@@ -867,7 +867,7 @@ export default function RestaurantProfilePage() {
         </main>
 
         <aside className="space-y-6">
-          <section className="glass-card rounded-lg p-5">
+          {/* <section className="glass-card rounded-lg p-5">
             <h2 className="text-lg font-semibold">Profile Completion</h2>
             <p className="mb-5 text-sm text-muted-foreground">
               Ready to publish across guest touchpoints.
@@ -908,7 +908,7 @@ export default function RestaurantProfilePage() {
                 </div>
               ))}
             </div>
-          </section>
+          </section> */}
 
           <section className="glass-card rounded-lg p-5">
             <div className="mb-4 flex items-center justify-between gap-3">

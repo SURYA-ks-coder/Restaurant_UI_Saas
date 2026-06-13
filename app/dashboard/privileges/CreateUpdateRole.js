@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Checkbox, message } from "antd";
-
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AntInput } from "@/components/ui/AntInput";
-import ButtonClick from "@/components/ui/ButtonClick";
 import DrawerPop from "@/components/ui/DrawerPop";
 import {
   Accordion,
@@ -17,8 +15,6 @@ import {
 import { action, API, getAction } from "@/lib/API";
 import Stepper from "@/components/ui/Stepper";
 import AssignEmployees from "./AssignEmployees";
-
-/* ─── Fallback data (used when API is unavailable) ───────────────────────── */
 
 const FALLBACK_MENU_LIST = [
   { id: 1, title: "Dashboard" },
@@ -42,7 +38,6 @@ const FALLBACK_MENU_LIST = [
   { id: 19, title: "Privileges" },
 ];
 
-/* Parent group titles — items matching these become accordion section headers */
 const PARENT_TITLES = new Set([
   "Dashboard",
   "Sales",
@@ -51,14 +46,9 @@ const PARENT_TITLES = new Set([
   "Administration",
 ]);
 
-/**
- * Converts the flat API list into grouped sections:
- * [{ id, title, children: [{id, title}, ...] }, ...]
- */
 function groupMenuItems(items) {
   const groups = [];
   let current = null;
-
   items.forEach((item) => {
     if (PARENT_TITLES.has(item.title)) {
       if (current) groups.push(current);
@@ -67,12 +57,9 @@ function groupMenuItems(items) {
       current.children.push(item);
     }
   });
-
   if (current) groups.push(current);
   return groups;
 }
-
-/* ─── Form validation ────────────────────────────────────────────────────── */
 
 const validationSchema = Yup.object({
   roleName: Yup.string()
@@ -82,7 +69,10 @@ const validationSchema = Yup.object({
     .required("Role name is required"),
 });
 
-/* ─── Component ──────────────────────────────────────────────────────────── */
+const steps = [
+  { id: 1, title: "Roles" },
+  { id: 2, title: "Assign Roles" },
+];
 
 export default function CreateUpdateRole({
   open,
@@ -95,18 +85,26 @@ export default function CreateUpdateRole({
   const [permissions, setPermissions] = useState(new Set());
   const [loadingMenus, setLoadingMenus] = useState(false);
 
+  // Tracks the actual role ID to use for assignment (may come from API response on create)
+  const [savedRoleId, setSavedRoleId] = useState(roleId || null);
+
+  // Staff list for AssignEmployees
+  const [staffList, setStaffList] = useState([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+
+  // Currently selected user IDs in AssignEmployees
+  const [assignedUserIds, setAssignedUserIds] = useState([]);
+
+  // Loading state for the assignment API call
+  const [isSavingAssignment, setIsSavingAssignment] = useState(false);
+
   const isUpdate = Boolean(roleId);
 
-  const steps = [
-    { id: 1, title: "Roles" },
-    { id: 2, title: "Assign Roles" },
-  ];
-
-  /* ── Formik ── */
+  /* ── Formik: step 0 — create / update role ── */
   const formik = useFormik({
     initialValues: { roleName: "" },
     validationSchema,
-    onSubmit: async (values, { setSubmitting, resetForm }) => {
+    onSubmit: async (values, { setSubmitting }) => {
       try {
         const payload = {
           roleName: values.roleName.trim(),
@@ -123,10 +121,9 @@ export default function CreateUpdateRole({
           message.success(
             result?.message || (isUpdate ? "Role updated" : "Role created"),
           );
-          // resetForm();
-          // setPermissions(new Set());
+          const newId = result.data?._id || result.data?.id || roleId;
+          setSavedRoleId(newId);
           setCurrentStep(1);
-          // onSaved?.();
         } else {
           message.error(result?.message || "Unable to save role");
         }
@@ -138,7 +135,44 @@ export default function CreateUpdateRole({
     },
   });
 
-  /* ── Fetch menu list from API ── */
+  /* ── Step 1 save: assign users to role ── */
+  const handleAssignSave = async () => {
+    if (!savedRoleId) {
+      message.error("Role ID not found. Please save the role first.");
+      return;
+    }
+    setIsSavingAssignment(true);
+    try {
+      const result = await action(
+        API.ASSIGN_USER_BY_ROLE,
+        { roleId: savedRoleId, userIds: assignedUserIds },
+        "PATCH",
+      );
+
+      if (result?.statusCode === 200 || result?.statusCode === 201) {
+        message.success(result?.message || "Employees assigned successfully");
+        onSaved?.();
+        handleClose();
+      } else {
+        message.error(result?.message || "Unable to assign employees");
+      }
+    } catch {
+      message.error("Unable to assign employees");
+    } finally {
+      setIsSavingAssignment(false);
+    }
+  };
+
+  /* ── Unified footer save handler ── */
+  const handleFooterSave = () => {
+    if (currentStep === 0) {
+      formik.handleSubmit();
+    } else {
+      handleAssignSave();
+    }
+  };
+
+  /* ── Fetch menus ── */
   const fetchMenuList = async () => {
     setLoadingMenus(true);
     try {
@@ -155,6 +189,20 @@ export default function CreateUpdateRole({
     }
   };
 
+  /* ── Fetch staff for assignment panel ── */
+  const fetchStaff = async () => {
+    setStaffLoading(true);
+    try {
+      const result = await getAction(API.GET_STAFF_LIST);
+      if (result?.statusCode === 200) {
+        setStaffList(result.data || []);
+      }
+    } catch {
+    } finally {
+      setStaffLoading(false);
+    }
+  };
+
   /* ── Fetch role details when editing ── */
   const fetchRole = async (id) => {
     try {
@@ -165,6 +213,12 @@ export default function CreateUpdateRole({
         if (Array.isArray(role.menus)) {
           setPermissions(new Set(role.menus));
         }
+        // Pre-populate assigned users if the role carries them
+        if (Array.isArray(role.userIds)) {
+          setAssignedUserIds(role.userIds);
+        } else if (Array.isArray(role.users)) {
+          setAssignedUserIds(role.users.map((u) => u._id || u));
+        }
       }
     } catch {
       message.error("Unable to fetch role details");
@@ -174,13 +228,16 @@ export default function CreateUpdateRole({
   useEffect(() => {
     if (!open) return;
     setCurrentStep(0);
+    setSavedRoleId(roleId || null);
     fetchMenuList();
+    fetchStaff();
 
     if (roleId) {
       fetchRole(roleId);
     } else {
       formik.resetForm();
       setPermissions(new Set());
+      setAssignedUserIds([]);
     }
   }, [open, roleId]);
 
@@ -189,21 +246,12 @@ export default function CreateUpdateRole({
     formik.resetForm();
     setPermissions(new Set());
     setCurrentStep(0);
+    setSavedRoleId(null);
+    setAssignedUserIds([]);
     onOpenChange(false);
   };
 
-  /* ── Step navigation ── */
-  const handleNext = async () => {
-    if (currentStep === 0) {
-      const errors = await formik.validateForm();
-      formik.setTouched({ roleName: true });
-      if (Object.keys(errors).length === 0) setCurrentStep(1);
-      return;
-    }
-    formik.handleSubmit();
-  };
-
-  /* ── Permission toggle helpers ── */
+  /* ── Permission helpers ── */
   const toggleItem = (id) => {
     setPermissions((prev) => {
       const next = new Set(prev);
@@ -235,8 +283,8 @@ export default function CreateUpdateRole({
   const getError = (field) =>
     formik.touched[field] && formik.errors[field] ? formik.errors[field] : "";
 
-  /* ── Accordion default open values ── */
   const defaultOpenValues = menuGroups.map((g) => String(g.id));
+  const isBusy = formik.isSubmitting || isSavingAssignment;
 
   return (
     <DrawerPop
@@ -246,21 +294,20 @@ export default function CreateUpdateRole({
       headerTitle={["Create New Role", "Manage your companies roles here"]}
       isFooter={true}
       bodyPadding="0"
-      footerBtn={["Cancel", "Save"]}
-      footerBtnDisabled={formik.isSubmitting}
-      loadingButton={formik.isSubmitting}
-      handleSubmit={formik.handleSubmit}
+      footerBtn={["Cancel", currentStep === 0 ? "Save & Next" : "Save"]}
+      footerBtnDisabled={isBusy}
+      loadingButton={isBusy}
+      handleSubmit={handleFooterSave}
     >
-      <div className="flex flex-col gap-6 h-full  mx-auto">
-        {/* Stepper header */}
+      <div className="flex flex-col gap-6 h-full mx-auto">
+        {/* Stepper */}
         <div className="px-10 py-5 bg-background">
           <Stepper steps={steps} currentStep={currentStep} />
         </div>
 
-        {/* Scrollable body */}
         {currentStep === 0 ? (
           <div className="flex-1 overflow-y-auto px-10 py-8 bg-[#f9fafb] dark:bg-[#0f172a]">
-            {/* Role Name card */}
+            {/* Role Name */}
             <div className="bg-white dark:bg-[#1e293b] rounded-xl border border-border p-6 mb-6">
               <div className="mb-5">
                 <h2 className="text-xl font-bold text-foreground">
@@ -270,7 +317,6 @@ export default function CreateUpdateRole({
                   Configure the company access based on the role
                 </p>
               </div>
-
               <AntInput
                 label="Role Name *"
                 name="roleName"
@@ -282,7 +328,7 @@ export default function CreateUpdateRole({
               />
             </div>
 
-            {/* Privileges section */}
+            {/* Privileges */}
             <div className="mb-6">
               <h3 className="text-base font-bold text-foreground">
                 Privileges
@@ -328,7 +374,6 @@ export default function CreateUpdateRole({
                         <AccordionContent>
                           {group.children.length > 0 ? (
                             <div className="grid grid-cols-2 gap-x-8">
-                              {/* Parent item itself as first checkbox */}
                               <div className="flex items-center py-2.5 border-b border-border/60">
                                 <Checkbox
                                   checked={permissions.has(group.id)}
@@ -338,8 +383,6 @@ export default function CreateUpdateRole({
                                   {group.title}
                                 </Checkbox>
                               </div>
-
-                              {/* Child items */}
                               {group.children.map((child) => (
                                 <div
                                   key={child.id}
@@ -360,7 +403,6 @@ export default function CreateUpdateRole({
                               ))}
                             </div>
                           ) : (
-                            /* Standalone item (e.g. Dashboard) */
                             <div className="flex items-center py-2">
                               <Checkbox
                                 checked={permissions.has(group.id)}
@@ -380,11 +422,12 @@ export default function CreateUpdateRole({
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center">
+          <div className="flex-1 overflow-y-auto px-10 py-8 bg-[#f9fafb] dark:bg-[#0f172a]">
             <AssignEmployees
-              onSave={(e) => {
-                console.log(e, "each");
-              }}
+              employees={staffList}
+              initialAssignedIds={assignedUserIds}
+              loading={staffLoading}
+              onSave={setAssignedUserIds}
             />
           </div>
         )}

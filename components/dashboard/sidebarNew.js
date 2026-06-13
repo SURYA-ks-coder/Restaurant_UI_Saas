@@ -21,6 +21,7 @@ import {
   Users,
   QrCode,
   Settings,
+  Paintbrush,
 } from "lucide-react";
 
 const navItems = [
@@ -164,6 +165,12 @@ const navItems = [
             id: 5,
             title: "Privileges",
             link: "/dashboard/privileges",
+            navigation: true,
+          },
+          {
+            id: 6,
+            title: "Appearance",
+            link: "/dashboard/appearance",
             navigation: true,
           },
         ],
