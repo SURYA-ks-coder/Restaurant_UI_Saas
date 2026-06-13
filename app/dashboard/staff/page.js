@@ -1,198 +1,148 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Award,
   CalendarClock,
   CheckCircle2,
   Clock,
-  Mail,
   MoreHorizontal,
+  Pencil,
   Phone,
   Plus,
   Search,
   ShieldCheck,
-  Star,
+  Trash2,
   UserCheck,
   Users,
+  UserX,
 } from "lucide-react";
+import { Dropdown, Skeleton, message } from "antd";
 import { cn } from "@/lib/utils";
+import { action, API, getAction } from "@/lib/API";
 import AddStaffs from "./AddStaffs";
 import ButtonClick from "@/components/ui/ButtonClick";
 
-const staffMembers = [
-  {
-    id: "STF-001",
-    name: "Maya Kapoor",
-    role: "Server",
-    department: "Floor",
-    status: "on_shift",
-    shift: "4:00 PM - 11:00 PM",
-    rating: 4.9,
-    phone: "+91 98765 11001",
-    email: "maya@flavorhub.test",
-  },
-  {
-    id: "STF-002",
-    name: "Ravi Menon",
-    role: "Head Chef",
-    department: "Kitchen",
-    status: "on_shift",
-    shift: "2:00 PM - 10:00 PM",
-    rating: 4.8,
-    phone: "+91 98765 11002",
-    email: "ravi@flavorhub.test",
-  },
-  {
-    id: "STF-003",
-    name: "Isha Rao",
-    role: "Host",
-    department: "Floor",
-    status: "break",
-    shift: "5:00 PM - 12:00 AM",
-    rating: 4.7,
-    phone: "+91 98765 11003",
-    email: "isha@flavorhub.test",
-  },
-  {
-    id: "STF-004",
-    name: "Noah D'Souza",
-    role: "Bartender",
-    department: "Bar",
-    status: "on_shift",
-    shift: "6:00 PM - 1:00 AM",
-    rating: 4.6,
-    phone: "+91 98765 11004",
-    email: "noah@flavorhub.test",
-  },
-  {
-    id: "STF-005",
-    name: "Anika Shah",
-    role: "Pastry Chef",
-    department: "Kitchen",
-    status: "off",
-    shift: "Off today",
-    rating: 4.8,
-    phone: "+91 98765 11005",
-    email: "anika@flavorhub.test",
-  },
-  {
-    id: "STF-006",
-    name: "Kabir Singh",
-    role: "Runner",
-    department: "Floor",
-    status: "scheduled",
-    shift: "8:00 PM - 1:00 AM",
-    rating: 4.4,
-    phone: "+91 98765 11006",
-    email: "kabir@flavorhub.test",
-  },
-  {
-    id: "STF-007",
-    name: "Neha Rao",
-    role: "Cashier",
-    department: "Admin",
-    status: "on_shift",
-    shift: "3:00 PM - 10:00 PM",
-    rating: 4.5,
-    phone: "+91 98765 11007",
-    email: "neha@flavorhub.test",
-  },
-  {
-    id: "STF-008",
-    name: "Arjun Patel",
-    role: "Line Cook",
-    department: "Kitchen",
-    status: "scheduled",
-    shift: "7:00 PM - 2:00 AM",
-    rating: 4.6,
-    phone: "+91 98765 11008",
-    email: "arjun@flavorhub.test",
-  },
-];
-
-const shiftBlocks = [
-  { time: "2 PM", kitchen: "Ravi", floor: "Prep crew", bar: "-" },
-  { time: "4 PM", kitchen: "Ravi, Anika", floor: "Maya", bar: "-" },
-  { time: "6 PM", kitchen: "Ravi, Arjun", floor: "Maya, Isha", bar: "Noah" },
-  { time: "8 PM", kitchen: "Ravi, Arjun", floor: "Maya, Kabir", bar: "Noah" },
-  { time: "10 PM", kitchen: "Arjun", floor: "Kabir", bar: "Noah" },
-];
-
-const requests = [
-  {
-    name: "Maya Kapoor",
-    type: "Shift swap",
-    detail: "Swap Friday close with Sunday lunch",
-    status: "Pending",
-  },
-  {
-    name: "Anika Shah",
-    type: "Time off",
-    detail: "May 18 - May 20",
-    status: "Review",
-  },
-  {
-    name: "Noah D'Souza",
-    type: "Overtime",
-    detail: "2.5 hours from last weekend",
-    status: "Pending",
-  },
-];
-
-const departments = ["All", "Floor", "Kitchen", "Bar", "Admin"];
-
 const statusStyles = {
-  on_shift: {
-    label: "On Shift",
+  active: {
+    label: "Active",
     className: "bg-success/10 text-success",
     dot: "bg-success",
   },
-  break: {
-    label: "On Break",
-    className: "bg-warning/10 text-warning",
-    dot: "bg-warning",
-  },
-  scheduled: {
-    label: "Scheduled",
-    className: "bg-primary/10 text-primary",
-    dot: "bg-primary",
-  },
-  off: {
-    label: "Off",
+  inactive: {
+    label: "Inactive",
     className: "bg-muted text-muted-foreground",
     dot: "bg-muted-foreground",
   },
+  blocked: {
+    label: "Blocked",
+    className: "bg-destructive/10 text-destructive",
+    dot: "bg-destructive",
+  },
 };
 
+const shiftBlocks = [
+  { time: "2 PM", kitchen: "—", floor: "—", bar: "—" },
+  { time: "4 PM", kitchen: "—", floor: "—", bar: "—" },
+  { time: "6 PM", kitchen: "—", floor: "—", bar: "—" },
+  { time: "8 PM", kitchen: "—", floor: "—", bar: "—" },
+  { time: "10 PM", kitchen: "—", floor: "—", bar: "—" },
+];
+
+const requests = [];
+
+function getDeptName(member) {
+  const d = member.departmentId;
+  if (!d) return "";
+  if (typeof d === "object") return d.departmentName || d.name || "";
+  return "";
+}
+
+function getInitials(name = "") {
+  return name
+    .split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export default function StaffPage() {
+  const [staffList, setStaffList] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStaff, setSelectedStaff] = useState(staffMembers[0]);
+  const [selectedStaff, setSelectedStaff] = useState(null);
   const [addStaffOpen, setAddStaffOpen] = useState(false);
+  const [editStaffId, setEditStaffId] = useState(null);
 
-  const filteredStaff = staffMembers.filter((member) => {
-    const matchesDepartment =
-      selectedDepartment === "All" || member.department === selectedDepartment;
-    const matchesSearch = `${member.name} ${member.role} ${member.department}`
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchesDepartment && matchesSearch;
-  });
-
-  const metrics = useMemo(() => {
-    return {
-      total: staffMembers.length,
-      onShift: staffMembers.filter((member) => member.status === "on_shift")
-        .length,
-      scheduled: staffMembers.filter((member) => member.status === "scheduled")
-        .length,
-      requests: requests.length,
-    };
+  const fetchStaffList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await getAction(API.GET_STAFF_LIST);
+      if (result?.statusCode === 200) {
+        const list = result.data || [];
+        setStaffList(list);
+        if (list.length > 0 && !selectedStaff) setSelectedStaff(list[0]);
+      }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchStaffList();
+  }, [fetchStaffList]);
+
+  const departments = useMemo(() => {
+    const names = new Set(staffList.map(getDeptName).filter(Boolean));
+    return ["All", ...names];
+  }, [staffList]);
+
+  const filteredStaff = useMemo(() => {
+    return staffList.filter((member) => {
+      const dept = getDeptName(member);
+      const matchesDept =
+        selectedDepartment === "All" || dept === selectedDepartment;
+      const haystack =
+        `${member.name} ${member.role} ${dept} ${member.employeeCode || ""} ${member.designation || ""}`.toLowerCase();
+      return matchesDept && haystack.includes(searchQuery.toLowerCase());
+    });
+  }, [staffList, selectedDepartment, searchQuery]);
+
+  const metrics = useMemo(
+    () => ({
+      total: staffList.length,
+      active: staffList.filter((m) => m.status === "active").length,
+      inactive: staffList.filter((m) => m.status === "inactive").length,
+      blocked: staffList.filter((m) => m.status === "blocked").length,
+    }),
+    [staffList],
+  );
+
+  const handleDelete = async (id) => {
+    try {
+      const result = await action(`${API.DELETE_STAFF}/${id}`, {}, "DELETE");
+      if (result?.statusCode === 200) {
+        message.success("Staff removed");
+        if (selectedStaff?._id === id) setSelectedStaff(null);
+        fetchStaffList();
+      } else {
+        message.error(result?.message || "Unable to delete staff");
+      }
+    } catch {
+      message.error("Unable to delete staff");
+    }
+  };
+
+  const openEdit = (member) => {
+    setEditStaffId(member._id);
+    setAddStaffOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-background ">
+    <div className="min-h-screen bg-background">
       <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <h1 className="text-3xl font-bold">Staff</h1>
@@ -206,8 +156,11 @@ export default function StaffPage() {
             Schedule Shift
           </button>
           <ButtonClick
-            handleSubmit={() => setAddStaffOpen(true)}
-            buttonName={"Add Staff"}
+            handleSubmit={() => {
+              setEditStaffId(null);
+              setAddStaffOpen(true);
+            }}
+            buttonName="Add Staff"
             icon={<Plus />}
             BtnType="primary"
           />
@@ -218,28 +171,28 @@ export default function StaffPage() {
         <MetricCard
           title="Team Members"
           value={metrics.total}
-          detail="Active profiles"
+          detail="Total staff"
           icon={Users}
           tone="primary"
         />
         <MetricCard
-          title="On Shift"
-          value={metrics.onShift}
-          detail="Currently clocked in"
+          title="Active"
+          value={metrics.active}
+          detail="Currently active"
           icon={UserCheck}
           tone="success"
         />
         <MetricCard
-          title="Scheduled"
-          value={metrics.scheduled}
-          detail="Upcoming tonight"
+          title="Inactive"
+          value={metrics.inactive}
+          detail="Off duty"
           icon={Clock}
           tone="accent"
         />
         <MetricCard
-          title="Requests"
-          value={metrics.requests}
-          detail="Need review"
+          title="Blocked"
+          value={metrics.blocked}
+          detail="Access restricted"
           icon={ShieldCheck}
           tone="warning"
         />
@@ -252,94 +205,147 @@ export default function StaffPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search staff, role, or department"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search name, role, or department"
                 className="h-10 w-full rounded-lg border border-border bg-muted pl-10 pr-3 text-sm outline-none focus:border-primary"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {departments.map((department) => (
+              {departments.map((dept) => (
                 <button
-                  key={department}
-                  onClick={() => setSelectedDepartment(department)}
+                  key={dept}
+                  onClick={() => setSelectedDepartment(dept)}
                   className={cn(
                     "whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium",
-                    selectedDepartment === department
+                    selectedDepartment === dept
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {department}
+                  {dept}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {filteredStaff.map((member) => {
-              const status = statusStyles[member.status];
-              const isSelected = selectedStaff?.id === member.id;
-
-              return (
-                <button
-                  key={member.id}
-                  onClick={() => setSelectedStaff(member)}
-                  className={cn(
-                    "rounded-lg border border-border bg-card/40 p-4 text-left transition-all hover:-translate-y-0.5 hover:bg-muted/30",
-                    isSelected &&
-                      "border-primary/50 bg-primary/5 ring-2 ring-primary/30",
-                  )}
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-border bg-card/40 p-4"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-                        {member.name
-                          .split(" ")
-                          .map((part) => part[0])
-                          .join("")}
-                      </div>
-                      <div>
-                        <h2 className="font-semibold">{member.name}</h2>
-                        <p className="text-sm text-muted-foreground">
-                          {member.role}
-                        </p>
-                      </div>
-                    </div>
-                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <Skeleton active avatar paragraph={{ rows: 2 }} />
+                </div>
+              ))}
+            </div>
+          ) : filteredStaff.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-muted-foreground">
+              <UserX className="h-10 w-10 opacity-40" />
+              <p className="text-sm">
+                {staffList.length === 0
+                  ? "No staff added yet. Click Add Staff to get started."
+                  : "No staff match your search."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+              {filteredStaff.map((member) => {
+                const statusKey = statusStyles[member.status]
+                  ? member.status
+                  : "inactive";
+                const status = statusStyles[statusKey];
+                const isSelected = selectedStaff?._id === member._id;
+                const deptName = getDeptName(member);
 
-                  <div className="mb-4 flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium",
-                        status.className,
-                      )}
-                    >
+                const menuItems = [
+                  {
+                    key: "edit",
+                    label: "Edit",
+                    icon: <Pencil className="h-3.5 w-3.5" />,
+                    onClick: () => openEdit(member),
+                  },
+                  {
+                    key: "delete",
+                    label: "Delete",
+                    icon: <Trash2 className="h-3.5 w-3.5" />,
+                    danger: true,
+                    onClick: () => handleDelete(member._id),
+                  },
+                ];
+
+                return (
+                  <div
+                    key={member._id}
+                    onClick={() => setSelectedStaff(member)}
+                    className={cn(
+                      "relative cursor-pointer rounded-lg border border-border bg-card/40 p-4 transition-all hover:-translate-y-0.5 hover:bg-muted/30",
+                      isSelected &&
+                        "border-primary/50 bg-primary/5 ring-2 ring-primary/30",
+                    )}
+                  >
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+                          {getInitials(member.name)}
+                        </div>
+                        <div>
+                          <h2 className="font-semibold">{member.name}</h2>
+                          <p className="text-sm capitalize text-muted-foreground">
+                            {member.designation || member.role?.replace("_", " ")}
+                          </p>
+                        </div>
+                      </div>
+                      <Dropdown
+                        menu={{ items: menuItems }}
+                        trigger={["click"]}
+                        placement="bottomRight"
+                      >
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded p-1 hover:bg-muted"
+                        >
+                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      </Dropdown>
+                    </div>
+
+                    <div className="mb-4 flex items-center justify-between">
                       <span
-                        className={cn("h-2 w-2 rounded-full", status.dot)}
-                      />
-                      {status.label}
-                    </span>
-                    <span className="flex items-center gap-1 text-sm text-warning">
-                      <Star className="h-4 w-4 fill-current" />
-                      {member.rating}
-                    </span>
-                  </div>
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium",
+                          status.className,
+                        )}
+                      >
+                        <span
+                          className={cn("h-2 w-2 rounded-full", status.dot)}
+                        />
+                        {status.label}
+                      </span>
+                      {member.employeeCode && (
+                        <span className="text-xs text-muted-foreground">
+                          {member.employeeCode}
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="rounded-lg bg-muted/30 p-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Department</span>
-                      <span>{member.department}</span>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-muted-foreground">Shift</span>
-                      <span>{member.shift}</span>
+                    <div className="rounded-lg bg-muted/30 p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Department</span>
+                        <span className="capitalize">{deptName || "—"}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-muted-foreground">Role</span>
+                        <span className="capitalize">
+                          {member.role?.replace("_", " ") || "—"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <aside className="space-y-6">
@@ -354,44 +360,73 @@ export default function StaffPage() {
               <Award className="h-4 w-4 text-muted-foreground" />
             </div>
 
-            {selectedStaff && (
+            {selectedStaff ? (
               <div>
                 <div className="mb-4 rounded-lg border border-border bg-muted/30 p-4">
                   <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-lg font-semibold text-primary">
-                    {selectedStaff.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")}
+                    {getInitials(selectedStaff.name)}
                   </div>
-                  <h3 className="text-xl font-semibold">
-                    {selectedStaff.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedStaff.role} • {selectedStaff.department}
+                  <h3 className="text-xl font-semibold">{selectedStaff.name}</h3>
+                  <p className="text-sm capitalize text-muted-foreground">
+                    {selectedStaff.designation || selectedStaff.role?.replace("_", " ")}
+                    {getDeptName(selectedStaff)
+                      ? ` • ${getDeptName(selectedStaff)}`
+                      : ""}
                   </p>
                 </div>
 
                 <div className="space-y-3 text-sm">
-                  <InfoRow label="Staff ID" value={selectedStaff.id} />
+                  {selectedStaff.employeeCode && (
+                    <InfoRow
+                      label="Employee Code"
+                      value={selectedStaff.employeeCode}
+                    />
+                  )}
+                  <InfoRow
+                    label="Role"
+                    value={
+                      <span className="capitalize">
+                        {selectedStaff.role?.replace("_", " ") || "—"}
+                      </span>
+                    }
+                  />
                   <InfoRow
                     label="Status"
-                    value={statusStyles[selectedStaff.status].label}
+                    value={
+                      statusStyles[selectedStaff.status]?.label ||
+                      selectedStaff.status
+                    }
                   />
-                  <InfoRow label="Shift" value={selectedStaff.shift} />
-                  <InfoRow label="Rating" value={selectedStaff.rating} />
+                  {selectedStaff.email && (
+                    <InfoRow label="Email" value={selectedStaff.email} />
+                  )}
+                  {selectedStaff.phone && (
+                    <InfoRow label="Phone" value={selectedStaff.phone} />
+                  )}
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-2">
-                  <button className="flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">
+                  <a
+                    href={`tel:${selectedStaff.phone}`}
+                    onClick={(e) => !selectedStaff.phone && e.preventDefault()}
+                    className="flex items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
+                  >
                     <Phone className="h-4 w-4" />
                     Call
-                  </button>
-                  <button className="flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
-                    <Mail className="h-4 w-4" />
-                    Message
+                  </a>
+                  <button
+                    onClick={() => openEdit(selectedStaff)}
+                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
                   </button>
                 </div>
               </div>
+            ) : (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Select a staff member to view details.
+              </p>
             )}
           </section>
 
@@ -422,31 +457,42 @@ export default function StaffPage() {
             <p className="mb-4 text-sm text-muted-foreground">
               Pending staff actions
             </p>
-            <div className="space-y-3">
-              {requests.map((request) => (
-                <div
-                  key={`${request.name}-${request.type}`}
-                  className="rounded-lg bg-muted/30 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{request.type}</p>
-                    <span className="text-xs text-primary">
-                      {request.status}
-                    </span>
+            {requests.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">
+                No pending requests.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {requests.map((request) => (
+                  <div
+                    key={`${request.name}-${request.type}`}
+                    className="rounded-lg bg-muted/30 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{request.type}</p>
+                      <span className="text-xs text-primary">
+                        {request.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {request.name} • {request.detail}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {request.name} • {request.detail}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         </aside>
       </div>
+
       <AddStaffs
         open={addStaffOpen}
-        onOpenChange={setAddStaffOpen}
-        onCreated={() => {}}
+        onOpenChange={(next) => {
+          setAddStaffOpen(next);
+          if (!next) setEditStaffId(null);
+        }}
+        onCreated={() => fetchStaffList()}
+        updateId={editStaffId}
       />
     </div>
   );

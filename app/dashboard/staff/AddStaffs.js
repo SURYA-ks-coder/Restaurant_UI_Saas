@@ -70,6 +70,7 @@ export default function AddStaffs({
   const [show, setShow] = useState(open);
   const [roleOptions, setRoleOptions] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [designationOption, setDesignationOption] = useState([]);
   const [shiftOptions, setShiftOptions] = useState([]);
   const [branchOptions, setBranchOptions] = useState([]);
 
@@ -127,7 +128,9 @@ export default function AddStaffs({
             (isUpdate ? "Unable to update staff" : "Unable to add staff"),
         );
       } catch {
-        message.error(isUpdate ? "Unable to update staff" : "Unable to add staff");
+        message.error(
+          isUpdate ? "Unable to update staff" : "Unable to add staff",
+        );
       } finally {
         setSubmitting(false);
       }
@@ -144,12 +147,14 @@ export default function AddStaffs({
   };
 
   const fetchDropdowns = async () => {
-    const [roles, departments, shifts, branches] = await Promise.allSettled([
-      getAction(API.GET_ROLE_LIST),
-      getAction(API.GET_DEPARTMENT_LIST),
-      getAction(API.GET_STAFF_SHIFT_LIST),
-      getAction(API.GET_BRANCH_LIST),
-    ]);
+    const [roles, departments, shifts, branches, designation] =
+      await Promise.allSettled([
+        getAction(API.GET_ROLE_LIST),
+        getAction(API.GET_DEPARTMENT_LIST),
+        getAction(API.GET_STAFF_SHIFT_LIST),
+        getAction(API.GET_BRANCH_LIST),
+        getAction(API.GET_DESIGNATION_LIST),
+      ]);
 
     if (roles.value?.statusCode === 200) {
       setRoleOptions(
@@ -162,7 +167,7 @@ export default function AddStaffs({
     if (departments.value?.statusCode === 200) {
       setDepartmentOptions(
         (departments.value.data || []).map((d) => ({
-          label: d.departmentName || d.name,
+          label: d.departmentName,
           value: d._id,
         })),
       );
@@ -170,7 +175,7 @@ export default function AddStaffs({
     if (shifts.value?.statusCode === 200) {
       setShiftOptions(
         (shifts.value.data || []).map((s) => ({
-          label: s.shiftName || s.name,
+          label: s.shiftName,
           value: s._id,
         })),
       );
@@ -178,8 +183,16 @@ export default function AddStaffs({
     if (branches.value?.statusCode === 200) {
       setBranchOptions(
         (branches.value.data || []).map((b) => ({
-          label: b.name,
+          label: b.branchName,
           value: b._id,
+        })),
+      );
+    }
+    if (designation?.value?.statusCode === 200) {
+      setDesignationOption(
+        designation?.value?.data?.map((d) => ({
+          label: d.designationName,
+          value: d._id,
         })),
       );
     }
@@ -290,15 +303,6 @@ export default function AddStaffs({
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
-            <AntInput
-              label="Designation"
-              name="designation"
-              placeholder="Eg: Senior Waiter"
-              value={formik.values.designation}
-              error={getError("designation")}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-            />
           </div>
         </section>
 
@@ -378,6 +382,18 @@ export default function AddStaffs({
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <AntSelect
+              label="Designation"
+              name="designation"
+              placeholder="Select Designation"
+              allowClear
+              options={designationOption}
+              value={formik.values.designation || undefined}
+              error={getError("designation")}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+            />
+
+            <AntSelect
               label="Department"
               value={formik.values.departmentId || undefined}
               allowClear
@@ -388,15 +404,14 @@ export default function AddStaffs({
               }
               onBlur={() => formik.setFieldTouched("departmentId", true)}
             />
+
             <AntSelect
               label="Shift"
               value={formik.values.shiftId || undefined}
               allowClear
               placeholder="Select shift"
               options={shiftOptions}
-              onChange={(value) =>
-                formik.setFieldValue("shiftId", value || "")
-              }
+              onChange={(value) => formik.setFieldValue("shiftId", value || "")}
               onBlur={() => formik.setFieldTouched("shiftId", true)}
             />
           </div>
