@@ -381,7 +381,11 @@ export default function CreateUpdateRole({
           </div>
         ) : (
           <div className="flex items-center justify-center">
-            <AssignEmployees />
+            <AssignEmployees
+              onSave={(e) => {
+                console.log(e, "each");
+              }}
+            />
           </div>
         )}
       </div>

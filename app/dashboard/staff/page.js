@@ -17,6 +17,8 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import AddStaffs from "./AddStaffs";
+import ButtonClick from "@/components/ui/ButtonClick";
 
 const staffMembers = [
   {
@@ -167,6 +169,7 @@ export default function StaffPage() {
   const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStaff, setSelectedStaff] = useState(staffMembers[0]);
+  const [addStaffOpen, setAddStaffOpen] = useState(false);
 
   const filteredStaff = staffMembers.filter((member) => {
     const matchesDepartment =
@@ -202,10 +205,12 @@ export default function StaffPage() {
             <CalendarClock className="h-4 w-4" />
             Schedule Shift
           </button>
-          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            <Plus className="h-4 w-4" />
-            Add Staff
-          </button>
+          <ButtonClick
+            handleSubmit={() => setAddStaffOpen(true)}
+            buttonName={"Add Staff"}
+            icon={<Plus />}
+            BtnType="primary"
+          />
         </div>
       </div>
 
@@ -438,6 +443,11 @@ export default function StaffPage() {
           </section>
         </aside>
       </div>
+      <AddStaffs
+        open={addStaffOpen}
+        onOpenChange={setAddStaffOpen}
+        onCreated={() => {}}
+      />
     </div>
   );
 }

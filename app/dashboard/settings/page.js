@@ -26,29 +26,12 @@ import SuppliersList from "./suppliers/SuppliersList";
 import AddSuppliers from "./suppliers/AddSuppliers";
 import SubscriptionPlanList from "./master/SubscriptionPlan";
 import AddSubscriptionPlan from "./master/AddSubscriptionPlan";
-
-const settingSections = [
-  { id: "profile", label: "Restaurant Profile", icon: Store },
-  { id: "operations", label: "Operations", icon: Settings },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "payments", label: "Payments", icon: CreditCard },
-  { id: "integrations", label: "Integrations", icon: PlugZap },
-  { id: "security", label: "Security", icon: ShieldCheck },
-];
-
-const integrations = [
-  { name: "Stripe Payments", status: "Connected", icon: CreditCard },
-  { name: "Kitchen Printer", status: "Online", icon: Printer },
-  { name: "Guest Wi-Fi", status: "Active", icon: Wifi },
-  { name: "Online Ordering", status: "Needs review", icon: TabletSmartphone },
-];
-
-const permissionRoles = [
-  { role: "Owner", access: "Full access", users: 1 },
-  { role: "Manager", access: "Operations, reports, staff", users: 3 },
-  { role: "Cashier", access: "POS and orders", users: 4 },
-  { role: "Kitchen", access: "KOT and inventory view", users: 6 },
-];
+import DesignationList from "./designation/DesignationList";
+import AddDesignation from "./designation/AddDesignation";
+import DepartmentList from "./department/DepartmentList";
+import AddDepartment from "./department/AddDepartment";
+import ShiftList from "./shift/ShiftList";
+import AddShift from "./shift/AddShift";
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
@@ -66,6 +49,12 @@ export default function SettingsPage() {
   const [suppliersDrawerOpen, setSuppliersDrawerOpen] = useState(false);
   const [suppliersRefreshKey, setSuppliersRefreshKey] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [departmentDrawerOpen, setDepartmentDrawerOpen] = useState(false);
+  const [departmentRefreshKey, setDepartmentRefreshKey] = useState(0);
+  const [designationDrawerOpen, setDesignationDrawerOpen] = useState(false);
+  const [designationRefreshKey, setDesignationRefreshKey] = useState(0);
+  const [shiftDrawerOpen, setShiftDrawerOpen] = useState(false);
+  const [shiftRefreshKey, setShiftRefreshKey] = useState(0);
 
   const handleAddClick = () => {
     if (selectedTab === "Category") {
@@ -83,6 +72,15 @@ export default function SettingsPage() {
 
     if (selectedTab === "Subcription") {
       setDrawerOpen(true);
+    }
+    if (selectedTab === "Department") {
+      setDepartmentDrawerOpen(true);
+    }
+    if (selectedTab === "Designation") {
+      setDesignationDrawerOpen(true);
+    }
+    if (selectedTab === "shift") {
+      setShiftDrawerOpen(true);
     }
   };
 
@@ -129,6 +127,21 @@ export default function SettingsPage() {
             title: "Subcription",
             content: <SubscriptionPlanList refreshKey={suppliersRefreshKey} />,
           },
+          {
+            id: 6,
+            title: "Department",
+            content: <DepartmentList refreshKey={departmentRefreshKey} />,
+          },
+          {
+            id: 7,
+            title: "Designation",
+            content: <DesignationList refreshKey={designationRefreshKey} />,
+          },
+          {
+            id: 8,
+            title: "shift",
+            content: <ShiftList refreshKey={shiftRefreshKey} />,
+          },
         ]}
       />
       <AddCategory
@@ -150,6 +163,21 @@ export default function SettingsPage() {
         open={suppliersDrawerOpen}
         onOpenChange={setSuppliersDrawerOpen}
         onCreated={() => setSuppliersRefreshKey((key) => key + 1)}
+      />
+      <AddDepartment
+        open={departmentDrawerOpen}
+        onOpenChange={setDepartmentDrawerOpen}
+        onCreated={() => setDepartmentRefreshKey((k) => k + 1)}
+      />
+      <AddDesignation
+        open={designationDrawerOpen}
+        onOpenChange={setDesignationDrawerOpen}
+        onCreated={() => setDesignationRefreshKey((k) => k + 1)}
+      />
+      <AddShift
+        open={shiftDrawerOpen}
+        onOpenChange={setShiftDrawerOpen}
+        onCreated={() => setShiftRefreshKey((k) => k + 1)}
       />
       {drawerOpen && (
         <AddSubscriptionPlan
