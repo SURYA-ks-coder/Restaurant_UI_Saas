@@ -58,6 +58,12 @@ const navItems = [
           },
           {
             id: 3,
+            title: "Orders List",
+            link: "/dashboard/ordersList",
+            navigation: true,
+          },
+          {
+            id: 4,
             title: "Billing",
             link: "/dashboard/billing",
             navigation: true,

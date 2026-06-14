@@ -260,7 +260,7 @@ export default function TablesPage() {
                   key={table._id}
                   onClick={() => setSelectedTable(table)}
                   className={cn(
-                    "rounded-lg p-4 text-left transition-all hover:-translate-y-0.5 bg-white dark:bg-card border border-gray-200",
+                    "rounded-lg p-4 text-left transition-all hover:-translate-y-0.5 bg-white dark:bg-card shadow ",
                     isSelected && "border-primary/50 ring-2 ring-primary/20",
                   )}
                 >
@@ -352,7 +352,7 @@ export default function TablesPage() {
         </section>
 
         <aside className="space-y-6">
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold">Selected Table</h2>
@@ -400,7 +400,7 @@ export default function TablesPage() {
                 {/* Table Card */}
                 <div
                   className={cn(
-                    "mb-4 rounded-lg border p-4",
+                    "mb-4 rounded-lg  p-4 bg-white dark:bg-card ",
                     statusStyles[selectedTable.status]?.panel,
                   )}
                 >
@@ -539,7 +539,7 @@ export default function TablesPage() {
             )}
           </section>
 
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <h2 className="text-lg font-semibold">Upcoming</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Reservations queued tonight
@@ -612,7 +612,7 @@ function SummaryCard({ title, value, detail, icon: Icon, tone }) {
   };
 
   return (
-    <div className="glass-card rounded-lg p-3 px-4">
+    <div className="bg-white dark:bg-card shadow rounded-lg p-3 px-4">
       <div className=" flex items-center justify-between">
         <div className=" flex items-center justify-between gap-2">
           <div className={cn("rounded-lg p-3", tones[tone])}>

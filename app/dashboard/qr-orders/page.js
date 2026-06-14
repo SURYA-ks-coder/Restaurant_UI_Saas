@@ -344,7 +344,7 @@ export default function QrOrdersPage() {
                     setSelectedTable(table);
                   }}
                   className={cn(
-                    "rounded-lg border border-border bg-card/40 p-4 text-left transition-all hover:-translate-y-0.5 hover:bg-muted/30",
+                    "rounded-lg bg-white dark:bg-card shadow p-4 text-left transition-all hover:-translate-y-0.5 hover:bg-muted/30",
                     isSelected &&
                       "border-primary/50 bg-primary/5 ring-2 ring-primary/30",
                   )}
@@ -393,7 +393,7 @@ export default function QrOrdersPage() {
         </section>
 
         <aside className="space-y-6">
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <div className="mb-4 flex items-center  gap-2">
               <div>
                 <h2 className="text-lg font-semibold">QR Preview</h2>
@@ -468,7 +468,7 @@ export default function QrOrdersPage() {
             )}
           </section>
           {/* 
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <h2 className="text-lg font-semibold">Live Mobile Orders</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Guest activity from QR menus
@@ -492,7 +492,7 @@ export default function QrOrdersPage() {
             </div>
           </section>
 
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <h2 className="text-lg font-semibold">Menu Highlights</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Most viewed QR items
@@ -517,7 +517,7 @@ export default function QrOrdersPage() {
             </div>
           </section>
 
-          <section className="glass-card rounded-lg p-5">
+          <section className="bg-white dark:bg-card shadow rounded-lg p-5">
             <h2 className="text-lg font-semibold">QR Campaigns</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Promotions shown inside guest menu
@@ -560,7 +560,7 @@ function MetricCard({ title, value, detail, icon: Icon, tone }) {
   };
 
   return (
-    <div className="glass-card rounded-lg p-3 px-4">
+    <div className="bg-white dark:bg-card shadow rounded-lg p-3 px-4">
       <div className=" flex items-center justify-between">
         <div className=" flex items-center justify-between gap-2">
           <div className={cn("rounded-lg p-3", tones[tone])}>
