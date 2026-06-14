@@ -20,82 +20,6 @@ import { Button, Dropdown } from "antd";
 import { FiDownload } from "react-icons/fi";
 import dayjs from "dayjs";
 
-const initialTables = [
-  {
-    id: 1,
-    seats: 2,
-    status: "occupied",
-    guest: "Anika Shah",
-    server: "Maya",
-    elapsed: "45m",
-    order: "$84.50",
-  },
-  { id: 2, seats: 4, status: "available", server: "Ravi" },
-  {
-    id: 3,
-    seats: 4,
-    status: "occupied",
-    guest: "Daniel Kim",
-    server: "Noah",
-    elapsed: "1h 20m",
-    order: "$126.20",
-  },
-  {
-    id: 4,
-    seats: 6,
-    status: "reserved",
-    guest: "Priya Mehta",
-    time: "7:30 PM",
-    server: "Maya",
-  },
-  {
-    id: 5,
-    seats: 2,
-    status: "occupied",
-    guest: "Alex Chen",
-    server: "Isha",
-    elapsed: "25m",
-    order: "$48.00",
-  },
-  { id: 6, seats: 4, status: "available", server: "Noah" },
-  {
-    id: 7,
-    seats: 8,
-    status: "reserved",
-    guest: "Corporate dinner",
-    time: "8:00 PM",
-    server: "Ravi",
-  },
-  { id: 8, seats: 2, status: "cleaning", server: "Isha", elapsed: "5m" },
-  {
-    id: 9,
-    seats: 4,
-    status: "occupied",
-    guest: "Sara Wilson",
-    server: "Maya",
-    elapsed: "55m",
-    order: "$72.80",
-  },
-  { id: 10, seats: 6, status: "available", server: "Ravi" },
-  {
-    id: 11,
-    seats: 4,
-    status: "occupied",
-    guest: "Omar Khan",
-    server: "Noah",
-    elapsed: "30m",
-    order: "$95.40",
-  },
-  {
-    id: 12,
-    seats: 2,
-    status: "reserved",
-    guest: "Neha Rao",
-    time: "8:30 PM",
-    server: "Isha",
-  },
-];
-
 const statusStyles = {
   available: {
     label: "Available",
@@ -126,15 +50,16 @@ const statusStyles = {
 export default function TablesPage() {
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [tables, setTables] = useState(initialTables);
-  const [selectedTable, setSelectedTable] = useState(initialTables[0]);
+  const [tables, setTables] = useState([]);
+  const [reservations, setReservations] = useState([]);
+  const [selectedTable, setSelectedTable] = useState({});
   const [tableDrawerOpen, setTableDrawerOpen] = useState(false);
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
 
   const counts = useMemo(() => {
     return tables.reduce(
       (acc, table) => {
-        acc[table.status] += 1;
+        acc[table.status] = (acc[table.status] || 0) + 1;
         acc.all += 1;
         return acc;
       },
@@ -146,23 +71,18 @@ export default function TablesPage() {
     const matchesStatus =
       selectedStatus === "all" || table.status === selectedStatus;
     const searchable =
-      `${table.tableName || table.id} ${table.guest || ""} ${table.server || ""}`.toLowerCase();
+      `${table.tableName || ""} ${table.tableNumber || ""}`.toLowerCase();
     const matchesSearch = searchable.includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
 
   const occupiedRevenue = tables
-    .filter((table) => table.order)
-    .reduce((sum, table) => sum + Number(table.order.replace("$", "")), 0);
+    .filter((t) => t.status === "occupied")
+    .reduce((sum, t) => sum + Number(t.totalRevenue || 0), 0);
 
-  const upcomingReservations = tables
-    .filter((table) => table.status === "reserved")
-    .map((table) => ({
-      table: table.tableName || table.id,
-      guest: table.guest,
-      time: table.time,
-      seats: table.seats,
-    }));
+  const upcomingReservations = reservations.filter((r) =>
+    ["reserved", "confirmed"].includes(r.status),
+  );
 
   const addCreatedTable = (table) => {
     const nextTable = {
@@ -179,46 +99,16 @@ export default function TablesPage() {
 
   const addCreatedReservation = (reservation) => {
     const reservationTableId = String(reservation.tableId);
-    const reservedTable = tables.find(
-      (table) => String(table._id || table.id) === reservationTableId,
-    );
-    const nextSelectedTable = reservedTable
-      ? {
-          ...reservedTable,
-          status:
-            reservation.status === "cancelled"
-              ? reservedTable.status
-              : "reserved",
-          guest: reservation.guestName || reservation.guest,
-          time: reservation.reservationTime || reservation.time,
-          seats:
-            reservation.partySize ||
-            reservedTable.capacity ||
-            reservedTable.seats,
-        }
-      : null;
 
-    setTables((currentTables) =>
-      currentTables.map((table) => {
-        const tableId = String(table._id || table.id);
-
-        if (tableId !== reservationTableId) {
-          return table;
-        }
-
-        return {
-          ...table,
-          status:
-            reservation.status === "cancelled" ? table.status : "reserved",
-          guest: reservation.guestName || reservation.guest,
-          time: reservation.reservationTime || reservation.time,
-          seats: reservation.partySize || table.capacity || table.seats,
-        };
-      }),
-    );
-
-    if (nextSelectedTable) {
-      setSelectedTable(nextSelectedTable);
+    if (reservation.status !== "cancelled") {
+      setReservations((prev) => [...prev, reservation]);
+      setTables((currentTables) =>
+        currentTables.map((table) =>
+          String(table._id || table.id) === reservationTableId
+            ? { ...table, status: "reserved" }
+            : table,
+        ),
+      );
     }
   };
 
@@ -233,8 +123,18 @@ export default function TablesPage() {
     } catch (error) {}
   };
 
+  const getReservationList = async () => {
+    try {
+      const result = await getAction(API.GET_RESERVATION_LIST, {});
+      if (result.statusCode === 200) {
+        setReservations(result.data);
+      }
+    } catch (error) {}
+  };
+
   useEffect(() => {
     getTableList();
+    getReservationList();
   }, []);
 
   const createQRCode = async (tableId) => {
@@ -346,25 +246,29 @@ export default function TablesPage() {
             {filteredTables.map((table) => {
               const style = statusStyles[table.status];
               const isSelected = selectedTable?._id === table._id;
+              const reservation = reservations.find(
+                (r) => String(r.tableId) === String(table._id),
+              );
+              const elapsedMin = dayjs().diff(dayjs(table.updatedAt), "minute");
+              const elapsed =
+                elapsedMin < 60
+                  ? `${elapsedMin} min`
+                  : `${Math.floor(elapsedMin / 60)} hr ${elapsedMin % 60} min`;
 
               return (
                 <button
                   key={table._id}
                   onClick={() => setSelectedTable(table)}
                   className={cn(
-                    "rounded-lg  p-4 text-left transition-all hover:-translate-y-0.5 bg-white dark:bg-card border border-gray-200",
-                    // style.panel,
-                    isSelected && "",
+                    "rounded-lg p-4 text-left transition-all hover:-translate-y-0.5 bg-white dark:bg-card border border-gray-200",
+                    isSelected && "border-primary/50 ring-2 ring-primary/20",
                   )}
                 >
                   <div className="mb-5 flex items-start justify-between">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm text-muted-foreground">Table</p>
-                        <p className="text-sm text-muted-foreground">
-                          {table.tableNumber}
-                        </p>
-                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Table {table.tableNumber}
+                      </p>
                       <h2 className="text-3xl font-bold">{table.tableName}</h2>
                     </div>
                     <p
@@ -373,10 +277,8 @@ export default function TablesPage() {
                         style.text,
                       )}
                     >
-                      <span
-                        className={cn("h-2 w-2 rounded-full ", style.dot)}
-                      />
-                      {table.status}
+                      <span className={cn("h-2 w-2 rounded-full", style.dot)} />
+                      {style.label}
                     </p>
                   </div>
 
@@ -384,28 +286,29 @@ export default function TablesPage() {
                     <UtensilsCrossed className="h-4 w-4" />
                     {table.capacity} seats
                     <span className="h-1 w-1 rounded-full bg-muted-foreground" />
-                    {table.server}
+                    {dayjs(table.updatedAt).format("hh:mm A")}
                   </div>
-                  <div className="flex  items-center gap-2 text-sm pb-2">
-                    <div className="flex flex-col gap-2">
+
+                  {table.qrCodeDataUrl && (
+                    <div className="flex items-center gap-2 pb-2 text-sm">
                       <img
                         src={table.qrCodeDataUrl}
                         alt="QR Code"
                         width={100}
                         height={100}
                       />
+                      <a
+                        href={table.qrCodeDataUrl}
+                        download={`table-${table.tableNumber}-qr.png`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 rounded-lg hover:bg-muted px-3 py-2 text-sm font-medium text-black dark:text-white"
+                      >
+                        <FiDownload className="text-2xl" />
+                      </a>
                     </div>
+                  )}
 
-                    <a
-                      href={table.qrCodeDataUrl}
-                      download={`table-${table.tableNumber}-qr.png`}
-                      className="flex items-center gap-1 rounded-lg hover:bg-muted px-3 py-2 text-sm font-medium  text-black dark:text-white"
-                    >
-                      <FiDownload className="text-2xl" />
-                    </a>
-                  </div>
-
-                  <div className="min-h-16 rounded-lg bg-background/50 p-3 ">
+                  <div className="min-h-16 rounded-lg bg-background/50 p-3">
                     {table.status === "available" && (
                       <p className="text-sm text-muted-foreground">
                         Ready for the next guest party.
@@ -413,23 +316,32 @@ export default function TablesPage() {
                     )}
                     {table.status === "occupied" && (
                       <>
-                        <p className="text-sm font-medium">{table.guest}</p>
+                        <p className="text-sm font-medium">
+                          {table.guestName || table.customerName || "Guest"}
+                        </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {table.elapsed} seated • {table.order}
+                          {elapsed} seated
+                          {table.totalRevenue
+                            ? ` • ₹${table.totalRevenue}`
+                            : ""}
                         </p>
                       </>
                     )}
                     {table.status === "reserved" && (
                       <>
-                        <p className="text-sm font-medium">{table.guest}</p>
+                        <p className="text-sm font-medium">
+                          {reservation?.guestName || "Reserved"}
+                        </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          Arrives at {table.time}
+                          {reservation?.reservationTime
+                            ? `Arrives at ${reservation.reservationTime}`
+                            : `${reservation?.partySize || table.capacity} guests`}
                         </p>
                       </>
                     )}
                     {table.status === "cleaning" && (
                       <p className="text-sm text-muted-foreground">
-                        Reset started {table.elapsed} ago.
+                        Reset started {elapsed} ago.
                       </p>
                     )}
                   </div>
@@ -514,51 +426,85 @@ export default function TablesPage() {
 
                 {/* Details */}
                 <div className="space-y-3 text-sm">
-                  <InfoRow
-                    label="Guest"
-                    value={
-                      selectedTable.guestName ||
-                      selectedTable.guest ||
-                      "No guest seated"
-                    }
-                  />
+                  {(() => {
+                    const linkedReservation = reservations.find(
+                      (r) => String(r.tableId) === String(selectedTable._id),
+                    );
+                    const elapsedMin = dayjs().diff(
+                      dayjs(selectedTable.updatedAt),
+                      "minute",
+                    );
+                    const elapsed =
+                      elapsedMin < 60
+                        ? `${elapsedMin} min`
+                        : `${Math.floor(elapsedMin / 60)} hr ${elapsedMin % 60} min`;
 
-                  <InfoRow
-                    label="Server"
-                    value={
-                      selectedTable.serverName ||
-                      selectedTable.server ||
-                      "Not Assigned"
-                    }
-                  />
-
-                  <InfoRow
-                    label="Time"
-                    value={
-                      selectedTable.status === "occupied"
-                        ? `${dayjs().diff(
-                            dayjs(selectedTable.updatedAt),
-                            "minute",
-                          )} min seated`
-                        : "Available now"
-                    }
-                  />
-
-                  <InfoRow
-                    label="Check"
-                    value={
-                      selectedTable.orderNumber || selectedTable.order || "-"
-                    }
-                  />
-
-                  <InfoRow label="Table No" value={selectedTable.tableNumber} />
-
-                  <InfoRow
-                    label="Created"
-                    value={dayjs(selectedTable.createdAt).format(
-                      "DD MMM YYYY, hh:mm A",
-                    )}
-                  />
+                    return (
+                      <>
+                        <InfoRow
+                          label="Guest"
+                          value={
+                            selectedTable.guestName ||
+                            selectedTable.customerName ||
+                            linkedReservation?.guestName ||
+                            "No guest seated"
+                          }
+                        />
+                        <InfoRow
+                          label="Party Size"
+                          value={
+                            linkedReservation?.partySize ||
+                            selectedTable.capacity
+                              ? `${linkedReservation?.partySize || selectedTable.capacity} guests`
+                              : "-"
+                          }
+                        />
+                        <InfoRow
+                          label="Time"
+                          value={
+                            selectedTable.status === "occupied"
+                              ? `${elapsed} seated`
+                              : selectedTable.status === "reserved"
+                                ? linkedReservation?.reservationTime ||
+                                  "Pending"
+                                : selectedTable.status === "cleaning"
+                                  ? `${elapsed} ago`
+                                  : "Available now"
+                          }
+                        />
+                        <InfoRow
+                          label="Revenue"
+                          value={
+                            selectedTable.totalRevenue
+                              ? `₹${selectedTable.totalRevenue}`
+                              : "-"
+                          }
+                        />
+                        <InfoRow
+                          label="Table No"
+                          value={selectedTable.tableNumber}
+                        />
+                        <InfoRow
+                          label="Floor"
+                          value={
+                            selectedTable.floorName ||
+                            selectedTable.floor ||
+                            "-"
+                          }
+                        />
+                        <InfoRow
+                          label="Created"
+                          value={
+                            selectedTable.createdAt
+                              ? dayjs(selectedTable.createdAt).format(
+                                  "DD MMM YYYY, hh:mm A",
+                                )
+                              : "-"
+                          }
+                        />
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Actions */}
@@ -599,23 +545,42 @@ export default function TablesPage() {
               Reservations queued tonight
             </p>
             <div className="space-y-3">
-              {upcomingReservations.map((reservation) => (
-                <div
-                  key={`${reservation.table}-${reservation.time}`}
-                  className="rounded-lg bg-muted/30 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{reservation.guest}</p>
-                    <span className="flex items-center gap-1 text-xs text-warning">
-                      <Clock className="h-3 w-3" />
-                      {reservation.time}
-                    </span>
+              {upcomingReservations.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No upcoming reservations.
+                </p>
+              )}
+              {upcomingReservations.map((reservation) => {
+                const reservedTable = tables.find(
+                  (t) => String(t._id) === String(reservation.tableId),
+                );
+                return (
+                  <div
+                    key={reservation._id}
+                    className="rounded-lg bg-muted/30 p-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        {reservation.guestName}
+                      </p>
+                      <span className="flex items-center gap-1 text-xs text-warning">
+                        <Clock className="h-3 w-3" />
+                        {reservation.reservationTime}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {reservedTable ? `${reservedTable.tableName}` : "Table"} •{" "}
+                      {reservation.partySize} guests
+                    </p>
+                    <p className="mt-0.5 text-xs capitalize text-muted-foreground">
+                      {reservation.status}
+                      {reservation.reservationDate
+                        ? ` · ${dayjs(reservation.reservationDate).format("DD MMM")}`
+                        : ""}
+                    </p>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Table {reservation.table} • {reservation.seats} seats
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </aside>
@@ -647,16 +612,31 @@ function SummaryCard({ title, value, detail, icon: Icon, tone }) {
   };
 
   return (
-    <div className="border rounded-lg p-5 bg-white/50 dark:bg-card/50">
-      <div className="mb-4 flex items-center justify-between">
-        <div className={cn("rounded-lg p-3", tones[tone])}>
-          <Icon className="h-5 w-5" />
+    <div className="glass-card rounded-lg p-3 px-4">
+      <div className=" flex items-center justify-between">
+        <div className=" flex items-center justify-between gap-2">
+          <div className={cn("rounded-lg p-3", tones[tone])}>
+            <Icon className="h-5 w-5" />
+          </div>
+          {/* <CheckCircle2 className="h-4 w-4 text-muted-foreground" /> */}
+          <div className="">
+            <p className="font-medium text-sm">{title}</p>
+            <p className="text-xs text-muted-foreground">{detail}</p>
+          </div>
         </div>
-        <span className="text-3xl font-semibold">{value}</span>
+        <p className="text-2xl font-semibold">{value}</p>
       </div>
-      <p className="font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{detail}</p>
     </div>
+    // <div className="border rounded-lg p-5 bg-white/50 dark:bg-card/50">
+    //   <div className="mb-4 flex items-center justify-between">
+    //     <div className={cn("rounded-lg p-3", tones[tone])}>
+    //       <Icon className="h-5 w-5" />
+    //     </div>
+    //     <span className="text-3xl font-semibold">{value}</span>
+    //   </div>
+    //   <p className="font-medium">{title}</p>
+    //   <p className="text-sm text-muted-foreground">{detail}</p>
+    // </div>
   );
 }
 
