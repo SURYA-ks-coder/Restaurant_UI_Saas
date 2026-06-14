@@ -88,7 +88,7 @@ export default function AddRestaurant({
         const endpoint = isUpdate
           ? `${API.UPDATE_RESTAURANT}/${updateId}`
           : API.CREATE_RESTAURANT;
-        const response = await fileUpload(endpoint, formData);
+        const response = await fileUpload(endpoint, formData, isUpdate ? "patch" : "post");
 
         if (response?.statusCode === 200 || response?.statusCode === 201) {
           message.success(
