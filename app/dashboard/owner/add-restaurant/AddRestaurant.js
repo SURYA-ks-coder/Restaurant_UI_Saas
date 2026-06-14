@@ -4,72 +4,79 @@ import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { message } from "antd";
-import { fileUpload, API } from "@/lib/API";
+import { fileUpload, getAction, API } from "@/lib/API";
 import DrawerPop from "@/components/ui/DrawerPop";
 import { AntInput, AntPasswordInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 
-export default function AddRestaurant({ open, onOpenChange, onCreated, updateId }) {
+const baseFields = {
+  restaurantName: "",
+  ownerName: "",
+  email: "",
+  password: "",
+  mobileNumber: "",
+  GSTNumber: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "",
+  pincode: "",
+  currency: "",
+  timezone: "",
+  subscriptionPlan: "",
+  subdomain: "",
+  customDomain: "",
+  branchName: "",
+  branchCode: "",
+  branchAddress: "",
+  branchCity: "",
+  branchState: "",
+  branchPincode: "",
+};
+
+export default function AddRestaurant({
+  open,
+  onOpenChange,
+  onCreated,
+  updateId,
+}) {
   const [show, setShow] = useState(open);
+  const [fetchLoading, setFetchLoading] = useState(false);
   const isUpdate = Boolean(updateId);
 
-  useEffect(() => {
-    setShow(open);
-  }, [open]);
-
-  const close = (val) => {
-    setShow(val);
-    onOpenChange?.(val);
-  };
-
-  const baseFields = {
-    restaurantName: "",
-    ownerName: "",
-    email: "",
-    password: "",
-    mobileNumber: "",
-    GSTNumber: "",
-    address: "",
-    city: "",
-    state: "",
-    country: "",
-    pincode: "",
-    currency: "",
-    timezone: "",
-    subscriptionPlan: "",
-    subdomain: "",
-    customDomain: "",
-    branchName: "",
-    branchCode: "",
-    branchAddress: "",
-    branchCity: "",
-    branchState: "",
-    branchPincode: "",
-  };
-
-  const validationSchema = Yup.object({
-    restaurantName: Yup.string().trim().min(2, "Too short").required("Restaurant name is required"),
-    ownerName: Yup.string().trim().min(2, "Too short").required("Owner name is required"),
-    email: Yup.string().trim().email("Enter a valid email").required("Email is required"),
-    ...(!isUpdate && {
-      password: Yup.string().min(6, "Min. 6 characters").required("Password is required"),
-    }),
-    mobileNumber: Yup.string()
-      .matches(/^[0-9]{10}$/, "Enter a valid 10-digit number")
-      .required("Mobile number is required"),
-    city: Yup.string().trim().required("City is required"),
-    state: Yup.string().trim().required("State is required"),
-    country: Yup.string().trim().required("Country is required"),
-    subscriptionPlan: Yup.string().required("Subscription plan is required"),
-    ...(!isUpdate && {
-      branchName: Yup.string().trim().required("Branch name is required"),
-      branchCode: Yup.string().trim().required("Branch code is required"),
-    }),
-  });
-
+  // ── formik declared first so functions below can safely reference it ──
   const formik = useFormik({
     initialValues: baseFields,
-    validationSchema,
+    validationSchema: Yup.object({
+      restaurantName: Yup.string()
+        .trim()
+        .min(2, "Too short")
+        .required("Restaurant name is required"),
+      ownerName: Yup.string()
+        .trim()
+        .min(2, "Too short")
+        .required("Owner name is required"),
+      email: Yup.string()
+        .trim()
+        .email("Enter a valid email")
+        .required("Email is required"),
+      ...(!isUpdate && {
+        password: Yup.string()
+          .min(6, "Min. 6 characters")
+          .required("Password is required"),
+      }),
+      mobileNumber: Yup.string()
+        .matches(/^[0-9]{10}$/, "Enter a valid 10-digit number")
+        .required("Mobile number is required"),
+      city: Yup.string().trim().required("City is required"),
+      state: Yup.string().trim().required("State is required"),
+      country: Yup.string().trim().required("Country is required"),
+      subscriptionPlan: Yup.string().required("Subscription plan is required"),
+      ...(!isUpdate && {
+        branchName: Yup.string().trim().required("Branch name is required"),
+        branchCode: Yup.string().trim().required("Branch code is required"),
+      }),
+    }),
     enableReinitialize: true,
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
@@ -86,7 +93,9 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
         if (response?.statusCode === 200 || response?.statusCode === 201) {
           message.success(
             response?.message ||
-              (isUpdate ? "Restaurant updated." : "Restaurant registered successfully.")
+              (isUpdate
+                ? "Restaurant updated."
+                : "Restaurant registered successfully."),
           );
           resetForm();
           onCreated?.();
@@ -101,6 +110,62 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
       }
     },
   });
+
+  // ── fetch existing restaurant data when editing ──
+  const fetchRestaurantDetails = async (id) => {
+    setFetchLoading(true);
+    try {
+      const result = await getAction(`${API.GET_RESTAURANT_BY_ID}/${id}`);
+      if (result?.statusCode === 200 && result.data) {
+        const r = result.data;
+        formik.setValues({
+          restaurantName: r.restaurantName || "",
+          ownerName: r.ownerName || "",
+          email: r.email || "",
+          password: "",
+          mobileNumber: r.mobileNumber || "",
+          GSTNumber: r.GSTNumber || "",
+          address: r.address || "",
+          city: r.city || "",
+          state: r.state || "",
+          country: r.country || "",
+          pincode: r.pincode || "",
+          currency: r.currency || "",
+          timezone: r.timezone || "",
+          subscriptionPlan: r.subscriptionPlan || "",
+          subdomain: r.subdomain || "",
+          customDomain: r.customDomain || "",
+          branchName: "",
+          branchCode: "",
+          branchAddress: "",
+          branchCity: "",
+          branchState: "",
+          branchPincode: "",
+        });
+      } else {
+        message.error(result?.message || "Unable to fetch restaurant details");
+      }
+    } catch {
+      message.error("Unable to fetch restaurant details");
+    } finally {
+      setFetchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setShow(open);
+    if (!open) return;
+    if (updateId) {
+      fetchRestaurantDetails(updateId);
+    } else {
+      formik.resetForm();
+    }
+  }, [open, updateId]);
+
+  const close = (val) => {
+    setShow(val);
+    onOpenChange?.(val);
+  };
 
   const field = (name) => ({
     name,
@@ -124,7 +189,7 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
       handleSubmit={formik.submitForm}
       updateBtn={isUpdate}
       updateFun={formik.submitForm}
-      loadingButton={formik.isSubmitting}
+      loadingButton={formik.isSubmitting || fetchLoading}
       width={900}
     >
       <form onSubmit={formik.handleSubmit} className="space-y-6 p-1">
@@ -175,8 +240,16 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
           />
           <AntInput label="City" placeholder="City" {...field("city")} />
           <AntInput label="State" placeholder="State" {...field("state")} />
-          <AntInput label="Country" placeholder="Country" {...field("country")} />
-          <AntInput label="Pincode" placeholder="6-digit pincode" {...field("pincode")} />
+          <AntInput
+            label="Country"
+            placeholder="Country"
+            {...field("country")}
+          />
+          <AntInput
+            label="Pincode"
+            placeholder="6-digit pincode"
+            {...field("pincode")}
+          />
           <AntSelect
             label="Currency"
             placeholder="Select currency"
@@ -199,7 +272,9 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
             ]}
             value={formik.values.timezone || undefined}
             onChange={(val) => formik.setFieldValue("timezone", val)}
-            error={formik.touched.timezone ? formik.errors.timezone : undefined}
+            error={
+              formik.touched.timezone ? formik.errors.timezone : undefined
+            }
           />
           <AntSelect
             label="Subscription Plan"
@@ -212,7 +287,9 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
             value={formik.values.subscriptionPlan || undefined}
             onChange={(val) => formik.setFieldValue("subscriptionPlan", val)}
             error={
-              formik.touched.subscriptionPlan ? formik.errors.subscriptionPlan : undefined
+              formik.touched.subscriptionPlan
+                ? formik.errors.subscriptionPlan
+                : undefined
             }
           />
           <AntInput
@@ -247,8 +324,16 @@ export default function AddRestaurant({ open, onOpenChange, onCreated, updateId 
                 wrapperClassName="sm:col-span-2"
                 {...field("branchAddress")}
               />
-              <AntInput label="Branch City" placeholder="City" {...field("branchCity")} />
-              <AntInput label="Branch State" placeholder="State" {...field("branchState")} />
+              <AntInput
+                label="Branch City"
+                placeholder="City"
+                {...field("branchCity")}
+              />
+              <AntInput
+                label="Branch State"
+                placeholder="State"
+                {...field("branchState")}
+              />
               <AntInput
                 label="Branch Pincode"
                 placeholder="6-digit pincode"

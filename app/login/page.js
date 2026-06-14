@@ -13,9 +13,11 @@ import {
   Mail,
   Sparkles,
 } from "lucide-react";
+import { message } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { action, API } from "@/lib/API";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,11 +25,37 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({ email: "", password: "" });
+
+  const validate = () => {
+    const next = { email: "", password: "" };
+
+    if (!email.trim()) {
+      next.email = "Email address is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      next.email = "Enter a valid email address";
+    }
+
+    if (!password) {
+      next.password = "Password is required";
+    } else if (password.length < 6) {
+      next.password = "Password must be at least 6 characters";
+    }
+
+    setErrors(next);
+    return !next.email && !next.password;
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!validate()) return;
+
+    setIsLoading(true);
     try {
-      const result = await action(API.LOGIN, { email, password });
+      const result = await action(API.LOGIN, {
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
       if (result?.statusCode === 200) {
         localStorage.setItem(
@@ -47,11 +75,18 @@ export default function LoginPage() {
           JSON.stringify(result?.data?.tokens?.refreshToken),
         );
         localStorage.setItem("userData", JSON.stringify(result?.data?.user));
-        setIsLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 700));
+
+        message.success("Login successful! Redirecting…");
+        await new Promise((resolve) => setTimeout(resolve, 800));
         router.push("/dashboard");
+      } else {
+        message.error(result?.message || "Invalid email or password");
+        setIsLoading(false);
       }
-    } catch (error) {}
+    } catch {
+      message.error("Something went wrong. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -72,22 +107,44 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Mail
+                  className={cn(
+                    "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
+                    errors.email ? "text-destructive" : "text-muted-foreground",
+                  )}
+                />
                 <Input
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="h-12 pl-10"
-                  required
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors((p) => ({ ...p, email: "" }));
+                  }}
+                  placeholder="you@example.com"
+                  className={cn(
+                    "h-12 pl-10",
+                    errors.email &&
+                      "border-destructive focus-visible:ring-destructive",
+                  )}
+                  autoComplete="email"
+                  disabled={isLoading}
                 />
               </div>
+              {errors.email && (
+                <p className="flex items-center gap-1.5 text-sm text-destructive">
+                  <span className="inline-block h-1 w-1 rounded-full bg-destructive" />
+                  {errors.email}
+                </p>
+              )}
             </div>
 
+            {/* Password */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
@@ -96,19 +153,37 @@ export default function LoginPage() {
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Lock
+                  className={cn(
+                    "absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2",
+                    errors.password
+                      ? "text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="h-12 pl-10 pr-10"
-                  required
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password)
+                      setErrors((p) => ({ ...p, password: "" }));
+                  }}
+                  placeholder="••••••••"
+                  className={cn(
+                    "h-12 pl-10 pr-10",
+                    errors.password &&
+                      "border-destructive focus-visible:ring-destructive",
+                  )}
+                  autoComplete="current-password"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  tabIndex={-1}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -117,15 +192,30 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="flex items-center gap-1.5 text-sm text-destructive">
+                  <span className="inline-block h-1 w-1 rounded-full bg-destructive" />
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary font-medium text-primary-foreground disabled:opacity-70"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary font-medium text-primary-foreground transition-opacity disabled:opacity-70 cursor-pointer"
             >
-              {isLoading ? "Signing in..." : "Sign in"}
-              {!isLoading && <ArrowRight className="h-4 w-4" />}
+              {isLoading ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+                  Signing in…
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -135,7 +225,10 @@ export default function LoginPage() {
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          <button className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border hover:bg-muted">
+          <button
+            type="button"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg border border-border hover:bg-muted"
+          >
             <Fingerprint className="h-4 w-4" />
             Sign in with biometrics
           </button>

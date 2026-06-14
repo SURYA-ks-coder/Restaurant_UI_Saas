@@ -8,48 +8,6 @@ import { action, getAction, API } from "@/lib/API";
 import Table from "@/components/ui/Table";
 import AddRestaurant from "./AddRestaurant";
 
-const sampleRestaurants = [
-  {
-    _id: "rest-1",
-    restaurantName: "Flavor Hub",
-    ownerName: "Surya KS",
-    email: "surya@flavorhub.com",
-    mobileNumber: "9876543210",
-    city: "Chennai",
-    state: "Tamil Nadu",
-    country: "India",
-    status: "active",
-    subscriptionPlan: "premium",
-    subdomain: "flavorhub",
-  },
-  {
-    _id: "rest-2",
-    restaurantName: "Spice Garden",
-    ownerName: "Priya Rajan",
-    email: "priya@spicegarden.com",
-    mobileNumber: "9876512345",
-    city: "Bengaluru",
-    state: "Karnataka",
-    country: "India",
-    status: "active",
-    subscriptionPlan: "standard",
-    subdomain: "spicegarden",
-  },
-  {
-    _id: "rest-3",
-    restaurantName: "The Curry House",
-    ownerName: "Rahul Sharma",
-    email: "rahul@curryhouse.com",
-    mobileNumber: "9876567890",
-    city: "Mumbai",
-    state: "Maharashtra",
-    country: "India",
-    status: "inactive",
-    subscriptionPlan: "basic",
-    subdomain: "curryhouse",
-  },
-];
-
 const restaurantHeader = [
   { title: "Restaurant", value: "restaurantName", type: "link" },
   { title: "Owner", value: "ownerName", type: "bold" },
@@ -71,7 +29,7 @@ const normalizeList = (result, fallback = []) => {
 
 export default function RestaurantList() {
   const router = useRouter();
-  const [data, setData] = useState(sampleRestaurants);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [restaurantId, setRestaurantId] = useState(null);
@@ -80,12 +38,12 @@ export default function RestaurantList() {
     setLoading(true);
     try {
       const result = await getAction(API.GET_RESTAURANT_LIST);
-      if (result?.statusCode === 200 || result?.statusCode === 201) {
-        const list = normalizeList(result, sampleRestaurants);
-        setData(list.length ? list : sampleRestaurants);
+      if (result?.statusCode === 200) {
+        const list = normalizeList(result);
+        setData(result?.data);
       }
     } catch {
-      setData(sampleRestaurants);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -97,7 +55,11 @@ export default function RestaurantList() {
 
   const handleDelete = async (id) => {
     try {
-      const result = await action(`${API.DELETE_RESTAURANT}/${id}`, {}, "DELETE");
+      const result = await action(
+        `${API.DELETE_RESTAURANT}/${id}`,
+        {},
+        "DELETE",
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         fetchList();
       }
@@ -139,9 +101,24 @@ export default function RestaurantList() {
 
       {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Restaurants" value={stats.total} icon={Building2} color="primary" />
-        <StatCard label="Active" value={stats.active} icon={CheckCircle2} color="success" />
-        <StatCard label="Inactive" value={stats.inactive} icon={XCircle} color="warning" />
+        <StatCard
+          label="Total Restaurants"
+          value={stats.total}
+          icon={Building2}
+          color="primary"
+        />
+        <StatCard
+          label="Active"
+          value={stats.active}
+          icon={CheckCircle2}
+          color="success"
+        />
+        <StatCard
+          label="Inactive"
+          value={stats.inactive}
+          icon={XCircle}
+          color="warning"
+        />
       </div>
 
       {/* Table */}
@@ -155,10 +132,12 @@ export default function RestaurantList() {
           onRowClick={(record) => {
             const name = encodeURIComponent(record.restaurantName || "");
             router.push(
-              `/dashboard/branch-management?restaurantId=${record._id}&restaurantName=${name}`
+              `/dashboard/branch-management?restaurantId=${record._id}&restaurantName=${name}`,
             );
           }}
           onEdit={(id) => {
+            console.log(id, "updateId");
+
             setRestaurantId(id);
             setDrawerOpen(true);
           }}

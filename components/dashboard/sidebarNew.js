@@ -201,26 +201,6 @@ const navItems = [
     ],
   },
 
-  // {
-  //   id: 7,
-  //   title: "Branch Management",
-  //   icon: <Building2 />,
-  //   submenus: [
-  //     {
-  //       id: 1,
-  //       title: "Locations",
-  //       subMenu: [
-  //         {
-  //           id: 1,
-  //           title: "All Branches",
-  //           link: "/dashboard/branch-management",
-  //           navigation: true,
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
-
   {
     id: 8,
     title: "Owner Tools",
