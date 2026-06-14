@@ -292,7 +292,7 @@ export default function StaffPage() {
                         <div>
                           <h2 className="font-semibold">{member.name}</h2>
                           <p className="text-sm capitalize text-muted-foreground">
-                            {member.designation || member.role?.replace("_", " ")}
+                            {member?.departmentId?.departmentName}
                           </p>
                         </div>
                       </div>
@@ -331,7 +331,9 @@ export default function StaffPage() {
 
                     <div className="rounded-lg bg-muted/30 p-3 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Department</span>
+                        <span className="text-muted-foreground">
+                          Department
+                        </span>
                         <span className="capitalize">{deptName || "—"}</span>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
@@ -366,9 +368,12 @@ export default function StaffPage() {
                   <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-lg font-semibold text-primary">
                     {getInitials(selectedStaff.name)}
                   </div>
-                  <h3 className="text-xl font-semibold">{selectedStaff.name}</h3>
+                  <h3 className="text-xl font-semibold">
+                    {selectedStaff.name}
+                  </h3>
                   <p className="text-sm capitalize text-muted-foreground">
-                    {selectedStaff.designation || selectedStaff.role?.replace("_", " ")}
+                    {selectedStaff.designation ||
+                      selectedStaff.role?.replace("_", " ")}
                     {getDeptName(selectedStaff)
                       ? ` • ${getDeptName(selectedStaff)}`
                       : ""}

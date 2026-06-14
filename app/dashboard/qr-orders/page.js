@@ -267,7 +267,7 @@ export default function QrOrdersPage() {
 
   const getTableList = async () => {
     try {
-      const result = await getAction(API.GET_TABLE_LIST, {});
+      const result = await getAction(API.GET_ALL_TABLE_ORDER_BASED, {});
       if (result.statusCode === 200) {
         const tableData = result.data;
         setSelectedTable(tableData[0]);
@@ -406,14 +406,16 @@ export default function QrOrdersPage() {
                     {dayjs(table.updatedAt).format("hh:mm A")}
                   </div>
 
-                  <div className="rounded-lg bg-muted/30 p-3">
-                    <div className="mb-3 flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Scans</span>
-                      <span className="font-medium">{table?.scans}</span>
-                    </div>
+                  <div className="rounded-lg bg-muted/30 p-2 flex flex-col gap-1.5 ">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Orders</span>
-                      <span className="font-medium">{table?.orders}</span>
+                      <span className="font-medium">{table?.totalOrders}</span>
+                    </div>
+                    <div className=" flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Revenue</span>
+                      <span className="font-medium">
+                        ₹ {table?.totalRevenue}
+                      </span>
                     </div>
                   </div>
                 </button>
@@ -458,7 +460,15 @@ export default function QrOrdersPage() {
                     label="Status"
                     value={statusStyles[selectedTable?.status]?.label}
                   />
-                  <InfoRow label="QR Link" value={selectedTable?.url} />
+                  <InfoRow
+                    label="QR Orders"
+                    value={selectedTable?.totalQrOrder}
+                  />
+                  <InfoRow
+                    label="Totla Orders"
+                    value={selectedTable?.totalOrders}
+                  />
+
                   <InfoRow
                     label="Last Scan"
                     value={dayjs(selectedTable?.updatedAt).format("hh:mm A")}
