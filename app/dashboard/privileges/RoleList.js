@@ -157,6 +157,7 @@ export default function RoleList({ refreshKey, onEdit }) {
       title: "Employees",
       value: "employees",
       width: 160,
+      isImageMultiple: true,
       render: (employees) => {
         if (!employees?.length) return null;
         return (

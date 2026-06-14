@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Space, Table as AntTable, Tooltip } from "antd";
+import {
+  Button,
+  Dropdown,
+  Menu,
+  Space,
+  Table as AntTable,
+  Tooltip,
+} from "antd";
+import { HiPlusSm } from "react-icons/hi";
 import { Eye, FilterXIcon, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -187,140 +195,81 @@ export default function Table({
             );
           }
           if (column.type === "isImageMultiple") {
-            <Dropdown
-              className=""
-              overlay={
-                <Menu className="overflow-auto max-h-56">
-                  {text.name?.map((data, i) => (
-                    <Menu.Item key={i}>
-                      {data && (
-                        <div
-                          // to={
-                          //   each.view &&
-                          //   `/employeeProfile/${text.employeeId[i]}`
-                          // }
-                          className="flex items-center justify-start gap-2"
-                        >
+            const users = Array.isArray(row.users) ? row.users : [];
+
+            if (users.length === 0)
+              return <span className="text-muted-foreground">—</span>;
+
+            return (
+              <Dropdown
+                overlay={
+                  <Menu className="overflow-auto max-h-56">
+                    {users.map((user, i) => (
+                      <Menu.Item key={user.userId ?? i}>
+                        <div className="flex items-center gap-2 py-0.5">
+                          {user.profileImage ? (
+                            <div className="overflow-hidden bg-white border-2 border-white rounded-full size-8 shrink-0">
+                              <img
+                                className="object-cover object-center w-full h-full"
+                                src={user.profileImage}
+                                alt={user.userName}
+                              />
+                            </div>
+                          ) : (
+                            <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 shrink-0 bg-primaryLight text-primary">
+                              {user.userName?.charAt(0).toUpperCase()}
+                            </p>
+                          )}
                           <div>
-                            {text[each.value]?.[i] ? (
-                              <div className="overflow-hidden bg-white border-2 border-white rounded-full size-8">
-                                <img
-                                  key={i}
-                                  className="object-cover object-center w-full h-full"
-                                  src={text[each.value]?.[i]}
-                                  alt=""
-                                />
-                              </div>
-                            ) : (
-                              <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primaryLight text-primary">
-                                {data?.charAt(0).toUpperCase()}
+                            <p className="font-semibold text-sm text-grey capitalize">
+                              {user.userName}
+                            </p>
+                            {user.employeeCode && (
+                              <p className="text-xs text-muted-foreground">
+                                {user.employeeCode}
                               </p>
                             )}
                           </div>
-                          <p className="font-semibold text-md text-grey">
-                            {data?.charAt(0).toUpperCase() + data?.slice(1)}
-                          </p>
-                          {/* Status Icon */}
-                          {text.statusdot?.[i] && (
-                            <div className="ml-2">
-                              {text.statusdot?.[i] === "Approved" && (
-                                <span className="relative inline-block w-2 h-2 bg-green-500 rounded-full">
-                                  <span className="absolute inline-flex w-full h-full bg-green-400 rounded-full opacity-75 animate-ping"></span>
-                                </span>
-                              )}
-                              {text.statusdot?.[i] === "Rejected" && (
-                                <span className="relative inline-block w-2 h-2 bg-red-500 rounded-full">
-                                  <span className="absolute inline-flex w-full h-full bg-red-400 rounded-full opacity-75 animate-ping"></span>
-                                </span>
-                              )}
-                              {text.statusdot?.[i] === "Pending" && (
-                                <span className="relative inline-block w-2 h-2 bg-yellow-500 rounded-full">
-                                  <span className="absolute inline-flex w-full h-full bg-yellow-400 rounded-full opacity-75 animate-ping"></span>
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </div>
-                      )}
-                    </Menu.Item>
-                  ))}
-                  <div className="flex items-center gap-1 pl-4">
-                    {text.adminData && (
-                      <>
-                        {text.adminData.profilePicture ? (
-                          <div className="overflow-hidden bg-white border-2 border-white rounded-full size-8">
-                            <img
-                              key={i}
-                              className="object-cover object-center w-full h-full"
-                              src={text.adminData.profilePicture}
-                              alt=""
-                            />
-                          </div>
-                        ) : (
-                          <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primaryLight text-primary">
-                            {text.adminData.fullName.charAt(0).toUpperCase()}
-                          </p>
-                        )}
-
-                        <p className="font-semibold text-md text-grey">
-                          {text.adminData.fullName}
-                        </p>
-                        <div className="ml-2">
-                          {text.mainStatus === "Approved" && (
-                            <span className="relative inline-block w-2 h-2 bg-green-500 rounded-full">
-                              <span className="absolute inline-flex w-full h-full bg-green-400 rounded-full opacity-75 animate-ping"></span>
-                            </span>
-                          )}
-                          {text.mainStatus === "Rejected" && (
-                            <span className="relative inline-block w-2 h-2 bg-red-500 rounded-full">
-                              <span className="absolute inline-flex w-full h-full bg-red-400 rounded-full opacity-75 animate-ping"></span>
-                            </span>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </Menu>
-              }
-              // placement={"top"}
-              trigger={["hover"]}
-            >
-              <div className="flex -space-x-3 rtl:space-x-reverse">
-                {text[each.value]?.map((data, index) =>
-                  text.name?.[index] && index < 3 ? (
-                    data ? (
-                      <div className="overflow-hidden bg-white border-2 border-white rounded-full size-8">
+                      </Menu.Item>
+                    ))}
+                  </Menu>
+                }
+                trigger={["hover"]}
+              >
+                <div className="flex -space-x-3 rtl:space-x-reverse cursor-pointer">
+                  {users.slice(0, 3).map((user, index) =>
+                    user.profileImage ? (
+                      <div
+                        key={user.userId ?? index}
+                        className="overflow-hidden bg-white border-2 border-white rounded-full size-8"
+                      >
                         <img
-                          key={index}
                           className="object-cover object-center w-full h-full"
-                          src={data}
-                          alt=""
+                          src={user.profileImage}
+                          alt={user.userName}
                         />
                       </div>
                     ) : (
-                      <div className="">
-                        <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primaryLight text-primary">
-                          {
-                            text.name?.map((each) =>
-                              each?.charAt(0).toUpperCase(),
-                            )[index]
-                          }
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    index === 3 && (
-                      <div className="flex items-center justify-center p-1 overflow-hidden text-center bg-red-100 border-2 border-white rounded-full size-8 ">
-                        <HiPlusSm className="text-sm text-red-600 " />
-                        <p className=" text-[10px] font-semibold text-red-600">
-                          {text[each?.value]?.length - 3}
-                        </p>
-                      </div>
-                    )
-                  ),
-                )}
-              </div>
-            </Dropdown>;
+                      <p
+                        key={user.userId ?? index}
+                        className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primaryLight text-primary"
+                      >
+                        {user.userName?.charAt(0).toUpperCase()}
+                      </p>
+                    ),
+                  )}
+                  {users.length > 3 && (
+                    <div className="flex items-center justify-center p-1 overflow-hidden text-center bg-red-100 border-2 border-white rounded-full size-8">
+                      <HiPlusSm className="text-sm text-red-600" />
+                      <p className="text-[10px] font-semibold text-red-600">
+                        {users.length - 3}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </Dropdown>
+            );
           }
 
           return cellValue ?? "-";
