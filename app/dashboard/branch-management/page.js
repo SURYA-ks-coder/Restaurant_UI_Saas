@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
   Building2,
   CheckCircle2,
   Edit3,
@@ -111,6 +113,13 @@ const normalizeBranch = (branch, managers = []) => {
 };
 
 export default function BranchManagementPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const restaurantId = searchParams.get("restaurantId");
+  const restaurantName = searchParams.get("restaurantName")
+    ? decodeURIComponent(searchParams.get("restaurantName"))
+    : null;
+
   const [branchRows, setBranchRows] = useState(sampleBranches);
   const [managerRows, setManagerRows] = useState(sampleManagers);
   const [search, setSearch] = useState("");
@@ -184,11 +193,25 @@ export default function BranchManagementPage() {
       {/* Header */}
       <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="mb-2 text-sm font-medium text-accent">Locations</p>
-          <h1 className="text-3xl font-bold md:text-4xl">Branch Management</h1>
+          {restaurantId ? (
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/owner/add-restaurant")}
+              className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Restaurants
+            </button>
+          ) : (
+            <p className="mb-2 text-sm font-medium text-accent">Locations</p>
+          )}
+          <h1 className="text-3xl font-bold md:text-4xl">
+            {restaurantName ? `${restaurantName} — Branches` : "Branch Management"}
+          </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
-            Manage all your restaurant locations — view details, assign managers,
-            and track branch performance in one place.
+            {restaurantName
+              ? `Viewing all branches for ${restaurantName}.`
+              : "Manage all your restaurant locations — view details, assign managers, and track branch performance in one place."}
           </p>
         </div>
         <button

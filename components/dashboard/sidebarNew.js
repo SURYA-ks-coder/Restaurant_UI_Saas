@@ -190,22 +190,8 @@ const navItems = [
             link: "/dashboard/restaurant-profile",
             navigation: true,
           },
-        ],
-      },
-    ],
-  },
-
-  {
-    id: 7,
-    title: "Branch Management",
-    icon: <Building2 />,
-    submenus: [
-      {
-        id: 1,
-        title: "Locations",
-        subMenu: [
           {
-            id: 1,
+            id: 2,
             title: "All Branches",
             link: "/dashboard/branch-management",
             navigation: true,
@@ -214,6 +200,26 @@ const navItems = [
       },
     ],
   },
+
+  // {
+  //   id: 7,
+  //   title: "Branch Management",
+  //   icon: <Building2 />,
+  //   submenus: [
+  //     {
+  //       id: 1,
+  //       title: "Locations",
+  //       subMenu: [
+  //         {
+  //           id: 1,
+  //           title: "All Branches",
+  //           link: "/dashboard/branch-management",
+  //           navigation: true,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   {
     id: 8,
@@ -232,7 +238,7 @@ const navItems = [
           },
           {
             id: 2,
-            title: "Register Restaurant",
+            title: "Restaurants",
             link: "/dashboard/owner/add-restaurant",
             navigation: true,
           },

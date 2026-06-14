@@ -15,8 +15,8 @@ import {
 
 const quickActions = [
   {
-    title: "Register Restaurant",
-    description: "Set up a new restaurant with owner, branches, and subscription details.",
+    title: "Restaurants",
+    description: "View all restaurants, register new ones, and manage existing entries.",
     icon: Plus,
     href: "/dashboard/owner/add-restaurant",
     accent: "bg-primary/10 text-primary",
@@ -144,10 +144,10 @@ export default function OwnerPage() {
                 href="/dashboard/owner/add-restaurant"
                 className="text-primary underline-offset-2 hover:underline"
               >
-                Register Restaurant
+                Restaurants
               </Link>{" "}
-              to onboard a new restaurant. All created restaurants will appear
-              in the Restaurant Profile and Branch Management sections.
+              to onboard a new restaurant or view all existing ones. Click any
+              restaurant row to manage its branches.
             </p>
           </div>
         </div>
