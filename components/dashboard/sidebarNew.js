@@ -24,6 +24,7 @@ import {
   Paintbrush,
   Store,
   Building2,
+  Crown,
 } from "lucide-react";
 
 const navItems = [
@@ -207,6 +208,32 @@ const navItems = [
             id: 1,
             title: "All Branches",
             link: "/dashboard/branch-management",
+            navigation: true,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: 8,
+    title: "Owner Tools",
+    icon: <Crown />,
+    submenus: [
+      {
+        id: 1,
+        title: "Admin",
+        subMenu: [
+          {
+            id: 1,
+            title: "Overview",
+            link: "/dashboard/owner",
+            navigation: true,
+          },
+          {
+            id: 2,
+            title: "Register Restaurant",
+            link: "/dashboard/owner/add-restaurant",
             navigation: true,
           },
         ],
