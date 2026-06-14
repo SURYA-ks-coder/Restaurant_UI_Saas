@@ -44,13 +44,14 @@ export function DashboardLayout({ children }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    applyAppearancePrefs();
-    // Auth guard — redirect to login if no token
+    // Auth guard runs FIRST — if no token, redirect before rendering anything
     const token = localStorage.getItem("accessToken");
     if (!token || token === "null" || token === "undefined") {
       router.replace("/login");
+      return;
     }
+    applyAppearancePrefs();
+    setMounted(true);
   }, [router]);
 
   const handleLogout = () => {
