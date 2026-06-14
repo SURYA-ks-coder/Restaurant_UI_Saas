@@ -28,16 +28,19 @@ const statusStyles = {
     label: "Active",
     className: "bg-success/10 text-success",
     dot: "bg-success",
+    text: " text-success",
   },
   inactive: {
     label: "Inactive",
     className: "bg-muted text-muted-foreground",
     dot: "bg-muted-foreground",
+    text: " text-muted-foreground",
   },
   blocked: {
     label: "Blocked",
     className: "bg-destructive/10 text-destructive",
     dot: "bg-destructive",
+    text: " text-destructive",
   },
 };
 
@@ -207,7 +210,7 @@ export default function StaffPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search name, role, or department"
-                className="h-10 w-full rounded-lg border border-border bg-muted pl-10 pr-3 text-sm outline-none focus:border-primary"
+                className="h-10 w-full rounded-lg border border-border pl-10 pr-3 text-sm outline-none focus:border-primary"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -286,11 +289,13 @@ export default function StaffPage() {
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary capitalize">
                           {getInitials(member.name)}
                         </div>
                         <div>
-                          <h2 className="font-semibold">{member.name}</h2>
+                          <h2 className="font-semibold capitalize">
+                            {member.name}
+                          </h2>
                           <p className="text-sm capitalize text-muted-foreground">
                             {member?.departmentId?.departmentName}
                           </p>
@@ -363,21 +368,23 @@ export default function StaffPage() {
             </div>
 
             {selectedStaff ? (
-              <div>
-                <div className="mb-4 rounded-lg border border-border bg-muted/30 p-4">
+              <div className=" flex flex-col gap-4">
+                <div className=" flex gap-2  rounded-lg border border-border bg-muted/30 p-4">
                   <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-lg font-semibold text-primary">
                     {getInitials(selectedStaff.name)}
                   </div>
-                  <h3 className="text-xl font-semibold">
-                    {selectedStaff.name}
-                  </h3>
-                  <p className="text-sm capitalize text-muted-foreground">
-                    {selectedStaff.designation ||
-                      selectedStaff.role?.replace("_", " ")}
-                    {getDeptName(selectedStaff)
-                      ? ` • ${getDeptName(selectedStaff)}`
-                      : ""}
-                  </p>
+                  <div className=" ">
+                    <h3 className="text-xl font-semibold capitalize">
+                      {selectedStaff.name}
+                    </h3>
+                    <p className="text-sm capitalize text-muted-foreground">
+                      {selectedStaff.designation ||
+                        selectedStaff.role?.replace("_", " ")}
+                      {getDeptName(selectedStaff)
+                        ? ` • ${getDeptName(selectedStaff)}`
+                        : ""}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-3 text-sm">
@@ -401,6 +408,7 @@ export default function StaffPage() {
                       statusStyles[selectedStaff.status]?.label ||
                       selectedStaff.status
                     }
+                    className={statusStyles[selectedStaff.status]?.text}
                   />
                   {selectedStaff.email && (
                     <InfoRow label="Email" value={selectedStaff.email} />
@@ -435,7 +443,7 @@ export default function StaffPage() {
             )}
           </section>
 
-          <section className="glass-card rounded-lg p-5">
+          {/* <section className="glass-card rounded-lg p-5">
             <h2 className="text-lg font-semibold">Today&apos;s Schedule</h2>
             <p className="mb-4 text-sm text-muted-foreground">
               Coverage by station
@@ -455,7 +463,7 @@ export default function StaffPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </section> */}
 
           <section className="glass-card rounded-lg p-5">
             <h2 className="text-lg font-semibold">Requests</h2>
@@ -512,23 +520,29 @@ function MetricCard({ title, value, detail, icon: Icon, tone }) {
   };
 
   return (
-    <div className="glass-card rounded-lg p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div className={cn("rounded-lg p-3", tones[tone])}>
-          <Icon className="h-5 w-5" />
+    <div className="glass-card rounded-lg p-3 px-4">
+      <div className=" flex items-center justify-between">
+        <div className=" flex items-center justify-between gap-2">
+          <div className={cn("rounded-lg p-3", tones[tone])}>
+            <Icon className="h-5 w-5" />
+          </div>
+          {/* <CheckCircle2 className="h-4 w-4 text-muted-foreground" /> */}
+          <div className="">
+            <p className="font-medium text-sm">{title}</p>
+            <p className="text-xs text-muted-foreground">{detail}</p>
+          </div>
         </div>
-        <Users className="h-4 w-4 text-muted-foreground" />
+        <p className="text-2xl font-semibold">{value}</p>
       </div>
-      <p className="text-2xl font-semibold">{value}</p>
-      <p className="mt-1 font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{detail}</p>
     </div>
   );
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value, className }) {
   return (
-    <div className="flex items-center justify-between border-b border-border pb-2">
+    <div
+      className={` ${className} flex items-center justify-between border-b border-border pb-2`}
+    >
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
     </div>
