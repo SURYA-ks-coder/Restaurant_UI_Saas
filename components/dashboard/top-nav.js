@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Bell,
   Check,
@@ -60,10 +61,16 @@ export function TopNav({ onMenuToggle }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [profileHref, setProfileHref] = useState("/dashboard/staff");
   const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
+    const userId =
+      localStorage.getItem("userId") ||
+      localStorage.getItem("staffId") ||
+      localStorage.getItem("_id");
+    if (userId) setProfileHref(`/dashboard/staff/${userId}`);
   }, []);
 
   const isLightTheme = mounted && resolvedTheme === "light";
@@ -180,8 +187,12 @@ export function TopNav({ onMenuToggle }) {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={profileHref}>Staff Profile</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">Settings</Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

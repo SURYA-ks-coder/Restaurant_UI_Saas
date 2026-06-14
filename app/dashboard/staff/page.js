@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Award,
   CalendarClock,
-  CheckCircle2,
   Clock,
+  ExternalLink,
   MoreHorizontal,
   Pencil,
   Phone,
@@ -44,14 +46,6 @@ const statusStyles = {
   },
 };
 
-const shiftBlocks = [
-  { time: "2 PM", kitchen: "—", floor: "—", bar: "—" },
-  { time: "4 PM", kitchen: "—", floor: "—", bar: "—" },
-  { time: "6 PM", kitchen: "—", floor: "—", bar: "—" },
-  { time: "8 PM", kitchen: "—", floor: "—", bar: "—" },
-  { time: "10 PM", kitchen: "—", floor: "—", bar: "—" },
-];
-
 const requests = [];
 
 function getDeptName(member) {
@@ -71,6 +65,7 @@ function getInitials(name = "") {
 }
 
 export default function StaffPage() {
+  const router = useRouter();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("All");
@@ -263,6 +258,12 @@ export default function StaffPage() {
 
                 const menuItems = [
                   {
+                    key: "view",
+                    label: "View Profile",
+                    icon: <ExternalLink className="h-3.5 w-3.5" />,
+                    onClick: () => router.push(`/dashboard/staff/${member._id}`),
+                  },
+                  {
                     key: "edit",
                     label: "Edit",
                     icon: <Pencil className="h-3.5 w-3.5" />,
@@ -435,6 +436,13 @@ export default function StaffPage() {
                     Edit
                   </button>
                 </div>
+                <Link
+                  href={`/dashboard/staff/${selectedStaff._id}`}
+                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Full Profile
+                </Link>
               </div>
             ) : (
               <p className="py-6 text-center text-sm text-muted-foreground">
