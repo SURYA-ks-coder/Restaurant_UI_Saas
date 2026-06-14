@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Plus,
   QrCode,
+  QrCodeIcon,
   RefreshCw,
   Search,
   Send,
@@ -23,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useFormik } from "formik";
 import { action, API, getAction } from "@/lib/API";
 import dayjs from "dayjs";
+import SearchBox from "@/components/ui/SearchBox";
 
 const qrTables = [
   {
@@ -99,45 +101,6 @@ const qrTables = [
   },
 ];
 
-const mobileOrders = [
-  {
-    id: "QR-2048",
-    table: "Table 5",
-    guest: "Guest 2",
-    items: 4,
-    total: "$72.50",
-    status: "New",
-    time: "Now",
-  },
-  {
-    id: "QR-2047",
-    table: "Table 3",
-    guest: "Guest 1",
-    items: 2,
-    total: "$38.00",
-    status: "In Cart",
-    time: "1 min ago",
-  },
-  {
-    id: "QR-2046",
-    table: "Table 7",
-    guest: "Guest 4",
-    items: 6,
-    total: "$126.20",
-    status: "Sent to Kitchen",
-    time: "4 min ago",
-  },
-  {
-    id: "QR-2045",
-    table: "Table 1",
-    guest: "Guest 1",
-    items: 3,
-    total: "$48.90",
-    status: "Paid",
-    time: "12 min ago",
-  },
-];
-
 const menuHighlights = [
   { name: "Wagyu Beef Steak", views: 186, conversion: "18%" },
   { name: "Truffle Pasta", views: 142, conversion: "22%" },
@@ -186,20 +149,19 @@ export default function QrOrdersPage() {
 
   const metrics = useMemo(() => {
     return {
-      scans: qrTables.reduce((sum, table) => sum + table.scans, 0),
-      orders: qrTables.reduce((sum, table) => sum + table.orders, 0),
-      active: qrTables.filter(
+      scans: tables.reduce((sum, table) => sum + (table.totalOrders || 0), 0),
+      orders: tables.reduce((sum, table) => sum + (table.totalQrOrder || 0), 0),
+      active: tables.filter(
         (table) => table.status === "active" || table.status === "ordering",
       ).length,
-      liveOrders: mobileOrders.filter((order) => order.status !== "Paid")
-        .length,
+      liveOrders: tables.filter((table) => table.status === "ordering").length,
     };
-  }, []);
+  }, [tables]);
 
-  const filteredTables = qrTables.filter((table) => {
+  const filteredTables = tables.filter((table) => {
     const matchesStatus =
       selectedStatus === "all" || table.status === selectedStatus;
-    const matchesSearch = `${table.table} ${table.url}`
+    const matchesSearch = `${table.tableName}`
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
@@ -335,7 +297,7 @@ export default function QrOrdersPage() {
       <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
         <section>
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative max-w-md flex-1">
+            {/* <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={searchQuery}
@@ -343,8 +305,14 @@ export default function QrOrdersPage() {
                 placeholder="Search table or QR link"
                 className="h-10 w-full rounded-lg border border-border bg-muted pl-10 pr-3 text-sm outline-none focus:border-primary"
               />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            </div> */}
+            <SearchBox
+              value={searchQuery}
+              change={(e) => setSearchQuery(e)}
+              placeholder="Search table or QR link"
+              className="w-full"
+            />
+            {/* <div className="flex gap-2 overflow-x-auto pb-1">
               {["all", "active", "ordering", "inactive", "needs_refresh"].map(
                 (status) => (
                   <button
@@ -361,7 +329,7 @@ export default function QrOrdersPage() {
                   </button>
                 ),
               )}
-            </div>
+            </div> */}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -426,29 +394,30 @@ export default function QrOrdersPage() {
 
         <aside className="space-y-6">
           <section className="glass-card rounded-lg p-5">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex items-center  gap-2">
               <div>
                 <h2 className="text-lg font-semibold">QR Preview</h2>
                 <p className="text-sm text-muted-foreground">
                   Selected table link
                 </p>
               </div>
-              <MoreHorizontal
-                className="h-4 w-4 text-muted-foreground cursor-pointer"
-                onClick={(e) => {
-                  // e.stopPropagation();
-                  formik?.handleSubmit();
-                }}
-              />
+              {/* <MoreHorizontal
+                  className="h-4 w-4 text-muted-foreground cursor-pointer"
+                  onClick={(e) => {
+                    // e.stopPropagation();
+                    formik?.handleSubmit();
+                  }}
+                /> */}
             </div>
 
             {selectedTable && (
               <div>
                 <div className="mb-4 flex aspect-square items-center justify-center rounded-lg border border-border bg-muted/30">
-                  <div className="grid h-36 w-36 grid-cols-5 gap-1 rounded-lg bg-background p-3"></div>
+                  {/* <div className="grid h-36 w-36 grid-cols-5 gap-1 rounded-lg bg-background p-3"></div> */}
                   <img
                     src={selectedTable.qrCodeDataUrl}
                     alt="QR Code"
+                    className=" rounded-lg"
                     // width={100}
                     // height={100}
                   />
@@ -591,16 +560,20 @@ function MetricCard({ title, value, detail, icon: Icon, tone }) {
   };
 
   return (
-    <div className="glass-card rounded-lg p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <div className={cn("rounded-lg p-3", tones[tone])}>
-          <Icon className="h-5 w-5" />
+    <div className="glass-card rounded-lg p-3 px-4">
+      <div className=" flex items-center justify-between">
+        <div className=" flex items-center justify-between gap-2">
+          <div className={cn("rounded-lg p-3", tones[tone])}>
+            <Icon className="h-5 w-5" />
+          </div>
+          {/* <CheckCircle2 className="h-4 w-4 text-muted-foreground" /> */}
+          <div className="">
+            <p className="font-medium text-sm">{title}</p>
+            <p className="text-xs text-muted-foreground">{detail}</p>
+          </div>
         </div>
-        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+        <p className="text-2xl font-semibold">{value}</p>
       </div>
-      <p className="text-2xl font-semibold">{value}</p>
-      <p className="mt-1 font-medium">{title}</p>
-      <p className="text-sm text-muted-foreground">{detail}</p>
     </div>
   );
 }
