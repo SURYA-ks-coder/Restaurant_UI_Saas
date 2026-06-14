@@ -57,7 +57,7 @@ const notifications = [
   },
 ];
 
-export function TopNav({ onMenuToggle }) {
+export function TopNav({ onMenuToggle, onLogout }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -193,7 +193,12 @@ export function TopNav({ onMenuToggle }) {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/settings">Settings</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={onLogout}
+              className="text-destructive focus:text-destructive"
+            >
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

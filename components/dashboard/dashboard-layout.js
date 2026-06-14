@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { MobileSidebar, Sidebar } from "./sidebar";
+import { MobileSidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import SidebarNew from "./sidebarNew";
 
@@ -28,7 +29,16 @@ function applyAppearancePrefs() {
   if (lang) root.setAttribute("lang", lang);
 }
 
+const AUTH_KEYS = [
+  "accessToken",
+  "refreshToken",
+  "restaurantId",
+  "branchIds",
+  "userData",
+];
+
 export function DashboardLayout({ children }) {
+  const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -36,7 +46,17 @@ export function DashboardLayout({ children }) {
   useEffect(() => {
     setMounted(true);
     applyAppearancePrefs();
-  }, []);
+    // Auth guard — redirect to login if no token
+    const token = localStorage.getItem("accessToken");
+    if (!token || token === "null" || token === "undefined") {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    AUTH_KEYS.forEach((key) => localStorage.removeItem(key));
+    router.replace("/login");
+  };
 
   if (!mounted) {
     return <div className="min-h-screen bg-background text-foreground" />;
@@ -70,10 +90,14 @@ export function DashboardLayout({ children }) {
           <SidebarNew
             collapsed={sidebarCollapsed}
             onToggle={() => setSidebarCollapsed((value) => !value)}
+            onLogout={handleLogout}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
-          <TopNav onMenuToggle={() => setMobileMenuOpen((value) => !value)} />
+          <TopNav
+            onMenuToggle={() => setMobileMenuOpen((value) => !value)}
+            onLogout={handleLogout}
+          />
           <main className="flex-1 overflow-y-auto bg-background p-4">
             {children}
           </main>
