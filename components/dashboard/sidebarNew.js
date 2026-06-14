@@ -22,6 +22,8 @@ import {
   QrCode,
   Settings,
   Paintbrush,
+  Store,
+  Building2,
 } from "lucide-react";
 
 const navItems = [
@@ -151,26 +153,60 @@ const navItems = [
           },
           {
             id: 3,
-            title: "Restaurant Profile",
-            link: "/dashboard/restaurant-profile",
-            navigation: true,
-          },
-          {
-            id: 4,
             title: "Settings",
             link: "/dashboard/settings",
             navigation: true,
           },
           {
-            id: 5,
+            id: 4,
             title: "Privileges",
             link: "/dashboard/privileges",
             navigation: true,
           },
           {
-            id: 6,
+            id: 5,
             title: "Appearance",
             link: "/dashboard/appearance",
+            navigation: true,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: 6,
+    title: "Restaurant Management",
+    icon: <Store />,
+    submenus: [
+      {
+        id: 1,
+        title: "Profile",
+        subMenu: [
+          {
+            id: 1,
+            title: "Restaurant Profile",
+            link: "/dashboard/restaurant-profile",
+            navigation: true,
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    id: 7,
+    title: "Branch Management",
+    icon: <Building2 />,
+    submenus: [
+      {
+        id: 1,
+        title: "Locations",
+        subMenu: [
+          {
+            id: 1,
+            title: "All Branches",
+            link: "/dashboard/branch-management",
             navigation: true,
           },
         ],

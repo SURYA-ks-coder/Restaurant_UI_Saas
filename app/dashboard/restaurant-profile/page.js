@@ -36,6 +36,7 @@ import { AntSelect } from "@/components/ui/AntSelect";
 import AntTextArea from "@/components/ui/AntTextArea";
 import AddBranch from "./Branch/AddBranch";
 import AddManager from "./Manager/AddManager";
+import { FaHandDots, FaPen } from "react-icons/fa6";
 
 const restaurantApiUrl = `${URL}${API.CREATE_RESTAURANT}`;
 
@@ -557,6 +558,19 @@ export default function RestaurantProfilePage() {
                               {branch.code}
                             </p>
                           </div>
+
+                          <FaPen
+                            className=" text-sm cursor-pointer text-gray-600"
+                            onClick={() => {
+                              setBranchUpdateId(getEntityId(activeBranch));
+                              setBranchDrawerOpen(true);
+                            }}
+                          />
+                        </div>
+                        <div className=" flex items-center justify-between">
+                          <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">
+                            {branch.address}
+                          </p>
                           <span
                             className={cn(
                               "rounded-full px-2 py-1 text-xs font-medium",
@@ -568,9 +582,6 @@ export default function RestaurantProfilePage() {
                             {branch.status === "active" ? "Active" : "Inactive"}
                           </span>
                         </div>
-                        <p className="mt-3 line-clamp-2 text-xs text-muted-foreground">
-                          {branch.address}
-                        </p>
                       </button>
                     );
                   })}
@@ -590,26 +601,6 @@ export default function RestaurantProfilePage() {
                       <MapPin className="h-4 w-4" />
                       {activeBranch.address}
                     </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setBranchUpdateId(getEntityId(activeBranch));
-                        setBranchDrawerOpen(true);
-                      }}
-                      className="flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                      Edit Branch
-                    </button>
-                    <button
-                      type="button"
-                      className="flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
-                    >
-                      <ImagePlus className="h-4 w-4" />
-                      Upload Cover
-                    </button>
                   </div>
                 </div>
 
