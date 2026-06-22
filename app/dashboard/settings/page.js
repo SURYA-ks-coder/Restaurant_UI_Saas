@@ -32,6 +32,8 @@ import DepartmentList from "./department/DepartmentList";
 import AddDepartment from "./department/AddDepartment";
 import ShiftList from "./shift/ShiftList";
 import AddShift from "./shift/AddShift";
+import PrinterList from "./printer/PrinterList";
+import AddPrinter from "./printer/AddPrinter";
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
@@ -55,6 +57,8 @@ export default function SettingsPage() {
   const [designationRefreshKey, setDesignationRefreshKey] = useState(0);
   const [shiftDrawerOpen, setShiftDrawerOpen] = useState(false);
   const [shiftRefreshKey, setShiftRefreshKey] = useState(0);
+  const [printerDrawerOpen, setPrinterDrawerOpen] = useState(false);
+  const [printerRefreshKey, setPrinterRefreshKey] = useState(0);
 
   const handleAddClick = () => {
     if (selectedTab === "Category") {
@@ -81,6 +85,9 @@ export default function SettingsPage() {
     }
     if (selectedTab === "shift") {
       setShiftDrawerOpen(true);
+    }
+    if (selectedTab === "Printer") {
+      setPrinterDrawerOpen(true);
     }
   };
 
@@ -142,6 +149,11 @@ export default function SettingsPage() {
             title: "shift",
             content: <ShiftList refreshKey={shiftRefreshKey} />,
           },
+          {
+            id: 9,
+            title: "Printer",
+            content: <PrinterList refreshKey={printerRefreshKey} />,
+          },
         ]}
       />
       <AddCategory
@@ -178,6 +190,11 @@ export default function SettingsPage() {
         open={shiftDrawerOpen}
         onOpenChange={setShiftDrawerOpen}
         onCreated={() => setShiftRefreshKey((k) => k + 1)}
+      />
+      <AddPrinter
+        open={printerDrawerOpen}
+        onOpenChange={setPrinterDrawerOpen}
+        onCreated={() => setPrinterRefreshKey((k) => k + 1)}
       />
       {drawerOpen && (
         <AddSubscriptionPlan
