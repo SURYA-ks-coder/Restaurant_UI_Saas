@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
+  // ── 1. Dashboard ──────────────────────────────────────────────────────────
   {
     id: 1,
     title: "Dashboard",
@@ -35,37 +36,38 @@ const navItems = [
     link: "/dashboard",
   },
 
+  // ── 2. Orders & Billing (daily operations) ────────────────────────────────
   {
     id: 2,
-    title: "Sales",
+    title: "Orders & Billing",
     icon: <Receipt />,
     submenus: [
       {
         id: 1,
         title: "Operations",
         subMenu: [
-          // {
-          //   id: 1,
-          //   title: "POS Ordering",
-          //   link: "/dashboard/pos",
-          //   navigation: true,
-          // },
           {
-            id: 2,
+            id: 1,
             title: "Orders",
             link: "/dashboard/orders",
             navigation: true,
           },
           {
-            id: 3,
+            id: 2,
             title: "Orders List",
             link: "/dashboard/ordersList",
             navigation: true,
           },
           {
-            id: 4,
+            id: 3,
             title: "Billing",
             link: "/dashboard/billing",
+            navigation: true,
+          },
+          {
+            id: 4,
+            title: "Kitchen KOT",
+            link: "/dashboard/kitchen",
             navigation: true,
           },
         ],
@@ -73,35 +75,30 @@ const navItems = [
     ],
   },
 
+  // ── 3. Menu & Tables ──────────────────────────────────────────────────────
   {
     id: 3,
-    title: "Restaurant",
+    title: "Menu & Tables",
     icon: <UtensilsCrossed />,
     submenus: [
       {
         id: 1,
-        title: "Management",
+        title: "Manage",
         subMenu: [
           {
             id: 1,
-            title: "Tables",
-            link: "/dashboard/tables",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Kitchen KOT",
-            link: "/dashboard/kitchen",
-            navigation: true,
-          },
-          {
-            id: 3,
             title: "Menus",
             link: "/dashboard/menus",
             navigation: true,
           },
           {
-            id: 4,
+            id: 2,
+            title: "Tables",
+            link: "/dashboard/tables",
+            navigation: true,
+          },
+          {
+            id: 3,
             title: "QR Orders",
             link: "/dashboard/qr-orders",
             navigation: true,
@@ -111,6 +108,7 @@ const navItems = [
     ],
   },
 
+  // ── 4. Inventory & Finance ────────────────────────────────────────────────
   {
     id: 4,
     title: "Inventory & Finance",
@@ -137,41 +135,46 @@ const navItems = [
     ],
   },
 
+  // ── 5. Reports (top-level — used frequently) ──────────────────────────────
   {
     id: 5,
-    title: "Administration",
+    title: "Reports",
+    icon: <BarChart3 />,
+    link: "/dashboard/reports",
+  },
+
+  // ── 6. Staff (top-level) ──────────────────────────────────────────────────
+  {
+    id: 6,
+    title: "Staff",
+    icon: <Users />,
+    link: "/dashboard/staff",
+  },
+
+  // ── 7. Settings ───────────────────────────────────────────────────────────
+  {
+    id: 7,
+    title: "Settings",
     icon: <Settings />,
     submenus: [
       {
         id: 1,
-        title: "Settings",
+        title: "Configuration",
         subMenu: [
           {
             id: 1,
-            title: "Staff",
-            link: "/dashboard/staff",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Reports",
-            link: "/dashboard/analytics",
-            navigation: true,
-          },
-          {
-            id: 3,
-            title: "Settings",
+            title: "General",
             link: "/dashboard/settings",
             navigation: true,
           },
           {
-            id: 4,
+            id: 2,
             title: "Privileges",
             link: "/dashboard/privileges",
             navigation: true,
           },
           {
-            id: 5,
+            id: 3,
             title: "Appearance",
             link: "/dashboard/appearance",
             navigation: true,
@@ -181,9 +184,10 @@ const navItems = [
     ],
   },
 
+  // ── 8. Restaurant Profile & Branches ─────────────────────────────────────
   {
-    id: 6,
-    title: "Restaurant Management",
+    id: 8,
+    title: "Restaurant",
     icon: <Store />,
     submenus: [
       {
@@ -207,8 +211,9 @@ const navItems = [
     ],
   },
 
+  // ── 9. Owner Tools ────────────────────────────────────────────────────────
   {
-    id: 8,
+    id: 9,
     title: "Owner Tools",
     icon: <Crown />,
     submenus: [
