@@ -80,93 +80,20 @@ const STATUS_CONFIG = [
 
 
 
-const TOP_ITEMS = [
-  { rank: 1, name: "Chicken Biryani", qty: 142, rev: "₹28,400", up: true },
-  { rank: 2, name: "Paneer Butter Masala", qty: 98, rev: "₹19,600", up: true },
-  { rank: 3, name: "Butter Naan", qty: 215, rev: "₹10,750", up: false },
-  { rank: 4, name: "Fried Rice", qty: 76, rev: "₹11,400", up: true },
-  { rank: 5, name: "Cold Coffee", qty: 63, rev: "₹7,875", up: false },
-];
+const ACTIVITY_TYPE_CONFIG = {
+  order_completed: { Icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  order_cancelled: { Icon: AlertCircle,  color: "text-rose-500",    bg: "bg-rose-500/10" },
+  table_closed:    { Icon: LayoutGrid,   color: "text-blue-500",    bg: "bg-blue-500/10" },
+  staff_added:     { Icon: Users,        color: "text-violet-500",  bg: "bg-violet-500/10" },
+  menu_updated:    { Icon: UtensilsCrossed, color: "text-amber-500", bg: "bg-amber-500/10" },
+  branch_settings: { Icon: Settings,     color: "text-muted-foreground", bg: "bg-muted" },
+};
 
-const ACTIVITIES = [
-  {
-    text: "Order #2456 Completed",
-    time: "2 min ago",
-    Icon: CheckCircle2,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    text: "Table 12 Closed",
-    time: "8 min ago",
-    Icon: LayoutGrid,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    text: "New Staff Added",
-    time: "25 min ago",
-    Icon: Users,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-  },
-  {
-    text: "Menu Updated",
-    time: "1 hr ago",
-    Icon: UtensilsCrossed,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-  {
-    text: "Branch Settings Modified",
-    time: "3 hr ago",
-    Icon: Settings,
-    color: "text-muted-foreground",
-    bg: "bg-muted",
-  },
-];
-
-const CUSTOMER_INSIGHTS = [
-  {
-    label: "New Customers",
-    value: "84",
-    Icon: Users,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    label: "Returning",
-    value: "264",
-    Icon: Activity,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    label: "VIP Members",
-    value: "32",
-    Icon: Star,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-  {
-    label: "Avg Visits/Wk",
-    value: "2.4×",
-    Icon: TrendingUp,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-  },
-];
-
-const BRANCH_PERF = [
-  {
-    name: "Chennai Central",
-    revenue: "₹65,000",
-    pct: "+14.2%",
-    up: true,
-    w: 68,
-  },
-  { name: "Anna Nagar", revenue: "₹42,000", pct: "+8.5%", up: true, w: 44 },
-  { name: "Velachery", revenue: "₹18,000", pct: "-3.2%", up: false, w: 19 },
+const CUSTOMER_INSIGHTS_CONFIG = [
+  { label: "New Customers", key: "newCustomers",      Icon: Users,      color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { label: "Returning",     key: "returningCustomers", Icon: Activity,   color: "text-blue-500",    bg: "bg-blue-500/10" },
+  { label: "VIP Members",   key: "vipMembers",         Icon: Star,       color: "text-amber-500",   bg: "bg-amber-500/10" },
+  { label: "Avg Visits/Wk", key: "avgVisitsPerWeek",  Icon: TrendingUp, color: "text-violet-500",  bg: "bg-violet-500/10", suffix: "×" },
 ];
 
 
@@ -301,6 +228,10 @@ export default function DashboardPage() {
   const [liveStatus, setLiveStatus] = useState({});
   const [revenueSummary, setRevenueSummary] = useState({});
   const [hourlyRevenue, setHourlyRevenue] = useState([]);
+  const [topItems, setTopItems] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [customerSummary, setCustomerSummary] = useState({});
+  const [branchPerformance, setBranchPerformance] = useState([]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -351,6 +282,8 @@ export default function DashboardPage() {
   const hourlyData = hourlyRevenue.map((h) => ({
     h: h.label,
     v: Math.round((h.revenue / maxHourlyRevenue) * 100),
+    revenue: h.revenue,
+    orders: h.orders,
   }));
 
   const kp = liveStatus?.kitchenPerformance ?? {};
@@ -415,12 +348,61 @@ export default function DashboardPage() {
     }
   };
 
+  const getTopSellingItems = async () => {
+    try {
+      const result = await getAction(API.GET_TOP_SELLING_ITEMS);
+      if (result.statusCode === 200) setTopItems(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getRecentActivities = async () => {
+    try {
+      const result = await getAction(API.GET_RECENT_ACTIVITIES);
+      if (result.statusCode === 200) setRecentActivities(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getCustomerSummary = async () => {
+    try {
+      const result = await getAction(API.GET_CUSTOMER_SUMMARY);
+      if (result.statusCode === 200) setCustomerSummary(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getBranchPerformance = async () => {
+    try {
+      const result = await getAction(API.GET_BRANCH_PERFORMANCE);
+      if (result.statusCode === 200) setBranchPerformance(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     getLiveOrdersList();
     getLiveStatus();
     getRevenueSummary();
     getHourlyRevenue();
+    getTopSellingItems();
+    getRecentActivities();
+    getCustomerSummary();
+    getBranchPerformance();
   }, []);
+
+  const relativeTime = (ts) => {
+    const mins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hr ago`;
+    return `${Math.floor(hrs / 24)} days ago`;
+  };
 
   return (
     <div className="min-h-screen bg-background p-5 text-foreground">
@@ -712,30 +694,88 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-sm font-semibold text-foreground">
-                Hourly Revenue
-              </h3>
-              <span className="text-[10px] font-medium text-muted-foreground bg-muted border border-border px-2.5 py-1 rounded-lg">
+          <Card className="overflow-hidden">
+            {/* Header */}
+            <div className="px-5 pt-5 pb-4 flex items-start justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Hourly Revenue
+                </p>
+                <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
+                  {formatINR(
+                    hourlyRevenue.reduce((s, h) => s + (h.revenue ?? 0), 0),
+                  )}
+                </p>
+              </div>
+              <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 border border-violet-500/20 px-2.5 py-1 rounded-full">
                 Today
               </span>
             </div>
-            <div className="flex items-end gap-1.5" style={{ height: 100 }}>
-              {hourlyData.map(({ h, v }) => (
-                <div
-                  key={h}
-                  className="flex-1 flex flex-col items-center gap-1.5"
-                >
-                  <div className="w-full flex items-end" style={{ height: 80 }}>
-                    <div
-                      className="w-full bg-violet-500 rounded-t-md hover:bg-violet-600 transition-colors cursor-default"
-                      style={{ height: `${v}%` }}
-                    />
-                  </div>
-                  <span className="text-[9px] text-muted-foreground">{h}</span>
+
+            {/* Chart */}
+            <div className="px-5 pb-5">
+              <div className="relative" style={{ height: 140 }}>
+                {/* Grid lines */}
+                {[25, 50, 75].map((pct) => (
+                  <div
+                    key={pct}
+                    className="absolute inset-x-0 border-t border-dashed border-border/60"
+                    style={{ bottom: `${pct}%` }}
+                  />
+                ))}
+
+                {/* Bars */}
+                <div className="absolute inset-0 flex items-end gap-1.5">
+                  {hourlyData.map(({ h, v, revenue, orders }) => {
+                    const isPeak = v === 100;
+                    return (
+                      <div
+                        key={h}
+                        className="group relative flex-1 flex flex-col items-center"
+                        style={{ height: "100%" }}
+                      >
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:flex flex-col items-center z-20 pointer-events-none">
+                          <div className="bg-popover border border-border shadow-2xl rounded-xl px-3 py-2 text-center whitespace-nowrap">
+                            <p className="text-xs font-bold text-foreground tabular-nums">
+                              {formatINR(revenue ?? 0)}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {orders ?? 0} orders
+                            </p>
+                          </div>
+                          <div className="w-2 h-2 rotate-45 bg-popover border-b border-r border-border -mt-1.25" />
+                        </div>
+
+                        {/* Bar wrapper */}
+                        <div
+                          className="w-full flex items-end"
+                          style={{ height: "100%" }}
+                        >
+                          <div
+                            className={cn(
+                              "w-full rounded-t-lg transition-all duration-300 cursor-default",
+                              isPeak
+                                ? "bg-linear-to-t from-amber-500 to-orange-400 shadow-lg shadow-amber-500/25 group-hover:from-amber-400 group-hover:to-orange-300"
+                                : "bg-linear-to-t from-violet-600 to-fuchsia-500 opacity-75 group-hover:opacity-100 group-hover:shadow-lg group-hover:shadow-violet-500/20",
+                            )}
+                            style={{ height: `${Math.max(v, 3)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
+
+              {/* Time labels */}
+              <div className="flex gap-1.5 mt-2">
+                {hourlyData.map(({ h }) => (
+                  <div key={h} className="flex-1 text-center">
+                    <span className="text-[9px] text-muted-foreground">{h}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
         </div>
@@ -752,10 +792,10 @@ export default function DashboardPage() {
               Top Selling Items
             </h3>
           </div>
-          <div className="space-y-1">
-            {TOP_ITEMS.map(({ rank, name, qty, rev, up }) => (
+          <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+            {topItems.map(({ rank, itemName, quantitySold, revenueGenerated, trend }) => (
               <div
-                key={name}
+                key={itemName}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors"
               >
                 <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
@@ -763,21 +803,21 @@ export default function DashboardPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">
-                    {name}
+                    {itemName}
                   </p>
-                  <p className="text-xs text-muted-foreground">{qty} sold</p>
+                  <p className="text-xs text-muted-foreground">{quantitySold} sold</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {rev}
+                    {formatINR(revenueGenerated)}
                   </p>
                   <span
                     className={cn(
                       "text-xs font-semibold",
-                      up ? "text-emerald-500" : "text-rose-500",
+                      trend === "up" ? "text-emerald-500" : "text-rose-500",
                     )}
                   >
-                    {up ? "↑ Up" : "↓ Down"}
+                    {trend === "up" ? "↑ Up" : "↓ Down"}
                   </span>
                 </div>
               </div>
@@ -794,31 +834,40 @@ export default function DashboardPage() {
               Recent Activities
             </h3>
           </div>
-          <div>
-            {ACTIVITIES.map(({ text, time, Icon, color, bg }, i) => (
-              <div key={text} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                      bg,
-                    )}
-                  >
-                    <Icon className={cn("w-3.5 h-3.5", color)} />
-                  </div>
-                  {i < ACTIVITIES.length - 1 && (
+          <div className="max-h-64 overflow-y-auto pr-1">
+            {recentActivities.map((activity, i) => {
+              const cfg = ACTIVITY_TYPE_CONFIG[activity.type] ?? {
+                Icon: Activity,
+                color: "text-muted-foreground",
+                bg: "bg-muted",
+              };
+              return (
+                <div key={activity.timestamp + i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
                     <div
-                      className="w-px flex-1 my-1 bg-border"
-                      style={{ minHeight: 12 }}
-                    />
-                  )}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                        cfg.bg,
+                      )}
+                    >
+                      <cfg.Icon className={cn("w-3.5 h-3.5", cfg.color)} />
+                    </div>
+                    {i < recentActivities.length - 1 && (
+                      <div
+                        className="w-px flex-1 my-1 bg-border"
+                        style={{ minHeight: 12 }}
+                      />
+                    )}
+                  </div>
+                  <div className="pb-3 pt-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {activity.description} · {relativeTime(activity.timestamp)}
+                    </p>
+                  </div>
                 </div>
-                <div className="pb-3 pt-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">{text}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{time}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>
@@ -830,7 +879,7 @@ export default function DashboardPage() {
             Customer Insights
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            {CUSTOMER_INSIGHTS.map(({ label, value, Icon, color, bg }) => (
+            {CUSTOMER_INSIGHTS_CONFIG.map(({ label, key, suffix, Icon, color, bg }) => (
               <div
                 key={label}
                 className="flex items-center gap-3 rounded-xl bg-muted p-4"
@@ -845,7 +894,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xl font-bold text-foreground tabular-nums">
-                    {value}
+                    {customerSummary[key] ?? "—"}{suffix ?? ""}
                   </p>
                   <p className="text-xs text-muted-foreground leading-tight">
                     {label}
@@ -861,40 +910,43 @@ export default function DashboardPage() {
             Branch Performance
           </h3>
           <div className="space-y-5">
-            {BRANCH_PERF.map(({ name, revenue, pct, up, w }) => (
-              <div key={name}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {name}
-                    </span>
+            {branchPerformance.map(({ branchName, revenue, growth, revenueShare }) => {
+              const up = growth >= 0;
+              return (
+                <div key={branchName}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">
+                        {branchName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground tabular-nums">
+                        {formatINR(revenue)}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs font-semibold",
+                          up ? "text-emerald-500" : "text-rose-500",
+                        )}
+                      >
+                        {up ? "+" : ""}{growth}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-foreground tabular-nums">
-                      {revenue}
-                    </span>
-                    <span
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
                       className={cn(
-                        "text-xs font-semibold",
-                        up ? "text-emerald-500" : "text-rose-500",
+                        "h-full rounded-full transition-all duration-700",
+                        up ? "bg-emerald-500" : "bg-rose-500",
                       )}
-                    >
-                      {pct}
-                    </span>
+                      style={{ width: `${revenueShare}%` }}
+                    />
                   </div>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-700",
-                      up ? "bg-emerald-500" : "bg-rose-500",
-                    )}
-                    style={{ width: `${w}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>

@@ -544,3 +544,30 @@
 .animate-accordion-up {
   animation: accordion-up 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.78 0.005 250);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.68 0.008 250);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(0.32 0.008 270);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.42 0.008 270);
+}
