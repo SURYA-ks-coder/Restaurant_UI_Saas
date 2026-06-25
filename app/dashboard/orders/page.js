@@ -18,370 +18,99 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { API, getAction } from "@/lib/API";
+import { message } from "antd";
+import { API, action, getAction } from "@/lib/API";
 import ViewOrderDetails from "./OrdersDetails.js/ViewOrderDetails";
 
-/* ─── static placeholder data (design only) ──────────────────────────────── */
+/* ─── helpers (mirrors pos/page.js) ──────────────────────────────────────── */
 
-const CATEGORIES = [
-  { id: "all", label: "All Items", count: 24, emoji: "🍽️" },
-  { id: "starters", label: "Starters", count: 6, emoji: "🥗" },
-  { id: "main", label: "Main Course", count: 8, emoji: "🍛" },
-  { id: "biryani", label: "Biryani", count: 4, emoji: "🫕" },
-  { id: "breads", label: "Breads", count: 4, emoji: "🫓" },
-  { id: "desserts", label: "Desserts", count: 4, emoji: "🍮" },
-  { id: "drinks", label: "Drinks", count: 4, emoji: "🥤" },
+const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
+
+const parseStoredValue = (key) => {
+  if (typeof window === "undefined") return "";
+  const value = localStorage.getItem(key);
+  if (!value) return "";
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const getEntityId = (value) => {
+  if (Array.isArray(value)) return getEntityId(value[0]);
+  if (value && typeof value === "object") return value._id || value.id || "";
+  return value || "";
+};
+
+const getBranchId = () =>
+  getEntityId(
+    parseStoredValue("branchId") ||
+      parseStoredValue("defaultBranchId") ||
+      parseStoredValue("branchIds"),
+  );
+
+/* ─── transform API shapes → design shapes ───────────────────────────────── */
+
+const ITEM_EMOJIS = [
+  "🍽️",
+  "🥘",
+  "🍲",
+  "🍛",
+  "🍜",
+  "🍝",
+  "🥗",
+  "🍱",
+  "🫕",
+  "🥙",
+  "🍗",
+  "🍖",
+  "🧀",
+  "🥬",
+  "🍄",
+  "🥕",
+  "🍋",
+  "☕",
+  "🧋",
+  "🥤",
+  "🍮",
+  "🍨",
+];
+const ITEM_BGS = [
+  "from-orange-400/70 to-red-500/70",
+  "from-amber-400/70 to-orange-600/70",
+  "from-yellow-300/70 to-amber-500/70",
+  "from-red-400/70 to-rose-600/70",
+  "from-stone-400/70 to-stone-700/70",
+  "from-lime-400/70 to-green-600/70",
+  "from-orange-500/70 to-red-600/70",
+  "from-amber-600/70 to-red-700/70",
+  "from-teal-400/70 to-cyan-600/70",
+  "from-green-500/70 to-emerald-700/70",
+  "from-pink-400/70 to-rose-600/70",
+  "from-sky-300/70 to-blue-500/70",
 ];
 
-const TABLES = [
-  { id: "t1", name: "Table 01", status: "available", seats: 2 },
-  { id: "t2", name: "Table 02", status: "occupied", seats: 4 },
-  { id: "t3", name: "Table 03", status: "available", seats: 4 },
-  { id: "t4", name: "Table 04", status: "reserved", seats: 6 },
-  { id: "t5", name: "Table 05", status: "available", seats: 2 },
-  { id: "t6", name: "Table 06", status: "occupied", seats: 8 },
-  { id: "t7", name: "Table 07", status: "available", seats: 4 },
-  { id: "t8", name: "Table 08", status: "available", seats: 6 },
-];
+const transformMenuItem = (item, index) => ({
+  id: item._id,
+  name: item.itemName,
+  desc: item.description || "",
+  price: Number(item.prices?.dineInPrice || 0),
+  time: item.preparationTime || 15,
+  category: item.categoryId?.categoryName || "", // display label
+  categoryId: item.categoryId?._id || "", // used for filter matching
+  veg: item.isVeg ?? true,
+  popular: item.isPopular ?? false,
+  emoji: ITEM_EMOJIS[index % ITEM_EMOJIS.length],
+  bg: ITEM_BGS[index % ITEM_BGS.length],
+});
 
-const MENU_ITEMS = [
-  {
-    id: "1",
-    name: "Paneer Tikka",
-    desc: "Smoked cottage cheese with spices",
-    price: 240,
-    time: 15,
-    category: "starters",
-    veg: true,
-    popular: true,
-    emoji: "🧀",
-    bg: "from-orange-400/70 to-red-500/70",
-  },
-  {
-    id: "2",
-    name: "Chicken Wings",
-    desc: "Crispy wings with hot sauce",
-    price: 320,
-    time: 20,
-    category: "starters",
-    veg: false,
-    popular: true,
-    emoji: "🍗",
-    bg: "from-amber-400/70 to-orange-600/70",
-  },
-  {
-    id: "3",
-    name: "Spring Rolls",
-    desc: "Crispy vegetable filled rolls",
-    price: 160,
-    time: 12,
-    category: "starters",
-    veg: true,
-    popular: false,
-    emoji: "🥟",
-    bg: "from-yellow-300/70 to-amber-500/70",
-  },
-  {
-    id: "4",
-    name: "Seekh Kebab",
-    desc: "Minced meat on skewers",
-    price: 280,
-    time: 18,
-    category: "starters",
-    veg: false,
-    popular: true,
-    emoji: "🍢",
-    bg: "from-red-400/70 to-rose-600/70",
-  },
-  {
-    id: "5",
-    name: "Mushroom Tikka",
-    desc: "Button mushrooms in spiced marinade",
-    price: 200,
-    time: 15,
-    category: "starters",
-    veg: true,
-    popular: false,
-    emoji: "🍄",
-    bg: "from-stone-400/70 to-stone-700/70",
-  },
-  {
-    id: "6",
-    name: "Veg Platter",
-    desc: "Assorted vegetarian starters",
-    price: 350,
-    time: 25,
-    category: "starters",
-    veg: true,
-    popular: false,
-    emoji: "🥘",
-    bg: "from-lime-400/70 to-green-600/70",
-  },
-  {
-    id: "7",
-    name: "Butter Chicken",
-    desc: "Creamy tomato-based chicken curry",
-    price: 380,
-    time: 25,
-    category: "main",
-    veg: false,
-    popular: true,
-    emoji: "🍲",
-    bg: "from-orange-500/70 to-red-600/70",
-  },
-  {
-    id: "8",
-    name: "Dal Makhani",
-    desc: "Slow-cooked black lentils in cream",
-    price: 280,
-    time: 30,
-    category: "main",
-    veg: true,
-    popular: true,
-    emoji: "🫘",
-    bg: "from-amber-600/70 to-red-700/70",
-  },
-  {
-    id: "9",
-    name: "Paneer Butter Masala",
-    desc: "Cottage cheese in rich tomato gravy",
-    price: 300,
-    time: 20,
-    category: "main",
-    veg: true,
-    popular: false,
-    emoji: "🧀",
-    bg: "from-orange-400/70 to-amber-600/70",
-  },
-  {
-    id: "10",
-    name: "Fish Curry",
-    desc: "Coastal style spiced fish curry",
-    price: 420,
-    time: 25,
-    category: "main",
-    veg: false,
-    popular: false,
-    emoji: "🐟",
-    bg: "from-teal-400/70 to-cyan-600/70",
-  },
-  {
-    id: "11",
-    name: "Mutton Rogan Josh",
-    desc: "Kashmiri spiced mutton curry",
-    price: 480,
-    time: 40,
-    category: "main",
-    veg: false,
-    popular: true,
-    emoji: "🍖",
-    bg: "from-red-600/70 to-rose-800/70",
-  },
-  {
-    id: "12",
-    name: "Palak Paneer",
-    desc: "Cottage cheese in spinach gravy",
-    price: 270,
-    time: 20,
-    category: "main",
-    veg: true,
-    popular: false,
-    emoji: "🥬",
-    bg: "from-green-500/70 to-emerald-700/70",
-  },
-  {
-    id: "13",
-    name: "Chicken Biryani",
-    desc: "Fragrant basmati with tender chicken",
-    price: 380,
-    time: 35,
-    category: "biryani",
-    veg: false,
-    popular: true,
-    emoji: "🫕",
-    bg: "from-yellow-500/70 to-amber-700/70",
-  },
-  {
-    id: "14",
-    name: "Veg Biryani",
-    desc: "Aromatic rice with mixed vegetables",
-    price: 280,
-    time: 30,
-    category: "biryani",
-    veg: true,
-    popular: false,
-    emoji: "🌾",
-    bg: "from-green-500/70 to-emerald-700/70",
-  },
-  {
-    id: "15",
-    name: "Hyderabadi Biryani",
-    desc: "Authentic dum-cooked biryani",
-    price: 420,
-    time: 40,
-    category: "biryani",
-    veg: false,
-    popular: true,
-    emoji: "🍚",
-    bg: "from-amber-500/70 to-yellow-700/70",
-  },
-  {
-    id: "16",
-    name: "Prawn Biryani",
-    desc: "Spiced rice with tiger prawns",
-    price: 450,
-    time: 40,
-    category: "biryani",
-    veg: false,
-    popular: false,
-    emoji: "🦐",
-    bg: "from-pink-400/70 to-rose-600/70",
-  },
-  {
-    id: "17",
-    name: "Butter Naan",
-    desc: "Soft leavened bread with butter",
-    price: 50,
-    time: 8,
-    category: "breads",
-    veg: true,
-    popular: true,
-    emoji: "🫓",
-    bg: "from-yellow-300/70 to-orange-400/70",
-  },
-  {
-    id: "18",
-    name: "Garlic Naan",
-    desc: "Naan with garlic and herbs",
-    price: 60,
-    time: 8,
-    category: "breads",
-    veg: true,
-    popular: false,
-    emoji: "🧄",
-    bg: "from-lime-400/70 to-green-600/70",
-  },
-  {
-    id: "19",
-    name: "Tandoori Roti",
-    desc: "Whole wheat bread from tandoor",
-    price: 40,
-    time: 6,
-    category: "breads",
-    veg: true,
-    popular: false,
-    emoji: "🫓",
-    bg: "from-amber-300/70 to-yellow-600/70",
-  },
-  {
-    id: "20",
-    name: "Peshwari Naan",
-    desc: "Stuffed with nuts and coconut",
-    price: 80,
-    time: 10,
-    category: "breads",
-    veg: true,
-    popular: false,
-    emoji: "🌰",
-    bg: "from-amber-400/70 to-yellow-700/70",
-  },
-  {
-    id: "21",
-    name: "Gulab Jamun",
-    desc: "Soft milk dumplings in rose syrup",
-    price: 120,
-    time: 5,
-    category: "desserts",
-    veg: true,
-    popular: true,
-    emoji: "🍮",
-    bg: "from-pink-400/70 to-rose-600/70",
-  },
-  {
-    id: "22",
-    name: "Rasmalai",
-    desc: "Soft chenna dumplings in cream",
-    price: 140,
-    time: 5,
-    category: "desserts",
-    veg: true,
-    popular: false,
-    emoji: "🍵",
-    bg: "from-yellow-200/70 to-amber-400/70",
-  },
-  {
-    id: "23",
-    name: "Ice Cream",
-    desc: "Seasonal flavors, house-made",
-    price: 160,
-    time: 3,
-    category: "desserts",
-    veg: true,
-    popular: true,
-    emoji: "🍨",
-    bg: "from-sky-300/70 to-blue-500/70",
-  },
-  {
-    id: "24",
-    name: "Gajar Halwa",
-    desc: "Warm carrot pudding with nuts",
-    price: 130,
-    time: 5,
-    category: "desserts",
-    veg: true,
-    popular: false,
-    emoji: "🥕",
-    bg: "from-orange-300/70 to-amber-500/70",
-  },
-  {
-    id: "25",
-    name: "Mango Lassi",
-    desc: "Fresh mango blended with yogurt",
-    price: 120,
-    time: 5,
-    category: "drinks",
-    veg: true,
-    popular: true,
-    emoji: "🥭",
-    bg: "from-yellow-400/70 to-orange-500/70",
-  },
-  {
-    id: "26",
-    name: "Masala Chai",
-    desc: "Spiced Indian milk tea",
-    price: 60,
-    time: 5,
-    category: "drinks",
-    veg: true,
-    popular: true,
-    emoji: "☕",
-    bg: "from-amber-700/70 to-yellow-900/70",
-  },
-  {
-    id: "27",
-    name: "Fresh Lime Soda",
-    desc: "Refreshing lime with soda",
-    price: 80,
-    time: 3,
-    category: "drinks",
-    veg: true,
-    popular: false,
-    emoji: "🍋",
-    bg: "from-lime-400/70 to-green-600/70",
-  },
-  {
-    id: "28",
-    name: "Cold Coffee",
-    desc: "Chilled coffee with cream",
-    price: 140,
-    time: 5,
-    category: "drinks",
-    veg: true,
-    popular: false,
-    emoji: "🧋",
-    bg: "from-amber-500/70 to-stone-700/70",
-  },
-];
+const transformTable = (table) => ({
+  id: table._id,
+  name: table.tableName || `Table ${table.tableNumber}`,
+  status: table.status === "active" ? "available" : table.status || "available",
+  seats: table.capacity || table.seats || 4,
+});
 
 const PAYMENT_METHODS = [
   { id: "cash", label: "Cash", Icon: Banknote },
@@ -442,7 +171,7 @@ function FoodCard({ item, onAdd }) {
         </button>
 
         {/* Category badge */}
-        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-gray-700 shadow-sm backdrop-blur-sm">
+        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-gray-700 shadow-sm backdrop-blur-sm capitalize">
           {item.category}
         </span>
 
@@ -559,16 +288,59 @@ export default function OrdersPage() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /* ── existing API ── */
+  /* live data */
+  const [categoryData, setCategoryData] = useState([]);
+  const [menuItemData, setMenuItemData] = useState([]);
+  const [tableData, setTableData] = useState([]);
+
+  /* ── fetch functions ── */
   useEffect(() => {
     getOrdersList();
+    getCategoryList();
+    getMenuItemList();
+    getTableList();
   }, []);
 
   const getOrdersList = async () => {
     try {
       const result = await getAction(API.GET_BILL_LIST, {});
+      if (result?.statusCode === 200) setOrdersData(result?.data || []);
+    } catch (error) {}
+  };
+
+  const getCategoryList = async () => {
+    try {
+      const result = await getAction(API.GET_CATEGORY_LIST);
       if (result?.statusCode === 200) {
-        setOrdersData(result?.data || []);
+        setCategoryData([
+          { id: "all", label: "All Items", emoji: "🍽️" },
+          ...(result.data || []).map((c) => ({
+            id: c._id,
+            label: c.categoryName,
+            emoji: "🍽️",
+          })),
+        ]);
+      }
+    } catch (error) {}
+  };
+
+  const getMenuItemList = async () => {
+    try {
+      const result = await action(API.GET_MENU_ITEM_LIST, {
+        restaurantId: getEntityId(parseStoredValue("restaurantId")),
+        branchId: getBranchId(),
+      });
+      if (result?.statusCode === 200) {
+        setMenuItemData((result.data || []).map(transformMenuItem));
+      }
+    } catch (error) {}
+  };
+
+  const getTableList = async () => {
+    try {
+      const result = await getAction(API.GET_TABLE_LIST);
+      if (result?.statusCode === 200) {
+        setTableData((result.data || []).map(transformTable));
       }
     } catch (error) {}
   };
@@ -608,9 +380,17 @@ export default function OrdersPage() {
   const clearCart = () => setCart([]);
 
   /* ── derived values ── */
-  const filteredItems = MENU_ITEMS.filter((item) => {
+  const categoriesWithCounts = categoryData.map((cat) => ({
+    ...cat,
+    count:
+      cat.id === "all"
+        ? menuItemData.length
+        : menuItemData.filter((i) => i.categoryId === cat.id).length,
+  }));
+
+  const filteredItems = menuItemData.filter((item) => {
     const matchCat =
-      activeCategory === "all" || item.category === activeCategory;
+      activeCategory === "all" || item.categoryId === activeCategory;
     const q = search.toLowerCase();
     const matchSearch =
       item.name.toLowerCase().includes(q) ||
@@ -624,14 +404,89 @@ export default function OrdersPage() {
   const serviceCharge = Math.round(subtotal * 0.02);
   const grandTotal = subtotal + tax + serviceCharge;
 
-  /* ── submit handler (design only – no API call added) ── */
-  const handleCompleteOrder = async () => {
-    if (!cart.length || !selectedTable) return;
+  /* ── bill helpers ── */
+  const buildBillNo = () => {
+    const datePart = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+    return `BILL-${datePart}-${Math.floor(1000 + Math.random() * 9000)}`;
+  };
+
+  const buildBillPayload = () => {
+    const restaurantId = getEntityId(parseStoredValue("restaurantId"));
+    const branchId = getBranchId();
+    const userData = parseStoredValue("userData");
+    const TAX_RATE = 5;
+
+    return {
+      restaurantId,
+      branchId,
+      billNo: buildBillNo(),
+      orderType: "dine-in",
+      tableId: selectedTable?.id,
+      items: cart.map((item) => {
+        const lineSubtotal = item.price * item.qty;
+        return {
+          menuItemId: item.id,
+          itemName: item.name,
+          quantity: Number(item.qty),
+          price: roundAmount(item.price),
+          taxAmount: roundAmount(lineSubtotal * (TAX_RATE / 100)),
+          total: roundAmount(lineSubtotal),
+        };
+      }),
+      taxRate: TAX_RATE,
+      discount: 0,
+      note: selectedTable ? `Order for ${selectedTable.name}` : "Dine-in order",
+      subTotal: roundAmount(subtotal),
+      taxTotal: roundAmount(tax),
+      discountTotal: 0,
+      grandTotal: roundAmount(grandTotal),
+      payments: [
+        {
+          method: paymentMethod,
+          amount: roundAmount(grandTotal),
+          paidAt: new Date(),
+        },
+      ],
+      paymentStatus: "paid",
+      status: "completed",
+      createdBy: getEntityId(userData),
+    };
+  };
+
+  const validateBill = () => {
+    if (!getEntityId(parseStoredValue("restaurantId")) || !getBranchId()) {
+      message.error("Restaurant and branch details are required.");
+      return false;
+    }
+    if (!selectedTable) {
+      message.error("Please select a table.");
+      return false;
+    }
+    if (!cart.length) {
+      message.error("Please add at least one item.");
+      return false;
+    }
+    return true;
+  };
+
+  const completeOrder = async () => {
+    if (!validateBill()) return;
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setIsSubmitting(false);
-    clearCart();
-    setSelectedTable(null);
+    try {
+      const result = await action(API.CREATE_BILL, buildBillPayload(), "POST");
+      if (result?.statusCode === 200 || result?.statusCode === 201) {
+        message.success(result?.message || "Order completed successfully");
+        clearCart();
+        setSelectedTable(null);
+        getOrdersList();
+        return;
+      }
+      message.error(result?.message || "Unable to complete order");
+    } catch {
+      message.error("Unable to complete order");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -663,12 +518,12 @@ export default function OrdersPage() {
 
           {/* Category chips */}
           <div className="flex gap-2 overflow-x-auto pb-4 [&::-webkit-scrollbar]:hidden">
-            {CATEGORIES.map((cat) => (
+            {categoriesWithCounts.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200",
+                  "flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 capitalize",
                   activeCategory === cat.id
                     ? "bg-linear-to-r from-blue-700 to-blue-500 text-white shadow-md shadow-blue-500/30"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200",
@@ -727,7 +582,7 @@ export default function OrdersPage() {
       ══════════════════════════════════════════ */}
       <div className="flex w-85 shrink-0 flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-xl xl:w-95">
         {/* Panel header */}
-        <div className="shrink-0 border-b border-gray-100 px-5 pb-4 pt-5">
+        <div className="shrink-0 border-b border-gray-100 px-5 pb-4 pt-2">
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-gray-900">
@@ -790,7 +645,7 @@ export default function OrdersPage() {
             {tableOpen && (
               <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-2xl">
                 <div className="max-h-56 overflow-y-auto py-1">
-                  {TABLES.map((t) => (
+                  {tableData.map((t) => (
                     <button
                       key={t.id}
                       disabled={t.status === "occupied"}
@@ -872,24 +727,24 @@ export default function OrdersPage() {
         {cart.length > 0 && (
           <div className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 pb-3 pt-4">
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-500">
                   Subtotal ({cartCount} items)
                 </span>
                 <span className="font-medium text-gray-800">₹{subtotal}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-500">GST (5%)</span>
                 <span className="font-medium text-gray-800">₹{tax}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Service charge (2%)</span>
                 <span className="font-medium text-gray-800">
                   ₹{serviceCharge}
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500 text-xl font-semibold">
+              <div className="flex justify-between text-xs">
+                <span className="text-gray-500 text-sm font-semibold">
                   Grand Total
                 </span>
                 <span className="font-medium text-gray-800">₹{grandTotal}</span>
@@ -920,7 +775,7 @@ export default function OrdersPage() {
                   key={id}
                   onClick={() => setPaymentMethod(id)}
                   className={cn(
-                    "flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-xs font-semibold transition-all duration-200",
+                    "flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-semibold transition-all duration-200 ",
                     paymentMethod === id
                       ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
                       : "bg-gray-100 text-gray-500 hover:bg-gray-200",
@@ -935,12 +790,12 @@ export default function OrdersPage() {
         )}
 
         {/* CTA */}
-        <div className="shrink-0 px-5 pb-5 pt-2">
+        <div className="shrink-0 px-5 pb-2 pt-2">
           <button
-            onClick={handleCompleteOrder}
+            onClick={completeOrder}
             disabled={!cart.length || !selectedTable || isSubmitting}
             className={cn(
-              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all duration-200",
+              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all duration-200 cursor-pointer",
               cart.length && selectedTable
                 ? "bg-linear-to-r from-blue-700 to-blue-500 shadow-lg shadow-blue-500/35 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/40 active:translate-y-0"
                 : "cursor-not-allowed bg-gray-200 text-gray-400",

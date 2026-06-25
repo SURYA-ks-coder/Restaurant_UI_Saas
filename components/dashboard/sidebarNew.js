@@ -44,12 +44,12 @@ const navItems = [
         id: 1,
         title: "Operations",
         subMenu: [
-          {
-            id: 1,
-            title: "POS Ordering",
-            link: "/dashboard/pos",
-            navigation: true,
-          },
+          // {
+          //   id: 1,
+          //   title: "POS Ordering",
+          //   link: "/dashboard/pos",
+          //   navigation: true,
+          // },
           {
             id: 2,
             title: "Orders",
