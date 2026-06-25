@@ -39,7 +39,7 @@ const AUTH_KEYS = [
 
 export function DashboardLayout({ children }) {
   const router = useRouter();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -50,9 +50,19 @@ export function DashboardLayout({ children }) {
       router.replace("/login");
       return;
     }
+    const stored = localStorage.getItem("sidebarExpanded");
+    if (stored !== null) setSidebarExpanded(JSON.parse(stored));
     applyAppearancePrefs();
     setMounted(true);
   }, [router]);
+
+  const handleSidebarToggle = () => {
+    setSidebarExpanded((p) => {
+      const next = !p;
+      localStorage.setItem("sidebarExpanded", JSON.stringify(next));
+      return next;
+    });
+  };
 
   const handleLogout = () => {
     AUTH_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -89,13 +99,14 @@ export function DashboardLayout({ children }) {
       <div className="flex h-full">
         <div className="shrink-0 h-full">
           <SidebarNew
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed((value) => !value)}
+            expanded={sidebarExpanded}
+            onToggle={handleSidebarToggle}
             onLogout={handleLogout}
           />
         </div>
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNav
+            sidebarExpanded={sidebarExpanded}
             onMenuToggle={() => setMobileMenuOpen((value) => !value)}
             onLogout={handleLogout}
           />

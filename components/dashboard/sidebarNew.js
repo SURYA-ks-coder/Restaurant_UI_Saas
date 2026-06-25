@@ -25,6 +25,7 @@ import {
   Store,
   Building2,
   Crown,
+  Flame,
 } from "lucide-react";
 
 const navItems = [
@@ -239,13 +240,8 @@ const navItems = [
   },
 ];
 
-const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {} }) => {
+const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {}, expanded = true, onToggle = () => {} }) => {
   const pathname = usePathname();
-
-  const [expanded, setExpanded] = useState(() => {
-    const stored = localStorage.getItem("sidebarExpanded");
-    return stored !== null ? JSON.parse(stored) : true;
-  });
 
   const [openMenus, setOpenMenus] = useState({});
   const [selectedMain, setSelectedMain] = useState(
@@ -254,7 +250,7 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {} }) => {
 
   const handleMenuClick = (menu) => {
     if (menu.submenus?.length) {
-      if (!expanded) setExpanded(true);
+      if (!expanded) onToggle();
       setOpenMenus((prev) => ({ ...prev, [menu.id]: !prev[menu.id] }));
     } else {
       setSelectedMain(menu.title);
@@ -291,9 +287,14 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {} }) => {
         overflow-hidden font-figtree select-none"
     >
       {/* ── TOP: logo + toggle ── */}
-      <div className="flex items-center justify-between px-4 py-4 flex-shrink-0 min-h-[64px]">
+      <div
+        className={`flex items-center shrink-0 min-h-16 px-4 py-4 ${
+          expanded ? "justify-between" : "justify-center"
+        }`}
+      >
+        {/* Brand — only when expanded */}
         <AnimatePresence initial={false}>
-          {expanded ? (
+          {expanded && (
             <motion.div
               key="logo-full"
               initial={{ opacity: 0, x: -12 }}
@@ -302,35 +303,50 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {} }) => {
               transition={{ duration: 0.2 }}
               className="flex items-center gap-2 overflow-hidden"
             >
-              {/* <img
-                src={logo}
-                alt="logo"
-                className="h-7 w-7 object-contain flex-shrink-0"
-              /> */}
-              {/* <img src={logoFull} alt="brand" className="h-5 object-contain" /> */}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="logo-icon"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-            >
-              {/* <img src={logo} alt="logo" className="h-7 w-7 object-contain" /> */}
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/30 shrink-0">
+                <Flame className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-bold text-base tracking-tight text-foreground whitespace-nowrap">
+                Ember<span className="text-primary">.</span>
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <button
-          onClick={() => setExpanded((p) => !p)}
-          className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center
-            text-[#667085] dark:text-[#94a3b8]
-            hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]
-            transition-colors duration-200"
+        {/* Toggle: ≡ when expanded, flame button when collapsed */}
+        <motion.button
+          onClick={onToggle}
+          whileTap={{ scale: 0.9 }}
+          className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+            expanded
+              ? "text-[#667085] dark:text-[#94a3b8] hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"
+              : "bg-primary shadow-sm shadow-primary/30"
+          }`}
         >
-          <HiMenuAlt2 className="text-xl" />
-        </button>
+          <AnimatePresence mode="wait" initial={false}>
+            {expanded ? (
+              <motion.span
+                key="menu-icon"
+                initial={{ opacity: 0, rotate: -90 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                exit={{ opacity: 0, rotate: 90 }}
+                transition={{ duration: 0.15 }}
+              >
+                <HiMenuAlt2 className="text-xl" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="flame-icon"
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={{ duration: 0.15 }}
+              >
+                <Flame className="h-4 w-4 text-white" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
       </div>
 
       {/* ── MAIN NAV ── */}
