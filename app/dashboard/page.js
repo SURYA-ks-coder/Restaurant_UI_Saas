@@ -45,22 +45,37 @@ const HEADER_STATS = [
   { label: "Today's Revenue", value: "todayRevenue", Icon: Wallet },
 ];
 
-const ORDER_STATUS = [
-  { label: "Completed", value: 215, color: "#22c55e", dot: "bg-emerald-500" },
-  { label: "Preparing", value: 34, color: "#3b82f6", dot: "bg-blue-500" },
+const STATUS_CONFIG = [
   {
+    status: "completed",
+    label: "Completed",
+    color: "#22c55e",
+    dot: "bg-emerald-500",
+  },
+  {
+    status: "preparing",
+    label: "Preparing",
+    color: "#3b82f6",
+    dot: "bg-blue-500",
+  },
+  {
+    status: "ready_to_serve",
     label: "Ready to Serve",
-    value: 18,
     color: "#8b5cf6",
     dot: "bg-violet-500",
   },
   {
+    status: "pending_payment",
     label: "Pending Payment",
-    value: 12,
     color: "#f59e0b",
     dot: "bg-amber-400",
   },
-  { label: "Cancelled", value: 4, color: "#f43f5e", dot: "bg-rose-500" },
+  {
+    status: "cancelled",
+    label: "Cancelled",
+    color: "#f43f5e",
+    dot: "bg-rose-500",
+  },
 ];
 
 const DINING_STATUS = [
@@ -251,12 +266,7 @@ const QUICK_ACTIONS = [
 
 function Card({ children, className }) {
   return (
-    <div
-      className={cn(
-        "bg-card rounded-2xl shadow-sm border border-border",
-        className,
-      )}
-    >
+    <div className={cn("bg-card rounded-2xl shadow-sm ", className)}>
       {children}
     </div>
   );
@@ -286,10 +296,10 @@ function DonutChart({ data }) {
   const R = 44;
   const sw = 11;
   const C = 2 * Math.PI * R;
-  const total = data.reduce((s, d) => s + d.value, 0);
+  const total = data?.reduce((s, d) => s + d.value, 0);
   const GAP = 1.5;
   let acc = 0;
-  const slices = data.map((d) => {
+  const slices = data?.map((d) => {
     const len = Math.max(0, (d.value / total) * C - GAP);
     const off = acc;
     acc += len + GAP;
@@ -309,7 +319,7 @@ function DonutChart({ data }) {
           strokeWidth={sw}
         />
         <g transform="rotate(-90 54 54)">
-          {slices.map((s, i) => (
+          {slices?.map((s, i) => (
             <circle
               key={i}
               cx="54"
@@ -340,7 +350,7 @@ export default function DashboardPage() {
   const [now, setNow] = useState(new Date());
   const [branch, setBranch] = useState(BRANCHES[0]);
   const [branchOpen, setBranchOpen] = useState(false);
-  const [liveOrders, setLiveOrders] = useState([]);
+  const [liveOrders, setLiveOrders] = useState({});
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -361,6 +371,19 @@ export default function DashboardPage() {
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
+  });
+
+  const apiBreakdown = liveOrders?.orderStatusBreakdown ?? [];
+  const apiMap = Object.fromEntries(apiBreakdown.map((i) => [i.status, i]));
+  const orderStatusData = STATUS_CONFIG.map(({ status, label, color, dot }) => {
+    const api = apiMap[status];
+    return {
+      label: api?.label ?? label,
+      value: api?.count ?? 0,
+      percentage: api?.percentage ?? 0,
+      color,
+      dot,
+    };
   });
 
   const getLiveOrdersList = async () => {
@@ -524,28 +547,23 @@ export default function DashboardPage() {
             <LiveBadge />
           </div>
           <div className="flex justify-center mb-4">
-            <DonutChart data={ORDER_STATUS} />
+            <DonutChart data={orderStatusData} />
           </div>
           <div className="space-y-2">
-            {ORDER_STATUS.map((s) => {
-              const total = ORDER_STATUS.reduce((sum, x) => sum + x.value, 0);
-              return (
-                <div key={s.label} className="flex items-center gap-2">
-                  <span
-                    className={cn("w-2 h-2 rounded-full shrink-0", s.dot)}
-                  />
-                  <span className="text-xs text-muted-foreground flex-1">
-                    {s.label}
-                  </span>
-                  <span className="text-xs font-semibold text-foreground tabular-nums">
-                    {s.value}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">
-                    {Math.round((s.value / total) * 100)}%
-                  </span>
-                </div>
-              );
-            })}
+            {orderStatusData?.map((s) => (
+              <div key={s.label} className="flex items-center gap-2">
+                <span className={cn("w-2 h-2 rounded-full shrink-0", s.dot)} />
+                <span className="text-xs text-muted-foreground flex-1">
+                  {s.label}
+                </span>
+                <span className="text-xs font-semibold text-foreground tabular-nums">
+                  {s.value}
+                </span>
+                <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">
+                  {s.percentage}%
+                </span>
+              </div>
+            ))}
           </div>
         </Card>
       </div>
@@ -565,7 +583,7 @@ export default function DashboardPage() {
               <LiveBadge />
             </div>
             <div className="space-y-3">
-              {ORDER_STATUS.map((s) => (
+              {orderStatusData?.map((s) => (
                 <div key={s.label} className="flex items-center gap-2">
                   <span
                     className={cn("w-2.5 h-2.5 rounded-full shrink-0", s.dot)}
