@@ -1,256 +1,166 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { Tooltip } from "antd";
 import { PiSignOut } from "react-icons/pi";
 import { HiChevronDown } from "react-icons/hi2";
-import { HiMenuAlt2 } from "react-icons/hi";
-import { BsThreeDotsVertical } from "react-icons/bs";
-
 import {
   LayoutDashboard,
   Receipt,
   UtensilsCrossed,
-  ChefHat,
   Package,
-  Wallet,
   BarChart3,
   Users,
-  QrCode,
   Settings,
-  Paintbrush,
   Store,
-  Building2,
   Crown,
   Flame,
 } from "lucide-react";
 
 const navItems = [
-  // ── 1. Dashboard ──────────────────────────────────────────────────────────
   {
     id: 1,
     title: "Dashboard",
+    shortTitle: "Dash",
     icon: <LayoutDashboard />,
     link: "/dashboard",
   },
-
-  // ── 2. Orders & Billing (daily operations) ────────────────────────────────
   {
     id: 2,
     title: "Orders & Billing",
+    shortTitle: "Orders",
     icon: <Receipt />,
     submenus: [
       {
         id: 1,
         title: "Operations",
         subMenu: [
-          {
-            id: 1,
-            title: "Orders",
-            link: "/dashboard/orders",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Orders List",
-            link: "/dashboard/ordersList",
-            navigation: true,
-          },
-          {
-            id: 3,
-            title: "Billing",
-            link: "/dashboard/billing",
-            navigation: true,
-          },
-          {
-            id: 4,
-            title: "Kitchen KOT",
-            link: "/dashboard/kitchen",
-            navigation: true,
-          },
+          { id: 1, title: "Orders", link: "/dashboard/orders", navigation: true },
+          { id: 2, title: "Orders List", link: "/dashboard/ordersList", navigation: true },
+          { id: 3, title: "Billing", link: "/dashboard/billing", navigation: true },
+          { id: 4, title: "Kitchen KOT", link: "/dashboard/kitchen", navigation: true },
         ],
       },
     ],
   },
-
-  // ── 3. Menu & Tables ──────────────────────────────────────────────────────
   {
     id: 3,
     title: "Menu & Tables",
+    shortTitle: "Menu",
     icon: <UtensilsCrossed />,
     submenus: [
       {
         id: 1,
         title: "Manage",
         subMenu: [
-          {
-            id: 1,
-            title: "Menus",
-            link: "/dashboard/menus",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Tables",
-            link: "/dashboard/tables",
-            navigation: true,
-          },
-          {
-            id: 3,
-            title: "QR Orders",
-            link: "/dashboard/qr-orders",
-            navigation: true,
-          },
+          { id: 1, title: "Menus", link: "/dashboard/menus", navigation: true },
+          { id: 2, title: "Tables", link: "/dashboard/tables", navigation: true },
+          { id: 3, title: "QR Orders", link: "/dashboard/qr-orders", navigation: true },
         ],
       },
     ],
   },
-
-  // ── 4. Inventory & Finance ────────────────────────────────────────────────
   {
     id: 4,
     title: "Inventory & Finance",
+    shortTitle: "Stock",
     icon: <Package />,
     submenus: [
       {
         id: 1,
         title: "Resources",
         subMenu: [
-          {
-            id: 1,
-            title: "Inventory",
-            link: "/dashboard/inventory",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Expenses",
-            link: "/dashboard/expenses",
-            navigation: true,
-          },
+          { id: 1, title: "Inventory", link: "/dashboard/inventory", navigation: true },
+          { id: 2, title: "Expenses", link: "/dashboard/expenses", navigation: true },
         ],
       },
     ],
   },
-
-  // ── 5. Reports (top-level — used frequently) ──────────────────────────────
   {
     id: 5,
     title: "Reports",
+    shortTitle: "Reports",
     icon: <BarChart3 />,
     link: "/dashboard/reports",
   },
-
-  // ── 6. Staff (top-level) ──────────────────────────────────────────────────
   {
     id: 6,
     title: "Staff",
+    shortTitle: "Staff",
     icon: <Users />,
     link: "/dashboard/staff",
   },
-
-  // ── 7. Settings ───────────────────────────────────────────────────────────
   {
     id: 7,
     title: "Settings",
+    shortTitle: "Settings",
     icon: <Settings />,
     submenus: [
       {
         id: 1,
         title: "Configuration",
         subMenu: [
-          {
-            id: 1,
-            title: "General",
-            link: "/dashboard/settings",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Privileges",
-            link: "/dashboard/privileges",
-            navigation: true,
-          },
-          {
-            id: 3,
-            title: "Appearance",
-            link: "/dashboard/appearance",
-            navigation: true,
-          },
+          { id: 1, title: "General", link: "/dashboard/settings", navigation: true },
+          { id: 2, title: "Privileges", link: "/dashboard/privileges", navigation: true },
+          { id: 3, title: "Appearance", link: "/dashboard/appearance", navigation: true },
         ],
       },
     ],
   },
-
-  // ── 8. Restaurant Profile & Branches ─────────────────────────────────────
   {
     id: 8,
     title: "Restaurant",
+    shortTitle: "Bistro",
     icon: <Store />,
     submenus: [
       {
         id: 1,
         title: "Profile",
         subMenu: [
-          {
-            id: 1,
-            title: "Restaurant Profile",
-            link: "/dashboard/restaurant-profile",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "All Branches",
-            link: "/dashboard/branch-management",
-            navigation: true,
-          },
+          { id: 1, title: "Restaurant Profile", link: "/dashboard/restaurant-profile", navigation: true },
+          { id: 2, title: "All Branches", link: "/dashboard/branch-management", navigation: true },
         ],
       },
     ],
   },
-
-  // ── 9. Owner Tools ────────────────────────────────────────────────────────
   {
     id: 9,
     title: "Owner Tools",
+    shortTitle: "Admin",
     icon: <Crown />,
     submenus: [
       {
         id: 1,
         title: "Admin",
         subMenu: [
-          {
-            id: 1,
-            title: "Overview",
-            link: "/dashboard/owner",
-            navigation: true,
-          },
-          {
-            id: 2,
-            title: "Restaurants",
-            link: "/dashboard/owner/add-restaurant",
-            navigation: true,
-          },
+          { id: 1, title: "Overview", link: "/dashboard/owner", navigation: true },
+          { id: 2, title: "Restaurants", link: "/dashboard/owner/add-restaurant", navigation: true },
         ],
       },
     ],
   },
 ];
 
-const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {}, expanded = true, onToggle = () => {} }) => {
+const SidebarNew = ({ onLogout = () => {} }) => {
   const pathname = usePathname();
-
+  const [hovering, setHovering] = useState(false);
   const [openMenus, setOpenMenus] = useState({});
   const [selectedMain, setSelectedMain] = useState(
     () => localStorage.getItem("selectedMainMenu") || "",
   );
 
+  const anyMenuOpen = Object.values(openMenus).some(Boolean);
+  const isExpanded = hovering || anyMenuOpen;
+
+  const isRouteActive = (link) => {
+    if (!link) return false;
+    return pathname === link || pathname.startsWith(link + "/");
+  };
+
   const handleMenuClick = (menu) => {
     if (menu.submenus?.length) {
-      if (!expanded) onToggle();
       setOpenMenus((prev) => ({ ...prev, [menu.id]: !prev[menu.id] }));
     } else {
       setSelectedMain(menu.title);
@@ -263,13 +173,10 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {}, expanded = tru
     localStorage.setItem("selectedMainMenu", title);
   };
 
-  const isLinkActive = (link) => link && pathname.startsWith(link);
-
-  /* ── icon wrapper helper ── */
   const iconOf = (icon, active) => {
     if (!React.isValidElement(icon)) return icon;
     return React.cloneElement(icon, {
-      className: `text-lg flex-shrink-0 transition-colors duration-200 ${
+      className: `text-lg shrink-0 transition-colors duration-200 ${
         active ? "text-primary" : "text-[#667085] dark:text-[#94a3b8]"
       }`,
     });
@@ -278,30 +185,48 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {}, expanded = tru
   return (
     <motion.aside
       initial={false}
-      animate={{ width: expanded ? 240 : 64 }}
-      transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-      className=" top-0 left-0 z-[999] h-full flex flex-col
-        bg-white dark:bg-[#0f172a]
-        border-r border-[#e4e7ec] dark:border-[#1e293b]
-        shadow-[2px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_12px_rgba(0,0,0,0.4)]
-        overflow-hidden font-figtree select-none"
+      animate={{ width: isExpanded ? 240 : 80 }}
+      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      className="fixed top-0 left-0 z-999 h-full flex flex-col overflow-hidden select-none font-figtree"
     >
-      {/* ── TOP: logo + toggle ── */}
-      <div
-        className={`flex items-center shrink-0 min-h-16 px-4 py-4 ${
-          expanded ? "justify-between" : "justify-center"
-        }`}
-      >
-        {/* Brand — only when expanded */}
-        <AnimatePresence initial={false}>
-          {expanded && (
+      {/* ── Animated background ── */}
+      <AnimatePresence initial={false}>
+        {isExpanded ? (
+          <motion.div
+            key="bg-light"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-white dark:bg-[#0f172a] border-r border-[#e4e7ec] dark:border-[#1e293b] shadow-[2px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_12px_rgba(0,0,0,0.4)]"
+          />
+        ) : (
+          <motion.div
+            key="bg-primary"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-primary"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Content layer ── */}
+      <div className="relative z-10 flex flex-col h-full overflow-hidden">
+
+        {/* Header */}
+        <AnimatePresence initial={false} mode="wait">
+          {isExpanded ? (
             <motion.div
-              key="logo-full"
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2 }}
-              className="flex items-center gap-2 overflow-hidden"
+              key="hdr-expanded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-2 px-4 min-h-16 shrink-0"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm shadow-primary/30 shrink-0">
                 <Flame className="h-4 w-4 text-white" />
@@ -310,315 +235,233 @@ const SidebarNew = ({ isPFESIenabled = null, onLogout = () => {}, expanded = tru
                 Ember<span className="text-primary">.</span>
               </span>
             </motion.div>
+          ) : (
+            <motion.div
+              key="hdr-collapsed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center justify-center min-h-16 shrink-0"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <Flame className="h-5 w-5 text-white" />
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Toggle: ≡ when expanded, flame button when collapsed */}
-        <motion.button
-          onClick={onToggle}
-          whileTap={{ scale: 0.9 }}
-          className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${
-            expanded
-              ? "text-[#667085] dark:text-[#94a3b8] hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"
-              : "bg-primary shadow-sm shadow-primary/30"
-          }`}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {expanded ? (
-              <motion.span
-                key="menu-icon"
-                initial={{ opacity: 0, rotate: -90 }}
-                animate={{ opacity: 1, rotate: 0 }}
-                exit={{ opacity: 0, rotate: 90 }}
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 scrollbar-hide">
+          <AnimatePresence initial={false} mode="wait">
+
+            {/* ── EXPANDED nav ── */}
+            {isExpanded ? (
+              <motion.ul
+                key="nav-expanded"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
+                className="flex flex-col gap-0.5 px-2"
               >
-                <HiMenuAlt2 className="text-xl" />
-              </motion.span>
+                {navItems.map((menu) => {
+                  const isActive =
+                    isRouteActive(menu.link) ||
+                    menu.submenus?.some((group) =>
+                      group.subMenu?.some((item) => isRouteActive(item.link)),
+                    );
+                  const isOpen = openMenus[menu.id];
+                  const hasSubmenus = menu.submenus?.length > 0;
+
+                  return (
+                    <li key={menu.id}>
+                      {menu.link ? (
+                        <Link
+                          href={menu.link}
+                          onClick={() => handleMenuClick(menu)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
+                            transition-all duration-200 no-underline
+                            ${isActive ? "bg-primary/10 dark:bg-primary/20" : "hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"}`}
+                        >
+                          {iconOf(menu.icon, isActive)}
+                          <span className={`text-sm font-medium whitespace-nowrap overflow-hidden
+                            ${isActive ? "text-primary" : "text-[#344054] dark:text-[#e2e8f0]"}`}>
+                            {menu.title}
+                          </span>
+                        </Link>
+                      ) : (
+                        <div
+                          onClick={() => handleMenuClick(menu)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
+                            transition-all duration-200
+                            ${isActive ? "bg-primary/10 dark:bg-primary/20" : "hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"}`}
+                        >
+                          {iconOf(menu.icon, isActive)}
+                          <span className={`text-sm font-medium whitespace-nowrap overflow-hidden flex-1
+                            ${isActive ? "text-primary" : "text-[#344054] dark:text-[#e2e8f0]"}`}>
+                            {menu.title}
+                          </span>
+                          {hasSubmenus && (
+                            <motion.span
+                              animate={{ rotate: isOpen ? 180 : 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="shrink-0 text-[#667085] dark:text-[#94a3b8]"
+                            >
+                              <HiChevronDown className="text-base" />
+                            </motion.span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sub-menu groups */}
+                      <AnimatePresence initial={false}>
+                        {isOpen && hasSubmenus && (
+                          <motion.ul
+                            key="submenu"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                            className="overflow-hidden pl-4 flex flex-col gap-0.5 mt-0.5"
+                          >
+                            {menu.submenus.map((group) => (
+                              <li key={group.id}>
+                                {group.title && (
+                                  <p className="text-[10px] font-semibold uppercase tracking-widest
+                                    text-[#9aa8bc] dark:text-[#475569] px-3 pt-2 pb-1">
+                                    {group.title}
+                                  </p>
+                                )}
+                                <ul className="flex flex-col gap-0.5 pl-3">
+                                  {group.subMenu?.map((item) => {
+                                    if (!item.navigation || !item.link) return null;
+                                    const itemActive = isRouteActive(item.link);
+                                    return (
+                                      <li key={item.id}>
+                                        <Link
+                                          href={item.link}
+                                          onClick={() => handleSubClick(item.title)}
+                                          className={`flex items-center gap-3 px-3 py-2 rounded-lg no-underline text-xs
+                                            ${itemActive
+                                              ? "bg-primary text-white"
+                                              : "text-gray-600 font-semibold hover:bg-[#f2f4f7]"
+                                            }`}
+                                        >
+                                          <span>{item.title}</span>
+                                        </Link>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              </li>
+                            ))}
+                          </motion.ul>
+                        )}
+                      </AnimatePresence>
+                    </li>
+                  );
+                })}
+              </motion.ul>
             ) : (
-              <motion.span
-                key="flame-icon"
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.7 }}
+
+              /* ── COLLAPSED nav — icon + label ── */
+              <motion.ul
+                key="nav-collapsed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
+                className="flex flex-col items-center gap-1 px-2"
               >
-                <Flame className="h-4 w-4 text-white" />
-              </motion.span>
+                {navItems.map((menu) => {
+                  const isActive =
+                    isRouteActive(menu.link) ||
+                    menu.submenus?.some((group) =>
+                      group.subMenu?.some((item) => isRouteActive(item.link)),
+                    );
+
+                  const iconNode = React.isValidElement(menu.icon)
+                    ? React.cloneElement(menu.icon, {
+                        className: `h-5 w-5 transition-colors ${isActive ? "text-primary" : "text-white"}`,
+                      })
+                    : menu.icon;
+
+                  const content = (
+                    <div className="flex flex-col items-center gap-1 py-1.5 w-full">
+                      <div
+                        className={`rounded-xl p-2.5 transition-all duration-200 ${
+                          isActive
+                            ? "bg-white shadow-sm"
+                            : "bg-white/15 group-hover:bg-white/30"
+                        }`}
+                      >
+                        {iconNode}
+                      </div>
+                      <span
+                        className={`text-[9px] font-medium tracking-wide leading-none ${
+                          isActive ? "text-white" : "text-white/70 group-hover:text-white/90"
+                        }`}
+                      >
+                        {menu.shortTitle}
+                      </span>
+                    </div>
+                  );
+
+                  return (
+                    <li key={menu.id} className="w-full">
+                      {menu.link ? (
+                        <Link
+                          href={menu.link}
+                          onClick={() => handleMenuClick(menu)}
+                          className="group flex w-full"
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => handleMenuClick(menu)}
+                          className="group flex w-full"
+                        >
+                          {content}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </motion.ul>
             )}
           </AnimatePresence>
-        </motion.button>
-      </div>
+        </nav>
 
-      {/* ── MAIN NAV ── */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-2 scrollbar-hide">
-        <ul className="flex flex-col gap-0.5">
-          {navItems.map((menu) => {
-            const isActive =
-              pathname === menu.link ||
-              menu.submenus?.some((group) =>
-                group.subMenu?.some((item) => pathname.startsWith(item.link)),
-              );
-            const isOpen = openMenus[menu.id];
-            const hasSubmenus = menu.submenus?.length > 0;
-
-            return (
-              <li key={menu.id}>
-                {/* ── Parent item ── */}
-                <Tooltip
-                  title={!expanded ? menu.title : ""}
-                  placement="right"
-                  mouseEnterDelay={0.3}
-                >
-                  {menu.link ? (
-                    <Link
-                      href={menu.link}
-                      target={menu.targetBlank ? "_blank" : undefined}
-                      onClick={() => handleMenuClick(menu)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-                        transition-all duration-200 group no-underline
-                        ${
-                          isActive
-                            ? "bg-primary/10 dark:bg-primary/20"
-                            : "hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"
-                        }`}
-                    >
-                      {iconOf(menu.icon, isActive)}
-
-                      <AnimatePresence initial={false}>
-                        {expanded && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "auto" }}
-                            exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={`text-sm font-medium whitespace-nowrap overflow-hidden
-                              ${isActive ? "text-primary" : "text-[#344054] dark:text-[#e2e8f0]"}`}
-                          >
-                            {menu.title}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                    </Link>
-                  ) : (
-                    <div
-                      onClick={() => handleMenuClick(menu)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-                        transition-all duration-200 group
-                        ${
-                          isActive
-                            ? "bg-primary/10 dark:bg-primary/20"
-                            : "hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"
-                        }`}
-                    >
-                      {iconOf(menu.icon, isActive)}
-                      <AnimatePresence initial={false}>
-                        {expanded && (
-                          <motion.span
-                            initial={{ opacity: 0, width: 0 }}
-                            animate={{ opacity: 1, width: "auto" }}
-                            exit={{ opacity: 0, width: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className={`text-sm font-medium whitespace-nowrap overflow-hidden flex-1
-                              ${isActive ? "text-primary" : "text-[#344054] dark:text-[#e2e8f0]"}`}
-                          >
-                            {menu.title}
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
-                      {expanded && hasSubmenus && (
-                        <motion.span
-                          animate={{ rotate: isOpen ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex-shrink-0 text-[#667085] dark:text-[#94a3b8]"
-                        >
-                          <HiChevronDown className="text-base" />
-                        </motion.span>
-                      )}
-                    </div>
-                  )}
-                </Tooltip>
-
-                {/* ── Sub-menu groups ── */}
-                <AnimatePresence initial={false}>
-                  {expanded && isOpen && hasSubmenus && (
-                    <motion.ul
-                      key="submenu"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                      className="overflow-hidden pl-4 flex flex-col gap-0.5 mt-0.5"
-                    >
-                      {menu.submenus.map((group) => (
-                        <li key={group.id}>
-                          {/* Group heading */}
-                          {group.title && (
-                            <p
-                              className="text-[10px] font-semibold uppercase tracking-widest
-                              text-[#9aa8bc] dark:text-[#475569] px-3 pt-2 pb-1"
-                            >
-                              {group.title}
-                            </p>
-                          )}
-                          {/* Sub-items */}
-                          <ul className="flex flex-col gap-0.5 pl-3">
-                            {group.subMenu?.map((item) => {
-                              if (!item.navigation || !item.link) return null;
-
-                              const itemActive = pathname.startsWith(item.link);
-
-                              return (
-                                <li key={item.id}>
-                                  <Link
-                                    href={item.link}
-                                    onClick={() => handleSubClick(item.title)}
-                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg no-underline text-xs
-          ${
-            itemActive
-              ? "bg-primary text-white"
-              : "text-gray-600 font-semibold hover:bg-[#f2f4f7]"
-          }`}
-                                  >
-                                    <span>{item.title}</span>
-                                  </Link>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </li>
-                      ))}
-                    </motion.ul>
-                  )}
-                </AnimatePresence>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-
-      {/* ── BOTTOM: settings + logout + user ── */}
-      <div className="flex-shrink-0 border-t border-[#e4e7ec] dark:border-[#1e293b] px-2 py-2">
-        {/* Settings & Help */}
-        <ul className="flex flex-col gap-0.5 mb-2">
-          {/* {bottomMenus.map((menu) => {
-            const isActive = selectedMain === menu.title;
-            return (
-              <li key={menu.id}>
-                <Tooltip
-                  title={!expanded ? menu.title : ""}
-                  placement="right"
-                  mouseEnterDelay={0.3}
-                >
-                  <div
-                    onClick={() => handleMenuClick(menu)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-                      transition-all duration-200
-                      ${
-                        isActive
-                          ? "bg-primary/10 dark:bg-primary/20"
-                          : "hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b]"
-                      }`}
-                  >
-                    {iconOf(menu.icon, isActive)}
-                    <AnimatePresence initial={false}>
-                      {expanded && (
-                        <motion.span
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: "auto" }}
-                          exit={{ opacity: 0, width: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className={`text-sm font-medium whitespace-nowrap overflow-hidden
-                            ${isActive ? "text-primary" : "text-[#344054] dark:text-[#e2e8f0]"}`}
-                        >
-                          {menu.title}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </Tooltip>
-              </li>
-            );
-          })} */}
-
-          {/* Logout */}
-          <li>
-            <Tooltip
-              title={!expanded ? "Logout" : ""}
-              placement="right"
-              mouseEnterDelay={0.3}
+        {/* ── Bottom: logout ── */}
+        <div className={`shrink-0 px-2 py-2 ${isExpanded ? "border-t border-[#e4e7ec] dark:border-[#1e293b]" : ""}`}>
+          {isExpanded ? (
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
+                transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/20 group"
             >
-              <button
-                onClick={onLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-                  transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/20 group"
-              >
-                <PiSignOut
-                  className="text-lg flex-shrink-0 text-[#667085] dark:text-[#94a3b8]
-                  group-hover:text-red-500 transition-colors duration-200"
-                />
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0 }}
-                      animate={{ opacity: 1, width: "auto" }}
-                      exit={{ opacity: 0, width: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-sm font-medium text-[#344054] dark:text-[#e2e8f0]
-                        group-hover:text-red-500 whitespace-nowrap overflow-hidden"
-                    >
-                      Logout
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </button>
-            </Tooltip>
-          </li>
-        </ul>
-
-        {/* User profile card */}
-        <div
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl
-          bg-[#f9fafb] dark:bg-[#1e293b]
-          border border-[#e4e7ec] dark:border-[#334155]
-          transition-all duration-200 overflow-hidden`}
-        >
-          {/* <div className="flex-shrink-0">
-            <Avatar name={userName} image={userAvatar} border={false} />
-          </div> */}
-          {/* <AnimatePresence initial={false}>
-            {expanded && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 overflow-hidden flex items-center justify-between gap-1"
-              >
-                <div className="overflow-hidden">
-                  <p
-                    className="text-sm font-semibold text-[#101828] dark:text-white
-                    whitespace-nowrap overflow-hidden text-ellipsis leading-tight"
-                  >
-                    {userName}
-                  </p>
-                  {userEmail && (
-                    <p
-                      className="text-xs text-[#667085] dark:text-[#94a3b8]
-                      whitespace-nowrap overflow-hidden text-ellipsis leading-tight"
-                    >
-                      {userEmail}
-                    </p>
-                  )}
-                </div>
-                <button
-                  className="flex-shrink-0 text-[#667085] dark:text-[#94a3b8]
-                  hover:text-[#344054] dark:hover:text-white transition-colors duration-200 p-1"
-                >
-                  <BsThreeDotsVertical className="text-base" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence> */}
+              <PiSignOut className="text-lg shrink-0 text-[#667085] dark:text-[#94a3b8]
+                group-hover:text-red-500 transition-colors duration-200" />
+              <span className="text-sm font-medium text-[#344054] dark:text-[#e2e8f0]
+                group-hover:text-red-500 whitespace-nowrap overflow-hidden">
+                Logout
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={onLogout}
+              className="group flex flex-col items-center gap-1 py-1.5 w-full"
+            >
+              <div className="rounded-xl p-2.5 bg-white/15 group-hover:bg-red-500/70 transition-colors duration-200">
+                <PiSignOut className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-[9px] font-medium text-white/60 group-hover:text-white/90">
+                Logout
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </motion.aside>

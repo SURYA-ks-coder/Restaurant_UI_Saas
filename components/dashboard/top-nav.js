@@ -115,7 +115,7 @@ const relativeTime = (ts) => {
   return hrs < 24 ? `${hrs} hr ago` : `${Math.floor(hrs / 24)} days ago`;
 };
 
-export function TopNav({ onMenuToggle, onLogout, sidebarExpanded = true }) {
+export function TopNav({ onMenuToggle, onLogout }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -236,28 +236,6 @@ export function TopNav({ onMenuToggle, onLogout, sidebarExpanded = true }) {
         >
           <Menu className="h-5 w-5" />
         </button>
-
-        {/* ── Brand name — slides in when sidebar collapses (icon lives in sidebar always) ── */}
-        <AnimatePresence initial={false}>
-          {!sidebarExpanded && (
-            <motion.div
-              key="topnav-brand"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              className="flex items-center gap-2 shrink-0"
-            >
-              <Link
-                href="/dashboard"
-                className="select-none font-bold text-base tracking-tight text-foreground hover:opacity-80 transition-opacity"
-              >
-                Ember<span className="text-primary">.</span>
-              </Link>
-              <div className="h-6 w-px bg-border" />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* ── Branch Selector ── */}
         <div className="relative" ref={branchRef}>

@@ -39,7 +39,6 @@ const AUTH_KEYS = [
 
 export function DashboardLayout({ children }) {
   const router = useRouter();
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -50,19 +49,9 @@ export function DashboardLayout({ children }) {
       router.replace("/login");
       return;
     }
-    const stored = localStorage.getItem("sidebarExpanded");
-    if (stored !== null) setSidebarExpanded(JSON.parse(stored));
     applyAppearancePrefs();
     setMounted(true);
   }, [router]);
-
-  const handleSidebarToggle = () => {
-    setSidebarExpanded((p) => {
-      const next = !p;
-      localStorage.setItem("sidebarExpanded", JSON.stringify(next));
-      return next;
-    });
-  };
 
   const handleLogout = () => {
     AUTH_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -96,24 +85,18 @@ export function DashboardLayout({ children }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="flex h-full">
-        <div className="shrink-0 h-full">
-          <SidebarNew
-            expanded={sidebarExpanded}
-            onToggle={handleSidebarToggle}
-            onLogout={handleLogout}
-          />
-        </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <TopNav
-            sidebarExpanded={sidebarExpanded}
-            onMenuToggle={() => setMobileMenuOpen((value) => !value)}
-            onLogout={handleLogout}
-          />
-          <main className="flex-1 overflow-y-auto bg-background p-4">
-            {children}
-          </main>
-        </div>
+
+      {/* Sidebar is now fixed-position — content uses ml-20 (80px) offset */}
+      <SidebarNew onLogout={handleLogout} />
+
+      <div className="ml-20 flex h-full flex-col overflow-hidden">
+        <TopNav
+          onMenuToggle={() => setMobileMenuOpen((value) => !value)}
+          onLogout={handleLogout}
+        />
+        <main className="flex-1 overflow-y-auto bg-background p-4">
+          {children}
+        </main>
       </div>
     </div>
   );
