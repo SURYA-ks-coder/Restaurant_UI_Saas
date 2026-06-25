@@ -26,7 +26,7 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import { action, API } from "@/lib/API";
+import { action, getAction, API } from "@/lib/API";
 import dayjs from "dayjs";
 
 /* ── data ──────────────────────────────────────────────────────────────── */
@@ -78,50 +78,7 @@ const STATUS_CONFIG = [
   },
 ];
 
-const DINING_STATUS = [
-  { label: "Available", value: 6, dot: "bg-emerald-400", total: 29 },
-  { label: "Occupied", value: 18, dot: "bg-blue-500", total: 29 },
-  { label: "Reserved", value: 3, dot: "bg-violet-500", total: 29 },
-  { label: "Cleaning", value: 2, dot: "bg-amber-400", total: 29 },
-];
 
-const KITCHEN_PERF = [
-  {
-    label: "Avg Prep Time",
-    value: "12 min",
-    Icon: Timer,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    label: "Ready Orders",
-    value: "18",
-    Icon: CheckCircle2,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    label: "Urgent Orders",
-    value: "3",
-    Icon: AlertCircle,
-    color: "text-rose-500",
-    bg: "bg-rose-500/10",
-  },
-  {
-    label: "Chef Efficiency",
-    value: "94%",
-    Icon: Zap,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-];
-
-const REVENUE = [
-  { period: "Today", value: "₹1,25,450", pct: "+12.5%", up: true },
-  { period: "This Week", value: "₹8,72,300", pct: "+8.3%", up: true },
-  { period: "This Month", value: "₹32,14,500", pct: "+15.2%", up: true },
-  { period: "This Year", value: "₹3,84,20,000", pct: "+22.7%", up: true },
-];
 
 const TOP_ITEMS = [
   { rank: 1, name: "Chicken Biryani", qty: 142, rev: "₹28,400", up: true },
@@ -212,16 +169,6 @@ const BRANCH_PERF = [
   { name: "Velachery", revenue: "₹18,000", pct: "-3.2%", up: false, w: 19 },
 ];
 
-const HOURLY = [
-  { h: "9AM", v: 45 },
-  { h: "11AM", v: 72 },
-  { h: "1PM", v: 100 },
-  { h: "3PM", v: 38 },
-  { h: "5PM", v: 56 },
-  { h: "7PM", v: 88 },
-  { h: "9PM", v: 65 },
-  { h: "11PM", v: 30 },
-];
 
 const QUICK_ACTIONS = [
   {
@@ -351,6 +298,9 @@ export default function DashboardPage() {
   const [branch, setBranch] = useState(BRANCHES[0]);
   const [branchOpen, setBranchOpen] = useState(false);
   const [liveOrders, setLiveOrders] = useState({});
+  const [liveStatus, setLiveStatus] = useState({});
+  const [revenueSummary, setRevenueSummary] = useState({});
+  const [hourlyRevenue, setHourlyRevenue] = useState([]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -386,6 +336,40 @@ export default function DashboardPage() {
     };
   });
 
+  const formatINR = (num) =>
+    "₹" + new Intl.NumberFormat("en-IN").format(Math.round(num ?? 0));
+
+  const rs = revenueSummary;
+  const revenueData = [
+    { period: "Today",      value: formatINR(rs.today?.revenue),      pct: `${rs.today?.growth >= 0 ? "+" : ""}${rs.today?.growth ?? 0}%`,      up: (rs.today?.growth ?? 0) >= 0 },
+    { period: "This Week",  value: formatINR(rs.thisWeek?.revenue),   pct: `${rs.thisWeek?.growth >= 0 ? "+" : ""}${rs.thisWeek?.growth ?? 0}%`,  up: (rs.thisWeek?.growth ?? 0) >= 0 },
+    { period: "This Month", value: formatINR(rs.thisMonth?.revenue),  pct: `${rs.thisMonth?.growth >= 0 ? "+" : ""}${rs.thisMonth?.growth ?? 0}%`, up: (rs.thisMonth?.growth ?? 0) >= 0 },
+    { period: "This Year",  value: formatINR(rs.thisYear?.revenue),   pct: `${rs.thisYear?.growth >= 0 ? "+" : ""}${rs.thisYear?.growth ?? 0}%`,  up: (rs.thisYear?.growth ?? 0) >= 0 },
+  ];
+
+  const maxHourlyRevenue = Math.max(...hourlyRevenue.map((h) => h.revenue), 1);
+  const hourlyData = hourlyRevenue.map((h) => ({
+    h: h.label,
+    v: Math.round((h.revenue / maxHourlyRevenue) * 100),
+  }));
+
+  const kp = liveStatus?.kitchenPerformance ?? {};
+  const kitchenPerfData = [
+    { label: "Avg Prep Time",   value: `${kp.avgPrepTime ?? 0} min`,  Icon: Timer,         color: "text-blue-500",    bg: "bg-blue-500/10" },
+    { label: "Ready Orders",    value: kp.readyOrders ?? 0,           Icon: CheckCircle2,  color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { label: "Urgent Orders",   value: kp.urgentOrders ?? 0,          Icon: AlertCircle,   color: "text-rose-500",    bg: "bg-rose-500/10" },
+    { label: "Chef Efficiency", value: `${kp.chefEfficiency ?? 0}%`,  Icon: Zap,           color: "text-amber-500",   bg: "bg-amber-500/10" },
+  ];
+
+  const ds = liveStatus?.diningStatus ?? {};
+  const diningTotal = (ds.available ?? 0) + (ds.occupied ?? 0) + (ds.reserved ?? 0) + (ds.cleaning ?? 0);
+  const diningStatusData = [
+    { label: "Available", value: ds.available ?? 0, dot: "bg-emerald-400", total: diningTotal },
+    { label: "Occupied",  value: ds.occupied ?? 0,  dot: "bg-blue-500",    total: diningTotal },
+    { label: "Reserved",  value: ds.reserved ?? 0,  dot: "bg-violet-500",  total: diningTotal },
+    { label: "Cleaning",  value: ds.cleaning ?? 0,  dot: "bg-amber-400",   total: diningTotal },
+  ];
+
   const getLiveOrdersList = async () => {
     try {
       const result = await action(API.TODAY_LIVE_ORDERS, {
@@ -402,8 +386,40 @@ export default function DashboardPage() {
     }
   };
 
+  const getLiveStatus = async () => {
+    try {
+      const result = await getAction(API.GET_LIVE_STATUS);
+      if (result.statusCode === 200) {
+        setLiveStatus(result.data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getRevenueSummary = async () => {
+    try {
+      const result = await getAction(API.GET_REVENUE_SUMMARY);
+      if (result.statusCode === 200) setRevenueSummary(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getHourlyRevenue = async () => {
+    try {
+      const result = await getAction(API.GET_HOURLY_REVENUE);
+      if (result.statusCode === 200) setHourlyRevenue(result.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     getLiveOrdersList();
+    getLiveStatus();
+    getRevenueSummary();
+    getHourlyRevenue();
   }, []);
 
   return (
@@ -610,7 +626,7 @@ export default function DashboardPage() {
               <LiveBadge />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              {KITCHEN_PERF.map(({ label, value, Icon, color, bg }) => (
+              {kitchenPerfData.map(({ label, value, Icon, color, bg }) => (
                 <div key={label} className={cn("rounded-xl p-3.5", bg)}>
                   <Icon className={cn("w-4 h-4 mb-2", color)} />
                   <p className="text-lg font-bold text-foreground tabular-nums">
@@ -635,7 +651,7 @@ export default function DashboardPage() {
               <LiveBadge />
             </div>
             <div className="space-y-3.5">
-              {DINING_STATUS.map((s) => (
+              {diningStatusData.map((s) => (
                 <div key={s.label}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span
@@ -670,7 +686,7 @@ export default function DashboardPage() {
               Revenue Breakdown
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              {REVENUE.map(({ period, value, pct, up }) => (
+              {revenueData.map(({ period, value, pct, up }) => (
                 <div key={period} className="rounded-xl bg-muted p-4">
                   <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
                     {period}
@@ -706,7 +722,7 @@ export default function DashboardPage() {
               </span>
             </div>
             <div className="flex items-end gap-1.5" style={{ height: 100 }}>
-              {HOURLY.map(({ h, v }) => (
+              {hourlyData.map(({ h, v }) => (
                 <div
                   key={h}
                   className="flex-1 flex flex-col items-center gap-1.5"
