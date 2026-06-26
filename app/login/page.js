@@ -232,6 +232,16 @@ export default function LoginPage() {
             <Fingerprint className="h-4 w-4" />
             Sign in with biometrics
           </button>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            New to Flavor Hub?{" "}
+            <Link
+              href="/dashboard/owner/add-restaurant"
+              className="font-medium text-primary hover:underline"
+            >
+              Create your restaurant
+            </Link>
+          </p>
         </div>
       </section>
 
