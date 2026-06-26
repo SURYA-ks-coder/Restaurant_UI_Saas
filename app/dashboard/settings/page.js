@@ -156,46 +156,62 @@ export default function SettingsPage() {
           },
         ]}
       />
-      <AddCategory
-        open={categoryDrawerOpen}
-        onOpenChange={setCategoryDrawerOpen}
-        onCreated={() => setCategoryRefreshKey((key) => key + 1)}
-      />
-      <AddSubCategory
-        open={subCategoryDrawerOpen}
-        onOpenChange={setSubCategoryDrawerOpen}
-        onCreated={() => setSubCategoryRefreshKey((key) => key + 1)}
-      />
-      <AddMenuItem
-        open={menuItemDrawerOpen}
-        onOpenChange={setMenuItemDrawerOpen}
-        onCreated={() => setMenuItemRefreshKey((key) => key + 1)}
-      />
-      <AddSuppliers
-        open={suppliersDrawerOpen}
-        onOpenChange={setSuppliersDrawerOpen}
-        onCreated={() => setSuppliersRefreshKey((key) => key + 1)}
-      />
-      <AddDepartment
-        open={departmentDrawerOpen}
-        onOpenChange={setDepartmentDrawerOpen}
-        onCreated={() => setDepartmentRefreshKey((k) => k + 1)}
-      />
-      <AddDesignation
-        open={designationDrawerOpen}
-        onOpenChange={setDesignationDrawerOpen}
-        onCreated={() => setDesignationRefreshKey((k) => k + 1)}
-      />
-      <AddShift
-        open={shiftDrawerOpen}
-        onOpenChange={setShiftDrawerOpen}
-        onCreated={() => setShiftRefreshKey((k) => k + 1)}
-      />
-      <AddPrinter
-        open={printerDrawerOpen}
-        onOpenChange={setPrinterDrawerOpen}
-        onCreated={() => setPrinterRefreshKey((k) => k + 1)}
-      />
+      {categoryDrawerOpen && (
+        <AddCategory
+          open={categoryDrawerOpen}
+          onOpenChange={setCategoryDrawerOpen}
+          onCreated={() => setCategoryRefreshKey((key) => key + 1)}
+        />
+      )}
+      {subCategoryDrawerOpen && (
+        <AddSubCategory
+          open={subCategoryDrawerOpen}
+          onOpenChange={setSubCategoryDrawerOpen}
+          onCreated={() => setSubCategoryRefreshKey((key) => key + 1)}
+        />
+      )}
+      {menuItemDrawerOpen && (
+        <AddMenuItem
+          open={menuItemDrawerOpen}
+          onOpenChange={setMenuItemDrawerOpen}
+          onCreated={() => setMenuItemRefreshKey((key) => key + 1)}
+        />
+      )}
+      {suppliersDrawerOpen && (
+        <AddSuppliers
+          open={suppliersDrawerOpen}
+          onOpenChange={setSuppliersDrawerOpen}
+          onCreated={() => setSuppliersRefreshKey((key) => key + 1)}
+        />
+      )}
+      {departmentDrawerOpen && (
+        <AddDepartment
+          open={departmentDrawerOpen}
+          onOpenChange={setDepartmentDrawerOpen}
+          onCreated={() => setDepartmentRefreshKey((k) => k + 1)}
+        />
+      )}
+      {designationDrawerOpen && (
+        <AddDesignation
+          open={designationDrawerOpen}
+          onOpenChange={setDesignationDrawerOpen}
+          onCreated={() => setDesignationRefreshKey((k) => k + 1)}
+        />
+      )}
+      {shiftDrawerOpen && (
+        <AddShift
+          open={shiftDrawerOpen}
+          onOpenChange={setShiftDrawerOpen}
+          onCreated={() => setShiftRefreshKey((k) => k + 1)}
+        />
+      )}
+      {printerDrawerOpen && (
+        <AddPrinter
+          open={printerDrawerOpen}
+          onOpenChange={setPrinterDrawerOpen}
+          onCreated={() => setPrinterRefreshKey((k) => k + 1)}
+        />
+      )}
       {drawerOpen && (
         <AddSubscriptionPlan
           open={drawerOpen}

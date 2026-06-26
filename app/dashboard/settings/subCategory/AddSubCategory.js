@@ -82,7 +82,7 @@ export default function AddSubCategory({
           isUpdate ? "PATCH" : "POST",
         );
 
-        if (result?.statusCode === 200 || result?.statusCode === 201) {
+        if (result?.statusCode === 200) {
           message.success(result?.message);
           resetForm();
           onCreated?.();
@@ -125,7 +125,7 @@ export default function AddSubCategory({
       const result = await getAction(API.GET_CATEGORY_LIST, {});
       if (result?.statusCode === 200) {
         setCategoryOptions(
-          (result?.data || []).map((category) => ({
+          (result?.data).map((category) => ({
             label: category.categoryName,
             value: category._id,
           })),
