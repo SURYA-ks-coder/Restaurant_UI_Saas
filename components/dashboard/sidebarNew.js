@@ -99,7 +99,16 @@ const navItems = [
     title: "Staff",
     shortTitle: "Staff",
     icon: <Users />,
-    link: "/dashboard/staff",
+    submenus: [
+      {
+        id: 1,
+        title: "Team",
+        subMenu: [
+          { id: 1, title: "All Staff", link: "/dashboard/staff", navigation: true },
+          { id: 2, title: "My Team", link: "/dashboard/staff/my-team", navigation: true, hideForRoles: ["owner", "super_admin"] },
+        ],
+      },
+    ],
   },
   {
     id: 7,
@@ -152,11 +161,25 @@ const navItems = [
   },
 ];
 
+function getLoggedRole() {
+  try {
+    const u = JSON.parse(localStorage.getItem("userData") || "{}");
+    return u?.role || "staff";
+  } catch {
+    return "staff";
+  }
+}
+
 const SidebarNew = ({ onLogout = () => {} }) => {
   const pathname = usePathname();
   const [hoveredMenuId, setHoveredMenuId] = useState(null);
   const [openSections, setOpenSections] = useState({});
   const closeTimer = useRef(null);
+  const [loggedRole, setLoggedRole] = useState("staff");
+
+  React.useEffect(() => {
+    setLoggedRole(getLoggedRole());
+  }, []);
 
   const hoveredMenu = navItems.find((m) => m.id === hoveredMenuId) ?? null;
   const showPanel = (hoveredMenu?.submenus?.length ?? 0) > 0;
@@ -349,6 +372,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                       >
                         {group.subMenu?.map((item) => {
                           if (!item.navigation || !item.link) return null;
+                          if (item.hideForRoles?.includes(loggedRole)) return null;
                           const active = isRouteActive(item.link);
                           return (
                             <li key={item.id}>

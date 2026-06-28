@@ -17,17 +17,15 @@ const initialValues = {
   phone: "",
   employeeCode: "",
   designation: "",
-  // role: "waiter",
-  // roleId: "",
   departmentId: "",
   shiftId: "",
   branchIds: [],
-  // defaultBranchId: "",
   gender: null,
   dateOfBirth: null,
   dateOfJoining: null,
   address: "",
   status: "active",
+  reportsTo: null,
   emergencyContact: {
     name: "",
     phone: "",
@@ -46,10 +44,10 @@ const validationSchema = Yup.object({
     .matches(/^[0-9+\-\s()]{7,16}$/, "Enter a valid phone number")
     .nullable(),
   role: Yup.string()
-    .oneOf(
-      ["manager", "cashier", "chef", "waiter", "inventory_staff"],
-      "Select a valid role",
-    )
+    // .oneOf(
+    //   ["manager", "cashier", "chef", "waiter", "inventory_staff"],
+    //   "Select a valid role",
+    // )
     .required("Role is required"),
   status: Yup.string()
     .oneOf(["active", "inactive", "blocked"])
@@ -73,6 +71,7 @@ export default function AddStaffs({
   const [designationOption, setDesignationOption] = useState([]);
   const [shiftOptions, setShiftOptions] = useState([]);
   const [branchOptions, setBranchOptions] = useState([]);
+  const [supervisorOptions, setSupervisorOptions] = useState([]);
 
   const isUpdate = Boolean(updateId);
 
@@ -84,6 +83,8 @@ export default function AddStaffs({
     initialValues,
     validationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
+      console.log(values, "values");
+
       try {
         const payload = {
           ...values,
@@ -97,7 +98,7 @@ export default function AddStaffs({
           roleId: values.roleId || undefined,
           departmentId: values.departmentId || undefined,
           shiftId: values.shiftId || undefined,
-          // defaultBranchId: values.defaultBranchId || undefined,
+          reportsTo: values.reportsTo || null,
           dateOfBirth: values.dateOfBirth || undefined,
           dateOfJoining: values.dateOfJoining || undefined,
           gender: values.gender || undefined,
@@ -147,13 +148,14 @@ export default function AddStaffs({
   };
 
   const fetchDropdowns = async () => {
-    const [roles, departments, shifts, branches, designation] =
+    const [roles, departments, shifts, branches, designation, supervisors] =
       await Promise.allSettled([
         getAction(API.GET_ROLE_LIST),
         getAction(API.GET_DEPARTMENT_LIST),
         getAction(API.GET_STAFF_SHIFT_LIST),
         getAction(API.GET_BRANCH_LIST),
         getAction(API.GET_DESIGNATION_LIST),
+        getAction(`${API.GET_STAFF_LIST}?status=active&limit=100`),
       ]);
 
     if (roles.value?.statusCode === 200) {
@@ -196,6 +198,14 @@ export default function AddStaffs({
         })),
       );
     }
+    if (supervisors?.value?.statusCode === 200) {
+      setSupervisorOptions(
+        (supervisors.value.data || []).map((s) => ({
+          label: `${s.name} — ${s.role?.replace("_", " ") || "staff"}`,
+          value: s._id,
+        })),
+      );
+    }
   };
 
   const fetchStaffDetails = async (id) => {
@@ -209,23 +219,24 @@ export default function AddStaffs({
           phone: s.phone || "",
           employeeCode: s.employeeCode || "",
           designation: s.designation || "",
-          // role: s.role || "waiter",
           roleId: s.roleId || "",
           departmentId: s.departmentId || "",
           shiftId: s.shiftId || "",
           branchIds: Array.isArray(s.branchIds) ? s.branchIds : [],
-          // defaultBranchId: s.defaultBranchId || "",
           gender: s.gender || null,
           dateOfBirth: s.dateOfBirth || null,
           dateOfJoining: s.dateOfJoining || null,
           address: s.address || "",
           status: s.status || "active",
+          reportsTo: s.reportsTo?._id || null,
           emergencyContact: {
             name: s.emergencyContact?.name || "",
             phone: s.emergencyContact?.phone || "",
             relation: s.emergencyContact?.relation || "",
           },
         });
+        // Remove self from supervisor options when editing
+        setSupervisorOptions((prev) => prev.filter((o) => o.value !== id));
       }
     } catch {
       message.error("Unable to fetch staff details");
@@ -253,7 +264,10 @@ export default function AddStaffs({
           ? "Update staff profile, role, and assignment."
           : "Add a new staff member. A default password will be set automatically.",
       ]}
-      handleSubmit={formik.handleSubmit}
+      handleSubmit={() => {
+        console.log(formik.values, "values");
+        formik.handleSubmit;
+      }}
       footerBtn={["Cancel", "Save"]}
       footerBtnDisabled={formik.isSubmitting}
       loadingButton={formik.isSubmitting}
@@ -413,6 +427,21 @@ export default function AddStaffs({
               options={shiftOptions}
               onChange={(value) => formik.setFieldValue("shiftId", value || "")}
               onBlur={() => formik.setFieldTouched("shiftId", true)}
+            />
+            <AntSelect
+              label="Reports To (Supervisor)"
+              value={formik.values.reportsTo || undefined}
+              allowClear
+              showSearch
+              placeholder="Select supervisor..."
+              options={supervisorOptions}
+              filterOption={(input, option) =>
+                option?.label?.toLowerCase().includes(input.toLowerCase())
+              }
+              onChange={(value) =>
+                formik.setFieldValue("reportsTo", value || null)
+              }
+              onBlur={() => formik.setFieldTouched("reportsTo", true)}
             />
           </div>
         </section>

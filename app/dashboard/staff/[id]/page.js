@@ -299,6 +299,16 @@ function OverviewTab({ staff, dept }) {
               label="Employee Code"
               value={staff.employeeCode || "Not assigned"}
             />
+            <InfoItem
+              icon={Users}
+              label="Reports To"
+              value={
+                staff.reportsTo
+                  ? `${staff.reportsTo.name} (${staff.reportsTo.role?.replace("_", " ")})`
+                  : "Not Assigned"
+              }
+              className="capitalize"
+            />
           </div>
         </div>
       </div>
@@ -434,6 +444,13 @@ function WorkTab({ staff, dept }) {
         : null,
     },
     { label: "Assigned Shift", value: shift },
+    {
+      label: "Reports To",
+      value: staff.reportsTo
+        ? `${staff.reportsTo.name} (${staff.reportsTo.role?.replace("_", " ")})`
+        : null,
+      className: "capitalize",
+    },
   ];
 
   return (

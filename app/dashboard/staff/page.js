@@ -3,6 +3,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+const ADMIN_ROLES = new Set(["owner", "super_admin"]);
+
+function getLoggedRole() {
+  try {
+    const u = JSON.parse(localStorage.getItem("userData") || "{}");
+    return u?.role || "staff";
+  } catch {
+    return "staff";
+  }
+}
 import {
   Award,
   CalendarClock,
@@ -74,10 +85,18 @@ export default function StaffPage() {
   const [addStaffOpen, setAddStaffOpen] = useState(false);
   const [editStaffId, setEditStaffId] = useState(null);
 
+  const loggedRole = useMemo(() => getLoggedRole(), []);
+  const isAdmin = ADMIN_ROLES.has(loggedRole);
+  const [viewScope, setViewScope] = useState(isAdmin ? "all" : "subordinates");
+
   const fetchStaffList = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getAction(API.GET_STAFF_LIST);
+      const url =
+        viewScope === "subordinates"
+          ? `${API.GET_STAFF_LIST}?viewScope=subordinates`
+          : API.GET_STAFF_LIST;
+      const result = await getAction(url);
       if (result?.statusCode === 200) {
         const list = result.data || [];
         setStaffList(list);
@@ -87,7 +106,7 @@ export default function StaffPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [viewScope]);
 
   useEffect(() => {
     fetchStaffList();
@@ -164,6 +183,29 @@ export default function StaffPage() {
           />
         </div>
       </div>
+
+      {/* View scope toggle — admins only see both options */}
+      {isAdmin && (
+        <div className="mb-6 flex gap-2 rounded-xl border border-border bg-muted/30 p-1 w-fit">
+          {[
+            { label: "All Staff", value: "all" },
+            { label: "My Team", value: "subordinates" },
+          ].map(({ label, value }) => (
+            <button
+              key={value}
+              onClick={() => { setViewScope(value); setSelectedStaff(null); }}
+              className={cn(
+                "rounded-lg px-4 py-1.5 text-sm font-medium transition-all",
+                viewScope === value
+                  ? "bg-background shadow-sm border border-border/60 text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
@@ -348,6 +390,14 @@ export default function StaffPage() {
                           {member.role?.replace("_", " ") || "—"}
                         </span>
                       </div>
+                      {member.reportsTo && (
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-muted-foreground">Reports To</span>
+                          <span className="capitalize truncate max-w-30">
+                            {member.reportsTo.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -417,6 +467,14 @@ export default function StaffPage() {
                   {selectedStaff.phone && (
                     <InfoRow label="Phone" value={selectedStaff.phone} />
                   )}
+                  <InfoRow
+                    label="Reports To"
+                    value={
+                      selectedStaff.reportsTo
+                        ? `${selectedStaff.reportsTo.name} (${selectedStaff.reportsTo.role?.replace("_", " ")})`
+                        : "Not Assigned"
+                    }
+                  />
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-2">
