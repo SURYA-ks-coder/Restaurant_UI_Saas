@@ -82,12 +82,15 @@ export default function UsersList({ refreshKey }) {
   const filteredUsers = useMemo(() => {
     const q = searchValue.trim().toLowerCase();
     if (!q) return users;
-    return users.filter(
-      (u) =>
+    return users.filter((u) => {
+      const roleName =
+        typeof u.role === "object" ? u.role?.roleName : u.role;
+      return (
         u.name?.toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q) ||
-        u.role?.toLowerCase().includes(q),
-    );
+        roleName?.toLowerCase().includes(q)
+      );
+    });
   }, [users, searchValue]);
 
   const columns = [
@@ -117,18 +120,28 @@ export default function UsersList({ refreshKey }) {
       dataIndex: "role",
       key: "role",
       width: 200,
-      render: (value) => (
-        <span className="text-sm text-foreground">{value || "-"}</span>
-      ),
+      render: (value, record) => {
+        const label =
+          typeof value === "object"
+            ? value?.roleName
+            : value || record.roleId?.roleName || null;
+        return (
+          <span className="text-sm text-foreground">{label || "-"}</span>
+        );
+      },
     },
     {
       title: "Department",
-      dataIndex: "department",
-      key: "department",
+      dataIndex: "departmentId",
+      key: "departmentId",
       width: 160,
-      render: (value) => (
-        <span className="text-sm text-muted-foreground">{value || "-"}</span>
-      ),
+      render: (value) => {
+        const label =
+          typeof value === "object" ? value?.departmentName : value || null;
+        return (
+          <span className="text-sm text-muted-foreground">{label || "-"}</span>
+        );
+      },
     },
     {
       title: "Status",

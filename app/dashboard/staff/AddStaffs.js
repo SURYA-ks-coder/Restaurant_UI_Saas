@@ -17,12 +17,12 @@ const initialValues = {
   phone: "",
   employeeCode: "",
   designation: "",
-  role: "waiter",
-  roleId: "",
+  // role: "waiter",
+  // roleId: "",
   departmentId: "",
   shiftId: "",
   branchIds: [],
-  defaultBranchId: "",
+  // defaultBranchId: "",
   gender: null,
   dateOfBirth: null,
   dateOfJoining: null,
@@ -97,7 +97,7 @@ export default function AddStaffs({
           roleId: values.roleId || undefined,
           departmentId: values.departmentId || undefined,
           shiftId: values.shiftId || undefined,
-          defaultBranchId: values.defaultBranchId || undefined,
+          // defaultBranchId: values.defaultBranchId || undefined,
           dateOfBirth: values.dateOfBirth || undefined,
           dateOfJoining: values.dateOfJoining || undefined,
           gender: values.gender || undefined,
@@ -209,12 +209,12 @@ export default function AddStaffs({
           phone: s.phone || "",
           employeeCode: s.employeeCode || "",
           designation: s.designation || "",
-          role: s.role || "waiter",
+          // role: s.role || "waiter",
           roleId: s.roleId || "",
           departmentId: s.departmentId || "",
           shiftId: s.shiftId || "",
           branchIds: Array.isArray(s.branchIds) ? s.branchIds : [],
-          defaultBranchId: s.defaultBranchId || "",
+          // defaultBranchId: s.defaultBranchId || "",
           gender: s.gender || null,
           dateOfBirth: s.dateOfBirth || null,
           dateOfJoining: s.dateOfJoining || null,
@@ -312,7 +312,7 @@ export default function AddStaffs({
             Role & Access
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <AntSelect
+            {/* <AntSelect
               label="Role *"
               value={formik.values.role}
               error={getError("role")}
@@ -325,10 +325,10 @@ export default function AddStaffs({
               ]}
               onChange={(value) => formik.setFieldValue("role", value)}
               onBlur={() => formik.setFieldTouched("role", true)}
-            />
+            /> */}
             {roleOptions.length > 0 && (
               <AntSelect
-                label="Custom Role"
+                label="Role"
                 value={formik.values.roleId || undefined}
                 allowClear
                 placeholder="Select custom role"
@@ -349,7 +349,7 @@ export default function AddStaffs({
               onChange={(value) => formik.setFieldValue("branchIds", value)}
               onBlur={() => formik.setFieldTouched("branchIds", true)}
             />
-            <AntSelect
+            {/* <AntSelect
               label="Default Branch"
               value={formik.values.defaultBranchId || undefined}
               allowClear
@@ -359,7 +359,7 @@ export default function AddStaffs({
                 formik.setFieldValue("defaultBranchId", value || "")
               }
               onBlur={() => formik.setFieldTouched("defaultBranchId", true)}
-            />
+            /> */}
             <AntSelect
               label="Status"
               value={formik.values.status}
