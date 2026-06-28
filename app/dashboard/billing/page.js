@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import { message } from "@/lib/message";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -6,7 +8,6 @@ import {
   Plus, ReceiptText, Smartphone, Tag, Trash2,
   UtensilsCrossed, Users, X, Zap,
 } from "lucide-react";
-import { message } from "antd";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
 import { AntInput } from "@/components/ui/AntInput";

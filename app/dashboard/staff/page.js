@@ -1,19 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const ADMIN_ROLES = new Set(["owner", "super_admin"]);
+import { getUserRole } from "@/lib/auth";
 
-function getLoggedRole() {
-  try {
-    const u = JSON.parse(localStorage.getItem("userData") || "{}");
-    return u?.role || "staff";
-  } catch {
-    return "staff";
-  }
-}
+const ADMIN_ROLES = new Set(["owner", "super_admin"]);
 import {
   Award,
   CalendarClock,
@@ -30,7 +23,8 @@ import {
   Users,
   UserX,
 } from "lucide-react";
-import { Dropdown, Skeleton, message } from "antd";
+import { Dropdown, Skeleton } from "antd";
+import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { action, API, getAction } from "@/lib/API";
 import AddStaffs from "./AddStaffs";
@@ -85,7 +79,7 @@ export default function StaffPage() {
   const [addStaffOpen, setAddStaffOpen] = useState(false);
   const [editStaffId, setEditStaffId] = useState(null);
 
-  const loggedRole = useMemo(() => getLoggedRole(), []);
+  const loggedRole = useMemo(() => getUserRole(), []);
   const isAdmin = ADMIN_ROLES.has(loggedRole);
   const [viewScope, setViewScope] = useState(isAdmin ? "all" : "subordinates");
 

@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
-import { message, Switch } from "antd";
+import { Switch } from "antd";
+import { message } from "@/lib/message";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AntInput } from "@/components/ui/AntInput";

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Table from "@/components/ui/Table";
 import { action, API, getAction } from "@/lib/API";
+import { getRestaurantId, getDefaultBranchId } from "@/lib/auth";
 import AddMenuItem from "./AddMenuItem";
 
 const menuItemHeader = [
@@ -64,8 +65,8 @@ export default function MenuItemList({ refreshKey }) {
   const getMenuItemList = async () => {
     try {
       const result = await action(API.GET_MENU_ITEM_LIST, {
-        restaurantId: JSON.parse(localStorage.getItem("restaurantId")),
-        branchId: JSON.parse(localStorage.getItem("branchIds")),
+        restaurantId: getRestaurantId(),
+        branchId: getDefaultBranchId(),
       });
       if (result?.statusCode === 200) {
         setMenuItemData(result?.data || []);

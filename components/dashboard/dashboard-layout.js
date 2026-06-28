@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MobileSidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import SidebarNew from "./sidebarNew";
+import { clearAuthData, getAccessToken } from "@/lib/auth";
 
 function applyAppearancePrefs() {
   const root = document.documentElement;
@@ -29,13 +30,6 @@ function applyAppearancePrefs() {
   if (lang) root.setAttribute("lang", lang);
 }
 
-const AUTH_KEYS = [
-  "accessToken",
-  "refreshToken",
-  "restaurantId",
-  "branchIds",
-  "userData",
-];
 
 export function DashboardLayout({ children }) {
   const router = useRouter();
@@ -44,8 +38,8 @@ export function DashboardLayout({ children }) {
 
   useEffect(() => {
     // Auth guard runs FIRST — if no token, redirect before rendering anything
-    const token = localStorage.getItem("accessToken");
-    if (!token || token === "null" || token === "undefined") {
+    const token = getAccessToken();
+    if (!token) {
       router.replace("/login");
       return;
     }
@@ -54,7 +48,7 @@ export function DashboardLayout({ children }) {
   }, [router]);
 
   const handleLogout = () => {
-    AUTH_KEYS.forEach((key) => localStorage.removeItem(key));
+    clearAuthData();
     router.replace("/login");
   };
 

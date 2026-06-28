@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
+
+import { message } from "@/lib/message";
 
 import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { message } from "antd";
 import { fileUpload, getAction, API } from "@/lib/API";
 import DrawerPop from "@/components/ui/DrawerPop";
 import { AntInput, AntPasswordInput } from "@/components/ui/AntInput";

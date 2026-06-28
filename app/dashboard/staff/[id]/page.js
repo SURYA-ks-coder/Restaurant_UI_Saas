@@ -18,7 +18,8 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { Modal, message } from "antd";
+import { Modal } from "antd";
+import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { action, API, getAction } from "@/lib/API";
 import AddStaffs from "../AddStaffs";

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -10,7 +10,8 @@ import {
   TrendingDown,
   X,
 } from "lucide-react";
-import { message, Popconfirm } from "antd";
+import { Popconfirm } from "antd";
+import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { action, API, getAction } from "@/lib/API";
 import { Input } from "@/components/ui/input";

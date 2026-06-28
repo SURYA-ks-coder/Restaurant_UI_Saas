@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { DatePicker, Modal, Select, Skeleton, message } from "antd";
+import { DatePicker, Modal, Select, Skeleton } from "antd";
+import { message } from "@/lib/message";
 import {
   BarChart3,
   DollarSign,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAction, API, URL as API_URL } from "@/lib/API";
+import { getAccessToken } from "@/lib/auth";
 import dayjs from "dayjs";
 
 const { RangePicker } = DatePicker;
@@ -435,9 +437,7 @@ export default function ReportsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${JSON.parse(
-            localStorage.getItem("accessToken")
-          )}`,
+          Authorization: `Bearer ${getAccessToken()}`,
         },
         body: JSON.stringify(params),
       });

@@ -161,14 +161,7 @@ const navItems = [
   },
 ];
 
-function getLoggedRole() {
-  try {
-    const u = JSON.parse(localStorage.getItem("userData") || "{}");
-    return u?.role || "staff";
-  } catch {
-    return "staff";
-  }
-}
+import { getUserRole, getMenuIds } from "@/lib/auth";
 
 const SidebarNew = ({ onLogout = () => {} }) => {
   const pathname = usePathname();
@@ -176,12 +169,19 @@ const SidebarNew = ({ onLogout = () => {} }) => {
   const [openSections, setOpenSections] = useState({});
   const closeTimer = useRef(null);
   const [loggedRole, setLoggedRole] = useState("staff");
+  const [allowedMenuIds, setAllowedMenuIds] = useState(null);
 
   React.useEffect(() => {
-    setLoggedRole(getLoggedRole());
+    setLoggedRole(getUserRole());
+    const ids = getMenuIds();
+    setAllowedMenuIds(ids.length > 0 ? new Set(ids) : null);
   }, []);
 
-  const hoveredMenu = navItems.find((m) => m.id === hoveredMenuId) ?? null;
+  const visibleNavItems = allowedMenuIds
+    ? navItems.filter((m) => allowedMenuIds.has(m.id))
+    : navItems;
+
+  const hoveredMenu = visibleNavItems.find((m) => m.id === hoveredMenuId) ?? null;
   const showPanel = (hoveredMenu?.submenus?.length ?? 0) > 0;
 
   const isRouteActive = (link) => {
@@ -200,7 +200,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
     cancelClose();
     setHoveredMenuId(menuId);
     // Auto-expand all sections for this menu
-    const menu = navItems.find((m) => m.id === menuId);
+    const menu = visibleNavItems.find((m) => m.id === menuId);
     if (menu?.submenus) {
       const init = {};
       menu.submenus.forEach((g) => { init[g.id] = true; });
@@ -225,7 +225,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-1 scrollbar-hide">
           <ul className="flex flex-col items-center gap-0.5 px-2">
-            {navItems.map((menu) => {
+            {visibleNavItems.map((menu) => {
               const isActive =
                 isRouteActive(menu.link) ||
                 menu.submenus?.some((g) =>

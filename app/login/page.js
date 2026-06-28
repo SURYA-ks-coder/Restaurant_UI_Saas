@@ -13,13 +13,15 @@ import {
   Mail,
   Sparkles,
 } from "lucide-react";
-import { message } from "antd";
+import { App } from "antd";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { action, API } from "@/lib/API";
+import { saveAuthData } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
+  const { message } = App.useApp();
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,23 +60,7 @@ export default function LoginPage() {
       });
 
       if (result?.statusCode === 200) {
-        localStorage.setItem(
-          "accessToken",
-          JSON.stringify(result?.data?.tokens?.accessToken),
-        );
-        localStorage.setItem(
-          "branchIds",
-          JSON.stringify(result?.data?.user?.defaultBranchId),
-        );
-        localStorage.setItem(
-          "restaurantId",
-          JSON.stringify(result?.data?.user?.restaurantId),
-        );
-        localStorage.setItem(
-          "refreshToken",
-          JSON.stringify(result?.data?.tokens?.refreshToken),
-        );
-        localStorage.setItem("userData", JSON.stringify(result?.data?.user));
+        saveAuthData(result);
 
         message.success("Login successful! Redirecting…");
         await new Promise((resolve) => setTimeout(resolve, 800));

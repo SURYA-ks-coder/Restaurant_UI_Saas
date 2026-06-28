@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
-import { message, Radio, Switch, Upload } from "antd";
+import { Radio, Switch, Upload } from "antd";
+import { message } from "@/lib/message";
 import { UploadIcon } from "lucide-react";
 import { useFormik } from "formik";
 import { useEffect, useMemo, useState } from "react";

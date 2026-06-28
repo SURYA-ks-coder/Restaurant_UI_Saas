@@ -4,6 +4,7 @@ import "./plugin.css";
 import "@/components/assets/css/style.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ConfigProvider } from "antd";
+import AntdApp from "@/components/AntdApp";
 
 export const metadata = {
   title: "Flavor Hub | Restaurant Management",
@@ -50,14 +51,16 @@ export default function RootLayout({ children }) {
             },
           }}
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <AntdApp>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </AntdApp>
         </ConfigProvider>
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>

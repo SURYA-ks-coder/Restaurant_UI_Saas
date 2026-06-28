@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
-import { DatePicker, message } from "antd";
+import { DatePicker } from "antd";
+import { message } from "@/lib/message";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import dayjs from "dayjs";
@@ -10,6 +11,7 @@ import { AntSelect } from "@/components/ui/AntSelect";
 import AntTextArea from "@/components/ui/AntTextArea";
 import DrawerPop from "@/components/ui/DrawerPop";
 import { action, API, getAction } from "@/lib/API";
+import { getRestaurantId } from "@/lib/auth";
 
 const initialValues = {
   name: "",
@@ -48,11 +50,6 @@ const validationSchema = Yup.object({
     .required("Status is required"),
 });
 
-const getStoredValue = (key) => {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem(key) || "";
-};
-
 export default function AddStaffs({
   open,
   onOpenChange,
@@ -80,7 +77,7 @@ export default function AddStaffs({
       try {
         const payload = {
           ...values,
-          restaurantId: getStoredValue("restaurantId"),
+          restaurantId: getRestaurantId(),
           name: values.name.trim(),
           email: values.email.trim().toLowerCase(),
           phone: values.phone?.trim() || undefined,

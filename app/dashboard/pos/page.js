@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
 import { AntInput } from "@/components/ui/AntInput";
-import { Dropdown, message } from "antd";
+import { Dropdown } from "antd";
+import { message } from "@/lib/message";
 
 const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
 

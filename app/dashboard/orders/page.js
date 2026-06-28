@@ -1,4 +1,6 @@
-"use client";
+﻿"use client";
+
+import { message } from "@/lib/message";
 
 import { useEffect, useState } from "react";
 import {
@@ -18,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { message } from "antd";
 import { API, action, getAction } from "@/lib/API";
 import ViewOrderDetails from "./OrdersDetails.js/ViewOrderDetails";
 
