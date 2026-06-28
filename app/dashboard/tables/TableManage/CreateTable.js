@@ -152,7 +152,7 @@ export default function CreateTable({
             tableName: table.tableName || table.name || "",
             tableNumber: numberOrEmpty(table.tableNumber || table.number),
             capacity: numberOrEmpty(table.capacity || table.seats),
-            floorName: table.floorName || table.floor || "",
+            floorName: table.floorName || table.floorId || "",
             qrCodeEnabled: Boolean(table.qrCodeEnabled),
             status: table.status || "available",
           });
@@ -249,6 +249,7 @@ export default function CreateTable({
               onChange={(checked) =>
                 formik.setFieldValue("qrCodeEnabled", checked)
               }
+              className="bg-primary"
             />
             <p className="mt-2 text-xs text-muted-foreground">
               Enables QR ordering for this table.

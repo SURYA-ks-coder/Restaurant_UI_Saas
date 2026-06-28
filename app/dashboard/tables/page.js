@@ -19,6 +19,7 @@ import { action, API, getAction } from "@/lib/API";
 import { Button, Dropdown } from "antd";
 import { FiDownload } from "react-icons/fi";
 import dayjs from "dayjs";
+import ButtonClick from "@/components/ui/ButtonClick";
 
 const statusStyles = {
   available: {
@@ -249,7 +250,9 @@ export default function TablesPage() {
                   <UtensilsCrossed className="h-7 w-7 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight">
-                  {tables.length === 0 ? "No tables yet" : "No tables match your search"}
+                  {tables.length === 0
+                    ? "No tables yet"
+                    : "No tables match your search"}
                 </h3>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                   {tables.length === 0
@@ -257,13 +260,18 @@ export default function TablesPage() {
                     : "Try adjusting your search or filter to find what you're looking for."}
                 </p>
                 {tables.length === 0 && (
-                  <button
-                    onClick={() => setTableDrawerOpen({ status: true, table: null })}
-                    className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+                  <ButtonClick
+                    handleSubmit={() =>
+                      setTableDrawerOpen({ status: true, table: null })
+                    }
+                    BtnType="primary"
+                    buttonName={"Add First Table"}
+                    icon={<Plus className="h-4 w-4" />}
+                    className=" mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
                   >
-                    <Plus className="h-4 w-4" />
-                    Add First Table
-                  </button>
+                    {/* <Plus className="h-4 w-4" />
+                    Add First Table */}
+                  </ButtonClick>
                 )}
               </div>
             )}
