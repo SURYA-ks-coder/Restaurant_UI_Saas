@@ -43,12 +43,6 @@ const validationSchema = Yup.object({
     .trim()
     .matches(/^[0-9+\-\s()]{7,16}$/, "Enter a valid phone number")
     .nullable(),
-  role: Yup.string()
-    // .oneOf(
-    //   ["manager", "cashier", "chef", "waiter", "inventory_staff"],
-    //   "Select a valid role",
-    // )
-    .required("Role is required"),
   status: Yup.string()
     .oneOf(["active", "inactive", "blocked"])
     .required("Status is required"),
@@ -266,7 +260,7 @@ export default function AddStaffs({
       ]}
       handleSubmit={() => {
         console.log(formik.values, "values");
-        formik.handleSubmit;
+        formik.handleReset();
       }}
       footerBtn={["Cancel", "Save"]}
       footerBtnDisabled={formik.isSubmitting}
