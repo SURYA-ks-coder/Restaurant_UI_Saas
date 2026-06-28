@@ -193,7 +193,10 @@ export default function StaffPage() {
           ].map(({ label, value }) => (
             <button
               key={value}
-              onClick={() => { setViewScope(value); setSelectedStaff(null); }}
+              onClick={() => {
+                setViewScope(value);
+                setSelectedStaff(null);
+              }}
               className={cn(
                 "rounded-lg px-4 py-1.5 text-sm font-medium transition-all",
                 viewScope === value
@@ -303,7 +306,8 @@ export default function StaffPage() {
                     key: "view",
                     label: "View Profile",
                     icon: <ExternalLink className="h-3.5 w-3.5" />,
-                    onClick: () => router.push(`/dashboard/staff/${member._id}`),
+                    onClick: () =>
+                      router.push(`/dashboard/staff/${member._id}`),
                   },
                   {
                     key: "edit",
@@ -387,12 +391,14 @@ export default function StaffPage() {
                       <div className="mt-2 flex items-center justify-between">
                         <span className="text-muted-foreground">Role</span>
                         <span className="capitalize">
-                          {member.role?.replace("_", " ") || "—"}
+                          {member.roleId?.roleName?.replace("_", " ") || "—"}
                         </span>
                       </div>
                       {member.reportsTo && (
                         <div className="mt-2 flex items-center justify-between">
-                          <span className="text-muted-foreground">Reports To</span>
+                          <span className="text-muted-foreground">
+                            Reports To
+                          </span>
                           <span className="capitalize truncate max-w-30">
                             {member.reportsTo.name}
                           </span>

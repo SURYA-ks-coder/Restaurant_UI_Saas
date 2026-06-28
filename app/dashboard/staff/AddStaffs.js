@@ -77,8 +77,6 @@ export default function AddStaffs({
     initialValues,
     validationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
-      console.log(values, "values");
-
       try {
         const payload = {
           ...values,
@@ -213,7 +211,7 @@ export default function AddStaffs({
           phone: s.phone || "",
           employeeCode: s.employeeCode || "",
           designation: s.designation || "",
-          roleId: s.roleId || "",
+          roleId: s.roleId?._id || "",
           departmentId: s.departmentId || "",
           shiftId: s.shiftId || "",
           branchIds: Array.isArray(s.branchIds) ? s.branchIds : [],
@@ -258,10 +256,7 @@ export default function AddStaffs({
           ? "Update staff profile, role, and assignment."
           : "Add a new staff member. A default password will be set automatically.",
       ]}
-      handleSubmit={() => {
-        console.log(formik.values, "values");
-        formik.handleReset();
-      }}
+      handleSubmit={formik.handleSubmit}
       footerBtn={["Cancel", "Save"]}
       footerBtnDisabled={formik.isSubmitting}
       loadingButton={formik.isSubmitting}
