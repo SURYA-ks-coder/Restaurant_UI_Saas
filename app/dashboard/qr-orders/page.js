@@ -333,7 +333,22 @@ export default function QrOrdersPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-            {tables.map((table) => {
+            {filteredTables.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-linear-to-b from-muted/40 to-muted/10 px-6 py-20 text-center">
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted shadow-inner">
+                  <QrCode className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {tables.length === 0 ? "No QR tables configured" : "No tables match your search"}
+                </h3>
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+                  {tables.length === 0
+                    ? "Generate QR codes for your tables so guests can scan and order directly from their phones."
+                    : "Try adjusting your search to find the table you're looking for."}
+                </p>
+              </div>
+            )}
+            {filteredTables.map((table) => {
               const style = statusStyles[table.status];
               const isSelected = selectedTable?._id === table._id;
 

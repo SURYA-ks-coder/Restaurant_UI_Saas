@@ -243,6 +243,30 @@ export default function TablesPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+            {filteredTables.length === 0 && (
+              <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-linear-to-b from-muted/40 to-muted/10 px-6 py-20 text-center">
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted shadow-inner">
+                  <UtensilsCrossed className="h-7 w-7 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {tables.length === 0 ? "No tables yet" : "No tables match your search"}
+                </h3>
+                <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+                  {tables.length === 0
+                    ? "Add your first table to start managing your floor, reservations, and guest service."
+                    : "Try adjusting your search or filter to find what you're looking for."}
+                </p>
+                {tables.length === 0 && (
+                  <button
+                    onClick={() => setTableDrawerOpen({ status: true, table: null })}
+                    className="mt-6 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add First Table
+                  </button>
+                )}
+              </div>
+            )}
             {filteredTables.map((table) => {
               const style = statusStyles[table.status];
               const isSelected = selectedTable?._id === table._id;

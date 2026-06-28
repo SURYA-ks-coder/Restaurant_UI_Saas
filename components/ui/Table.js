@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Dropdown,
-  Menu,
-  Space,
-  Table as AntTable,
-  Tooltip,
-} from "antd";
+import { Button, Dropdown, Space, Table as AntTable, Tooltip } from "antd";
 import { HiPlusSm } from "react-icons/hi";
 import { Eye, FilterXIcon, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import React, { useMemo, useState } from "react";
@@ -200,41 +193,43 @@ export default function Table({
             if (users.length === 0)
               return <span className="text-muted-foreground">—</span>;
 
+            const dropdownItems = users.map((user, i) => ({
+              key: user.userId ?? i,
+              label: (
+                <div className="flex items-center gap-2 py-0.5">
+                  {user.profileImage ? (
+                    <div className="overflow-hidden bg-primary/10 border-2 border-white rounded-full size-8 shrink-0">
+                      <img
+                        className="object-cover object-center w-full h-full"
+                        src={user.profileImage}
+                        alt={user.userName}
+                      />
+                    </div>
+                  ) : (
+                    <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 shrink-0 bg-primary/10 text-primary">
+                      {user.userName?.charAt(0).toUpperCase()}
+                    </p>
+                  )}
+                  <div>
+                    <p className="font-semibold text-sm capitalize">
+                      {user.userName}
+                    </p>
+                    {user.employeeCode && (
+                      <p className="text-xs text-muted-foreground">
+                        {user.employeeCode}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ),
+            }));
+
             return (
               <Dropdown
-                overlay={
-                  <Menu className="overflow-auto max-h-56">
-                    {users.map((user, i) => (
-                      <Menu.Item key={user.userId ?? i}>
-                        <div className="flex items-center gap-2 py-0.5">
-                          {user.profileImage ? (
-                            <div className="overflow-hidden bg-white border-2 border-white rounded-full size-8 shrink-0">
-                              <img
-                                className="object-cover object-center w-full h-full"
-                                src={user.profileImage}
-                                alt={user.userName}
-                              />
-                            </div>
-                          ) : (
-                            <p className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 shrink-0 bg-primaryLight text-primary">
-                              {user.userName?.charAt(0).toUpperCase()}
-                            </p>
-                          )}
-                          <div>
-                            <p className="font-semibold text-sm text-grey capitalize">
-                              {user.userName}
-                            </p>
-                            {user.employeeCode && (
-                              <p className="text-xs text-muted-foreground">
-                                {user.employeeCode}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </Menu.Item>
-                    ))}
-                  </Menu>
-                }
+                menu={{
+                  items: dropdownItems,
+                  className: "max-h-56 overflow-auto",
+                }}
                 trigger={["hover"]}
               >
                 <div className="flex -space-x-3 rtl:space-x-reverse cursor-pointer">
@@ -242,7 +237,7 @@ export default function Table({
                     user.profileImage ? (
                       <div
                         key={user.userId ?? index}
-                        className="overflow-hidden bg-white border-2 border-white rounded-full size-8"
+                        className="overflow-hidden bg-primary/10 border-2 border-white rounded-full size-8"
                       >
                         <img
                           className="object-cover object-center w-full h-full"
@@ -253,7 +248,7 @@ export default function Table({
                     ) : (
                       <p
                         key={user.userId ?? index}
-                        className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primaryLight text-primary"
+                        className="flex items-center justify-center font-semibold border-2 border-white rounded-full size-8 bg-primary/10 text-primary"
                       >
                         {user.userName?.charAt(0).toUpperCase()}
                       </p>

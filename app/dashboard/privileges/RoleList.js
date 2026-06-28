@@ -1,18 +1,10 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  Table as AntTable,
-  Switch,
-  Space,
-  Button,
-  Tooltip,
-  Avatar,
-} from "antd";
-import { Pencil, Trash2, Columns3 } from "lucide-react";
+import { Switch, Space, Button, Tooltip } from "antd";
+import { Pencil, Trash2 } from "lucide-react";
 import { message } from "antd";
 import { action, API, getAction } from "@/lib/API";
-import SearchBox from "@/components/ui/SearchBox";
 import Table from "@/components/ui/Table";
 
 const mockRoles = [
@@ -155,25 +147,9 @@ export default function RoleList({ refreshKey, onEdit }) {
     },
     {
       title: "Employees",
-      value: "employees",
-      width: 160,
-      isImageMultiple: true,
-      render: (employees) => {
-        if (!employees?.length) return null;
-        return (
-          <Avatar.Group max={{ count: 4 }}>
-            {employees.map((emp, i) => (
-              <Avatar
-                key={i}
-                style={{ backgroundColor: "#7c3aed", fontSize: 12 }}
-                size={28}
-              >
-                {emp.name?.charAt(0).toUpperCase()}
-              </Avatar>
-            ))}
-          </Avatar.Group>
-        );
-      },
+      value: "users",
+      type: "isImageMultiple",
+      width: 200,
     },
     {
       title: "Status",
