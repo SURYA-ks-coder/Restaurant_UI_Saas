@@ -69,10 +69,20 @@ const navItems = [
     submenus: [
       {
         id: 1,
-        title: "Resources",
+        title: "Inventory",
         subMenu: [
-          { id: 1, title: "Inventory", link: "/dashboard/inventory", navigation: true },
-          { id: 2, title: "Expenses", link: "/dashboard/expenses", navigation: true },
+          { id: 1, title: "Inventory Items", link: "/dashboard/inventory", navigation: true },
+          { id: 2, title: "Stock", link: "/dashboard/inventory/stock", navigation: true },
+          { id: 3, title: "Warehouse", link: "/dashboard/inventory/warehouse", navigation: true },
+          { id: 4, title: "Transfers", link: "/dashboard/inventory/transfers", navigation: true },
+          { id: 5, title: "Wastage", link: "/dashboard/inventory/wastage", navigation: true },
+        ],
+      },
+      {
+        id: 2,
+        title: "Finance",
+        subMenu: [
+          { id: 1, title: "Expenses", link: "/dashboard/expenses", navigation: true },
         ],
       },
     ],

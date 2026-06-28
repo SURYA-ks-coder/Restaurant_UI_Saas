@@ -24,7 +24,7 @@ import {
   registerKotListeners,
   removeKotListeners,
 } from "@/components/socket/kotSocketListeners";
-import { action, API, getAction, patchAction } from "@/lib/API";
+import { action, API, getAction, patchAction, postAction } from "@/lib/API";
 import { Button, Checkbox, Tooltip } from "antd";
 import { FaCircleCheck } from "react-icons/fa6";
 import { MdCancel } from "react-icons/md";
@@ -139,6 +139,14 @@ export default function KitchenPage() {
     UpdateKOTStatus(kotId);
   };
 
+  const deductStockForKot = async (kotId, items) => {
+    try {
+      await postAction(API.DEDUCT_STOCK_BY_KOT, { kotId, items });
+    } catch {
+      // Stock deduction is best-effort; do not block order flow on failure
+    }
+  };
+
   const moveToNextStatus = (order) => {
     const statusFlow = {
       pending: "preparing",
@@ -155,6 +163,12 @@ export default function KitchenPage() {
         return { ...currentOrder, status: nextStatus };
       }),
     );
+
+    // Deduct ingredients from stock when chef starts preparation
+    if (order.status === "pending" && nextStatus === "preparing") {
+      deductStockForKot(kotId, order.items);
+    }
+
     handleStatusChange(kotId, nextStatus);
   };
 

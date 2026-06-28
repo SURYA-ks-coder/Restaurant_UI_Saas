@@ -71,7 +71,7 @@ export default function AddRestaurant({
       city: Yup.string().trim().required("City is required"),
       state: Yup.string().trim().required("State is required"),
       country: Yup.string().trim().required("Country is required"),
-      subscriptionPlan: Yup.string().required("Subscription plan is required"),
+      // subscriptionPlan: Yup.string().required("Subscription plan is required"),
       ...(!isUpdate && {
         branchName: Yup.string().trim().required("Branch name is required"),
         branchCode: Yup.string().trim().required("Branch code is required"),
@@ -88,7 +88,11 @@ export default function AddRestaurant({
         const endpoint = isUpdate
           ? `${API.UPDATE_RESTAURANT}/${updateId}`
           : API.CREATE_RESTAURANT;
-        const response = await fileUpload(endpoint, formData, isUpdate ? "patch" : "post");
+        const response = await fileUpload(
+          endpoint,
+          formData,
+          isUpdate ? "patch" : "post",
+        );
 
         if (response?.statusCode === 200 || response?.statusCode === 201) {
           message.success(
@@ -132,7 +136,7 @@ export default function AddRestaurant({
           pincode: r.pincode || "",
           currency: r.currency || "",
           timezone: r.timezone || "",
-          subscriptionPlan: r.subscriptionPlan || "",
+          // subscriptionPlan: r.subscriptionPlan || "",
           subdomain: r.subdomain || "",
           customDomain: r.customDomain || "",
           branchName: "",
@@ -272,11 +276,9 @@ export default function AddRestaurant({
             ]}
             value={formik.values.timezone || undefined}
             onChange={(val) => formik.setFieldValue("timezone", val)}
-            error={
-              formik.touched.timezone ? formik.errors.timezone : undefined
-            }
+            error={formik.touched.timezone ? formik.errors.timezone : undefined}
           />
-          <AntSelect
+          {/* <AntSelect
             label="Subscription Plan"
             placeholder="Select plan"
             options={[
@@ -291,7 +293,7 @@ export default function AddRestaurant({
                 ? formik.errors.subscriptionPlan
                 : undefined
             }
-          />
+          /> */}
           <AntInput
             label="Subdomain"
             placeholder="e.g. my-restaurant"
