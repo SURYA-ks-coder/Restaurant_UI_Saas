@@ -580,8 +580,6 @@ export default function RestaurantProfilePage() {
       <AddManager
         open={managerDrawerOpen}
         updateId={managerUpdateId}
-        branches={normalizedBranches}
-        managers={normalizedManagers}
         onOpenChange={(next) => {
           setManagerDrawerOpen(next);
           if (!next) setManagerUpdateId(null);
