@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { message } from "@/lib/message";
+import { getRestaurantId, getDefaultBranchId, getUserId } from "@/lib/auth";
 
 import { useEffect, useState } from "react";
 import {
@@ -26,30 +27,6 @@ import ViewOrderDetails from "./OrdersDetails.js/ViewOrderDetails";
 /* ─── helpers (mirrors pos/page.js) ──────────────────────────────────────── */
 
 const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
-
-const parseStoredValue = (key) => {
-  if (typeof window === "undefined") return "";
-  const value = localStorage.getItem(key);
-  if (!value) return "";
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-};
-
-const getEntityId = (value) => {
-  if (Array.isArray(value)) return getEntityId(value[0]);
-  if (value && typeof value === "object") return value._id || value.id || "";
-  return value || "";
-};
-
-const getBranchId = () =>
-  getEntityId(
-    parseStoredValue("branchId") ||
-      parseStoredValue("defaultBranchId") ||
-      parseStoredValue("branchIds"),
-  );
 
 /* ─── transform API shapes → design shapes ───────────────────────────────── */
 
@@ -328,8 +305,8 @@ export default function OrdersPage() {
   const getMenuItemList = async () => {
     try {
       const result = await action(API.GET_MENU_ITEM_LIST, {
-        restaurantId: getEntityId(parseStoredValue("restaurantId")),
-        branchId: getBranchId(),
+        restaurantId: getRestaurantId(),
+        branchId: getDefaultBranchId(),
       });
       if (result?.statusCode === 200) {
         setMenuItemData((result.data || []).map(transformMenuItem));
@@ -412,9 +389,8 @@ export default function OrdersPage() {
   };
 
   const buildBillPayload = () => {
-    const restaurantId = getEntityId(parseStoredValue("restaurantId"));
-    const branchId = getBranchId();
-    const userData = parseStoredValue("userData");
+    const restaurantId = getRestaurantId();
+    const branchId = getDefaultBranchId();
     const TAX_RATE = 5;
 
     return {
@@ -435,6 +411,7 @@ export default function OrdersPage() {
         };
       }),
       taxRate: TAX_RATE,
+      orderType: "dine_in",
       discount: 0,
       note: selectedTable ? `Order for ${selectedTable.name}` : "Dine-in order",
       subTotal: roundAmount(subtotal),
@@ -450,12 +427,12 @@ export default function OrdersPage() {
       ],
       paymentStatus: "paid",
       status: "completed",
-      createdBy: getEntityId(userData),
+      createdBy: getUserId(),
     };
   };
 
   const validateBill = () => {
-    if (!getEntityId(parseStoredValue("restaurantId")) || !getBranchId()) {
+    if (!getRestaurantId() || !getDefaultBranchId()) {
       message.error("Restaurant and branch details are required.");
       return false;
     }
