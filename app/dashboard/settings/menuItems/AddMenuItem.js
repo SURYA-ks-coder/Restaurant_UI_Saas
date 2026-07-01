@@ -13,7 +13,7 @@ import {
   AntTimeSelect,
 } from "@/components/ui/antd-components";
 import DrawerPop from "@/components/ui/DrawerPop";
-import { action, API, getAction } from "@/lib/API";
+import { fileUpload, API, getAction } from "@/lib/API";
 import { LocalStorageData } from "@/lib/LocalStoragekeyvalue";
 import RadioButton from "@/components/ui/RadioButton";
 
@@ -135,7 +135,6 @@ const menuItemValidationSchema = Yup.object({
 
 const getId = (value) => value?._id || value || "";
 const numberOrEmpty = (value) => (value || value === 0 ? value : "");
-const toNumberOrNull = (value) => (value || value === 0 ? Number(value) : null);
 
 const foodTypeOptions = [
   { label: "Starter", value: "starter" },
@@ -196,45 +195,47 @@ export default function AddMenuItem({
     validationSchema: menuItemValidationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
-        const payload = {
-          ...values,
-          restaurantId: LocalStorageData.restaurantId,
-          branchId: LocalStorageData.branchId,
-          itemName: values.itemName.trim(),
-          itemCode: values.itemCode.trim(),
-          barcode: values.barcode.trim(),
-          categoryId: values.categoryId,
-          subCategoryId: values.subCategoryId || null,
-          description: values.description.trim(),
-          dineInPrice: Number(values.dineInPrice) || 0,
-          parcelPrice: toNumberOrNull(values.parcelPrice),
-          onlinePrice: toNumberOrNull(values.onlinePrice),
-          discountPrice: toNumberOrNull(values.discountPrice),
-          price: Number(values.dineInPrice) || 0,
-          stockEnabled: values.stockEnabled,
-          currentStock: values.stockEnabled
-            ? Number(values.currentStock) || 0
-            : null,
-          minimumStock: values.stockEnabled
-            ? Number(values.minStockAlert) || 0
-            : null,
-          spicyLevel: values.spicyLevel,
-          unitType: values.stockEnabled ? values.unitType : "",
-          prepTime: toNumberOrNull(values.prepTime),
-          gstPercentage: Number(values.gstPercentage),
-          itemImage:
-            typeof values.itemImage === "string" ? values.itemImage : undefined,
-          availabilityStatus: values.availabilityStatus,
-          status: "active",
-        };
+        const fd = new FormData();
+        fd.append("restaurantId", LocalStorageData.restaurantId);
+        fd.append("branchId", LocalStorageData.branchId);
+        fd.append("itemName", values.itemName.trim());
+        fd.append("itemCode", values.itemCode.trim());
+        fd.append("barcode", values.barcode?.trim() || "");
+        fd.append("categoryId", values.categoryId);
+        fd.append("subCategoryId", values.subCategoryId || "");
+        fd.append("description", values.description?.trim() || "");
+        fd.append("dineInPrice", Number(values.dineInPrice) || 0);
+        fd.append("price", Number(values.dineInPrice) || 0);
+        if (values.parcelPrice || values.parcelPrice === 0)
+          fd.append("parcelPrice", Number(values.parcelPrice));
+        if (values.onlinePrice || values.onlinePrice === 0)
+          fd.append("onlinePrice", Number(values.onlinePrice));
+        if (values.discountPrice || values.discountPrice === 0)
+          fd.append("discountPrice", Number(values.discountPrice));
+        fd.append("itemType", values.itemType);
+        fd.append("foodType", values.foodType || "");
+        fd.append("spicyLevel", values.spicyLevel || "");
+        fd.append("stockEnabled", values.stockEnabled);
+        fd.append("currentStock", values.stockEnabled ? Number(values.currentStock) || 0 : 0);
+        fd.append("minimumStock", values.stockEnabled ? Number(values.minStockAlert) || 0 : 0);
+        fd.append("unitType", values.stockEnabled ? values.unitType : "");
+        fd.append("kitchenSection", values.kitchenSection || "");
+        if (values.prepTime || values.prepTime === 0)
+          fd.append("prepTime", Number(values.prepTime));
+        fd.append("gstPercentage", Number(values.gstPercentage));
+        fd.append("availabilityStatus", values.availabilityStatus);
+        fd.append("status", "active");
 
-        const result = await action(
-          isUpdate
-            ? `${API.UPDATE_MENU_ITEM}/${updateId}`
-            : API.CREATE_MENU_ITEM,
-          payload,
-          isUpdate ? "PATCH" : "POST",
-        );
+        // image field name must match multer's single("image")
+        if (values.itemImage instanceof File) {
+          fd.append("image", values.itemImage);
+        }
+
+        const url = isUpdate
+          ? `${API.UPDATE_MENU_ITEM}/${updateId}`
+          : API.CREATE_MENU_ITEM;
+
+        const result = await fileUpload(url, fd, isUpdate ? "patch" : "post");
 
         if (result?.statusCode === 200 || result?.statusCode === 201) {
           message.success(result?.message);
@@ -246,15 +247,11 @@ export default function AddMenuItem({
 
         message.error(
           result?.message ||
-            (isUpdate
-              ? "Unable to update menu item"
-              : "Unable to create menu item"),
+            (isUpdate ? "Unable to update menu item" : "Unable to create menu item"),
         );
-      } catch (error) {
+      } catch {
         message.error(
-          isUpdate
-            ? "Unable to update menu item"
-            : "Unable to create menu item",
+          isUpdate ? "Unable to update menu item" : "Unable to create menu item",
         );
       } finally {
         setSubmitting(false);

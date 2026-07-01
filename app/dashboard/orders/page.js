@@ -74,11 +74,12 @@ const transformMenuItem = (item, index) => ({
   name: item.itemName,
   desc: item.description || "",
   price: Number(item.prices?.dineInPrice || 0),
-  time: item.preparationTime || 15,
-  category: item.categoryId?.categoryName || "", // display label
-  categoryId: item.categoryId?._id || "", // used for filter matching
-  veg: item.isVeg ?? true,
+  time: item.preparationTime || item.prepTime || 15,
+  category: item.categoryId?.categoryName || "",
+  categoryId: item.categoryId?._id || "",
+  veg: item.itemType === "veg",
   popular: item.isPopular ?? false,
+  image: item.image || null,
   emoji: ITEM_EMOJIS[index % ITEM_EMOJIS.length],
   bg: ITEM_BGS[index % ITEM_BGS.length],
 });
@@ -128,12 +129,20 @@ function FoodCard({ item, onAdd }) {
       <div
         className={cn(
           "relative flex h-44 items-center justify-center overflow-hidden bg-linear-to-br",
-          item.bg,
+          !item.image && item.bg,
         )}
       >
-        <span className="text-[64px] leading-none drop-shadow-lg transition-transform duration-300 group-hover:scale-110">
-          {item.emoji}
-        </span>
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <span className="text-[64px] leading-none drop-shadow-lg transition-transform duration-300 group-hover:scale-110">
+            {item.emoji}
+          </span>
+        )}
 
         {/* Favorite */}
         <button
