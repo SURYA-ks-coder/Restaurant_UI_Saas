@@ -5,8 +5,10 @@ import { DatePicker, Modal, Select, Skeleton } from "antd";
 import { message } from "@/lib/message";
 import {
   BarChart3,
+  Building2,
   DollarSign,
   Download,
+  FileSpreadsheet,
   FileText,
   LayoutGrid,
   List,
@@ -34,6 +36,7 @@ const CATEGORIES = [
   "Order Reports",
   "Staff Reports",
   "Financial Reports",
+  "Other Reports",
 ];
 
 const CATEGORY_ICONS = {
@@ -42,6 +45,7 @@ const CATEGORY_ICONS = {
   "Order Reports": ShoppingCart,
   "Staff Reports": Users,
   "Financial Reports": DollarSign,
+  "Other Reports": Building2,
 };
 
 // ─── All Reports Definition ───────────────────────────────────────────────────
@@ -91,7 +95,17 @@ const ALL_REPORTS = [
       "Best performing menu items ranked by number of orders and revenue",
     category: "Sales Reports",
     endpoint: "reports/top-selling-items",
-    filterFields: ["branch", "dateRange", "category"],
+    filterFields: ["branch", "dateRange"],
+  },
+  {
+    id: "least-selling-items",
+    name: "Least Selling Items Report",
+    description:
+      "Slowest performing menu items ranked by number of orders and revenue",
+    category: "Sales Reports",
+    endpoint: API.LEAST_SELLING_ITEMS_REPORT,
+    method: "GET",
+    filterFields: ["branch", "dateRange"],
   },
   {
     id: "sales-by-category",
@@ -100,6 +114,16 @@ const ALL_REPORTS = [
       "Sales distribution and performance analysis broken down by menu category",
     category: "Sales Reports",
     endpoint: "reports/sales/category",
+    filterFields: ["branch", "dateRange"],
+  },
+  {
+    id: "customer-report",
+    name: "Customer Report",
+    description:
+      "Customer order history, spend and visit frequency across the restaurant",
+    category: "Other Reports",
+    endpoint: API.CUSTOMER_REPORT,
+    method: "GET",
     filterFields: ["branch", "dateRange"],
   },
 
@@ -147,6 +171,16 @@ const ALL_REPORTS = [
       "All purchase orders with supplier, item details and payment information",
     category: "Inventory Reports",
     endpoint: "reports/inventory/purchase-orders",
+    filterFields: ["branch", "dateRange"],
+  },
+  {
+    id: "inventory-summary",
+    name: "Inventory Summary Report",
+    description:
+      "Aggregate inventory valuation and stock-health overview across categories",
+    category: "Inventory Reports",
+    endpoint: API.INVENTORY_REPORT,
+    method: "GET",
     filterFields: ["branch", "dateRange"],
   },
 
@@ -234,6 +268,16 @@ const ALL_REPORTS = [
     endpoint: "reports/staff/shifts",
     filterFields: ["branch", "dateRange"],
   },
+  {
+    id: "staff-performance",
+    name: "Staff Performance Report",
+    description:
+      "Individual staff performance metrics including orders handled and sales generated",
+    category: "Staff Reports",
+    endpoint: API.STAFF_PERFORMANCE_REPORT,
+    method: "GET",
+    filterFields: ["branch", "dateRange"],
+  },
 
   // Financial Reports (4)
   {
@@ -272,16 +316,45 @@ const ALL_REPORTS = [
     endpoint: "reports/financial/tax",
     filterFields: ["branch", "dateRange"],
   },
+  {
+    id: "tax-detail-report",
+    name: "Tax Detail Report",
+    description:
+      "Line-item level tax breakdown for every bill within the selected period",
+    category: "Financial Reports",
+    endpoint: API.TAX_DETAIL_REPORT,
+    method: "GET",
+    filterFields: ["branch", "dateRange"],
+  },
+
+  // Other Reports (2)
+  {
+    id: "branch-report",
+    name: "Branch Performance Report",
+    description:
+      "Comparative performance across branches including sales and order volume",
+    category: "Other Reports",
+    endpoint: API.BRANCH_REPORT,
+    method: "GET",
+    filterFields: ["branch", "dateRange"],
+  },
+  {
+    id: "audit-log-report",
+    name: "Audit Log Report",
+    description:
+      "System activity log of user actions for security and compliance review",
+    category: "Other Reports",
+    endpoint: API.AUDIT_LOG_REPORT,
+    method: "GET",
+    filterFields: ["branch", "dateRange"],
+  },
 ];
 
 // ─── Order / Staff status options ─────────────────────────────────────────────
 
 const ORDER_STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
-  { value: "confirmed", label: "Confirmed" },
-  { value: "preparing", label: "Preparing" },
-  { value: "ready", label: "Ready" },
-  { value: "served", label: "Served" },
+  { value: "held", label: "Held" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
@@ -298,6 +371,12 @@ const GROUP_BY_OPTIONS = [
   { value: "month", label: "Monthly" },
 ];
 
+const FORMAT_OPTIONS = [
+  { value: "pdf", label: "PDF", icon: FileText, activeColor: "text-destructive" },
+  { value: "xlsx", label: "Excel", icon: FileSpreadsheet, activeColor: "text-green-600" },
+  { value: "csv", label: "CSV", icon: BarChart3, activeColor: "text-primary" },
+];
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
@@ -312,7 +391,6 @@ export default function ReportsPage() {
   const [formValues, setFormValues] = useState({});
 
   const [branches, setBranches] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [departments, setDepartments] = useState([]);
 
   // Load favorites from localStorage
@@ -329,9 +407,8 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [branchRes, catRes, deptRes] = await Promise.all([
+        const [branchRes, deptRes] = await Promise.all([
           getAction(API.GET_BRANCH_LIST),
-          getAction(API.GET_CATEGORY_LIST),
           getAction(API.GET_DEPARTMENT_LIST),
         ]);
         if (branchRes?.statusCode === 200) {
@@ -339,14 +416,6 @@ export default function ReportsPage() {
             (branchRes.data || []).map((b) => ({
               value: b._id,
               label: b.branchName || b.name || "Branch",
-            }))
-          );
-        }
-        if (catRes?.statusCode === 200) {
-          setCategories(
-            (catRes.data || []).map((c) => ({
-              value: c._id,
-              label: c.categoryName || c.name || "Category",
             }))
           );
         }
@@ -414,124 +483,83 @@ export default function ReportsPage() {
   }, []);
 
   const triggerBlobDownload = (blob, name, format) => {
-    const ext = format === "pdf" ? "pdf" : format === "excel" ? "xlsx" : "csv";
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${name}.${ext}`;
+    a.download = `${name}.${format}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const exportAsCSV = (rawData, name) => {
-    const rows = Array.isArray(rawData) ? rawData : rawData ? [rawData] : [];
-    if (rows.length === 0) {
-      message.warning("No data available to export");
-      return;
+  // Builds the filter payload shared by both GET (query string) and POST
+  // (JSON body) reports. Field names must match the backend Joi validators
+  // exactly — e.g. "department" not "departmentId", "orderStatus"/"staffStatus"
+  // not a generic "status" — unmatched keys are silently stripped server-side.
+  const buildFilterParams = () => {
+    const params = {};
+    if (formValues.branchId) params.branchId = formValues.branchId;
+    if (formValues.departmentId) params.department = formValues.departmentId;
+    if (formValues.orderStatus) params.orderStatus = formValues.orderStatus;
+    if (formValues.staffStatus) params.staffStatus = formValues.staffStatus;
+    if (formValues.groupBy) params.groupBy = formValues.groupBy;
+
+    if (formValues.dateRange?.[0] && formValues.dateRange?.[1]) {
+      params.startDate = dayjs(formValues.dateRange[0]).format("YYYY-MM-DD");
+      params.endDate = dayjs(formValues.dateRange[1]).format("YYYY-MM-DD");
     }
-
-    const flatten = (obj, prefix = "") =>
-      Object.entries(obj).reduce((acc, [k, v]) => {
-        const key = prefix ? `${prefix}.${k}` : k;
-        if (v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date))
-          Object.assign(acc, flatten(v, key));
-        else acc[key] = v ?? "";
-        return acc;
-      }, {});
-
-    const flat = rows.map((r) => flatten(r));
-    const headers = [...new Set(flat.flatMap(Object.keys))].filter(
-      (h) => !h.startsWith("_") && h !== "__v",
-    );
-
-    const escape = (val) => {
-      const s = val === null || val === undefined ? "" : String(val);
-      return s.includes(",") || s.includes('"') || s.includes("\n")
-        ? `"${s.replace(/"/g, '""')}"`
-        : s;
-    };
-
-    const csv = [
-      headers.join(","),
-      ...flat.map((row) => headers.map((h) => escape(row[h])).join(",")),
-    ].join("\n");
-
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    triggerBlobDownload(blob, name, "csv");
+    if (formValues.date) {
+      params.date = dayjs(formValues.date).format("YYYY-MM-DD");
+    }
+    return params;
   };
 
   const handleDownload = async () => {
     setDownloading(true);
     try {
-      const params = { format: downloadFormat };
+      const method = selectedReport.method || "POST";
+      const params = buildFilterParams();
+      params.export = downloadFormat; // "csv" | "xlsx" | "pdf"
 
-      if (formValues.branchId) params.branchId = formValues.branchId;
-      if (formValues.categoryId) params.categoryId = formValues.categoryId;
-      if (formValues.departmentId) params.departmentId = formValues.departmentId;
-      if (formValues.orderStatus) params.status = formValues.orderStatus;
-      if (formValues.staffStatus) params.status = formValues.staffStatus;
-      if (formValues.groupBy) params.groupBy = formValues.groupBy;
-
-      if (formValues.dateRange?.[0]) {
-        params.startDate = dayjs(formValues.dateRange[0]).format("YYYY-MM-DD");
-        params.endDate = dayjs(formValues.dateRange[1]).format("YYYY-MM-DD");
+      let response;
+      if (method === "GET") {
+        const qs = new URLSearchParams(params).toString();
+        response = await fetch(`${API_URL}${selectedReport.endpoint}?${qs}`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${getAccessToken()}` },
+        });
+      } else {
+        response = await fetch(`${API_URL}${selectedReport.endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+          body: JSON.stringify(params),
+        });
       }
-      if (formValues.date) {
-        params.date = dayjs(formValues.date).format("YYYY-MM-DD");
-      }
 
-      const response = await fetch(`${API_URL}${selectedReport.endpoint}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getAccessToken()}`,
-        },
-        body: JSON.stringify(params),
-      });
-
+      // The backend always streams a binary file (csv/xlsx/pdf) with a
+      // Content-Disposition header when `export` is set — it only ever
+      // returns JSON on validation/auth errors.
       const contentType = response.headers.get("content-type") || "";
 
       if (contentType.includes("application/json")) {
         const data = await response.json();
-
-        if (data.statusCode === 200) {
-          if (data.downloadUrl) {
-            // Re-fetch the URL with auth so cross-origin download works
-            const fileRes = await fetch(data.downloadUrl, {
-              headers: { Authorization: `Bearer ${getAccessToken()}` },
-            });
-            if (fileRes.ok) {
-              const blob = await fileRes.blob();
-              triggerBlobDownload(blob, selectedReport.name, downloadFormat);
-            } else {
-              // Fallback: open the URL directly
-              window.open(data.downloadUrl, "_blank");
-            }
-          } else {
-            // Backend returned JSON data — export client-side as CSV
-            const reportData = data.data || data.report || data.result;
-            if (reportData) {
-              exportAsCSV(reportData, selectedReport.name);
-            } else {
-              message.warning("Report generated but no data to download.");
-            }
-          }
-          message.success(data.message || "Report downloaded successfully");
-          setModalOpen(false);
-        } else {
-          message.error(data.message || "Failed to generate report");
-        }
-      } else if (response.ok) {
-        // Binary file response (PDF / Excel stream)
-        const blob = await response.blob();
-        triggerBlobDownload(blob, selectedReport.name, downloadFormat);
-        message.success("Report downloaded successfully");
-        setModalOpen(false);
-      } else {
-        message.error("Failed to generate report. Please try again.");
+        message.error(data?.message || "Failed to generate report");
+        return;
       }
+
+      if (!response.ok) {
+        message.error("Failed to generate report. Please try again.");
+        return;
+      }
+
+      const blob = await response.blob();
+      triggerBlobDownload(blob, selectedReport.name, downloadFormat);
+      message.success("Report downloaded successfully");
+      setModalOpen(false);
     } catch {
       message.error("An error occurred while downloading the report");
     } finally {
@@ -586,23 +614,6 @@ export default function ReportsPage() {
               onChange={(date) => setField("date", date)}
               format="DD/MM/YYYY"
               placeholder="Select Date"
-            />
-          </div>
-        );
-      case "category":
-        return (
-          <div key="category" className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Category
-            </label>
-            <Select
-              size="large"
-              placeholder="All Categories"
-              className="w-full"
-              options={[{ value: "", label: "All Categories" }, ...categories]}
-              value={formValues.categoryId || undefined}
-              onChange={(val) => setField("categoryId", val)}
-              allowClear
             />
           </div>
         );
@@ -849,78 +860,43 @@ export default function ReportsPage() {
                 Download Format{" "}
                 <span className="text-destructive">*</span>
               </p>
-              <div className="flex gap-4">
-                <label
-                  className={cn(
-                    "flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all flex-1 justify-center",
-                    downloadFormat === "pdf"
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:bg-muted/50"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="format"
-                    value="pdf"
-                    checked={downloadFormat === "pdf"}
-                    onChange={() => setDownloadFormat("pdf")}
-                    className="accent-primary"
-                  />
-                  <FileText
+              <div className="flex gap-3">
+                {FORMAT_OPTIONS.map(({ value, label, icon: Icon, activeColor }) => (
+                  <label
+                    key={value}
                     className={cn(
-                      "w-4 h-4",
-                      downloadFormat === "pdf"
-                        ? "text-destructive"
-                        : "text-muted-foreground"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      downloadFormat === "pdf"
-                        ? "text-foreground"
-                        : "text-muted-foreground"
+                      "flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-all flex-1 justify-center",
+                      downloadFormat === value
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:bg-muted/50"
                     )}
                   >
-                    PDF
-                  </span>
-                </label>
-
-                <label
-                  className={cn(
-                    "flex items-center gap-2.5 px-4 py-2.5 rounded-lg border cursor-pointer transition-all flex-1 justify-center",
-                    downloadFormat === "excel"
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card hover:bg-muted/50"
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="format"
-                    value="excel"
-                    checked={downloadFormat === "excel"}
-                    onChange={() => setDownloadFormat("excel")}
-                    className="accent-primary"
-                  />
-                  <BarChart3
-                    className={cn(
-                      "w-4 h-4",
-                      downloadFormat === "excel"
-                        ? "text-green-600"
-                        : "text-muted-foreground"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "text-sm font-medium",
-                      downloadFormat === "excel"
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    Excel
-                  </span>
-                </label>
+                    <input
+                      type="radio"
+                      name="format"
+                      value={value}
+                      checked={downloadFormat === value}
+                      onChange={() => setDownloadFormat(value)}
+                      className="accent-primary"
+                    />
+                    <Icon
+                      className={cn(
+                        "w-4 h-4",
+                        downloadFormat === value ? activeColor : "text-muted-foreground"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        downloadFormat === value
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {label}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
 
