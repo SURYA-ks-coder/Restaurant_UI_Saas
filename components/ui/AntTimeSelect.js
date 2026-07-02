@@ -17,7 +17,7 @@ export function AntTimeSelect({
   ...props
 }) {
   const selectThemeClass =
-    "w-full !border-border !bg-muted/40 !text-foreground placeholder:!text-muted-foreground hover:!bg-muted/50 focus:!border-primary focus:!bg-muted/40 ";
+    "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground hover:!bg-card focus:!border-primary focus:!bg-card ";
 
   return (
     <label className={cn("block", wrapperClassName)}>

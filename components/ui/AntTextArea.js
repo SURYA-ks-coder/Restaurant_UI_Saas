@@ -4,7 +4,7 @@ import { Input } from "antd";
 import { cn } from "@/lib/utils";
 
 const textAreaThemeClass =
-  "w-full !border-border !text-foreground placeholder:!text-muted-foreground  focus:!border-primary ";
+  "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground focus:!border-primary focus:!bg-card";
 
 export function AntTextArea({
   label,

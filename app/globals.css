@@ -48,6 +48,7 @@
   --gradient-end: oklch(0.65 0.18 230);
   --success: oklch(0.7 0.18 145);
   --warning: oklch(0.8 0.15 85);
+  --drawer-mask: oklch(0 0 0 / 0.45);
 }
 
 .dark {
@@ -91,6 +92,7 @@
   --gradient-end: oklch(0.65 0.18 230);
   --success: oklch(0.7 0.18 145);
   --warning: oklch(0.8 0.15 85);
+  --drawer-mask: oklch(0 0.005 270 / 0.75);
 }
 
 @theme inline {
@@ -408,11 +410,7 @@
 }
 
 .app-ant-select-popup.ant-select-dropdown {
-  /* background: color-mix(
-    in oklch,
-    var(--background) 88%,
-    var(--muted)
-  ) !important; */
+  background: var(--card) !important;
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 16px 40px oklch(0 0 0 / 0.35);
@@ -421,12 +419,17 @@
 
 .app-ant-select-popup .ant-select-item {
   border-radius: 6px;
-  /* color: var(--foreground); */
+  background: transparent !important;
+  color: var(--foreground);
 }
 
-.app-ant-select-popup .ant-select-item-option-active,
+.app-ant-select-popup .ant-select-item-option-active {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+
 .app-ant-select-popup .ant-select-item-option-selected {
-  /* background: color-mix(in oklch, var(--muted) 72%, transparent) !important; */
+  background: color-mix(in oklch, var(--primary) 12%, var(--card)) !important;
   color: var(--foreground) !important;
 }
 

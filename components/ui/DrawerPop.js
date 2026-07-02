@@ -16,7 +16,7 @@ export default function DrawerPop({
   footerBtn = [],
   width = 830,
   className = "",
-  background = "#f8fafd",
+  background = "var(--card)",
   headerRight,
   saveAndContinue = false,
   buttonClick = () => {},
@@ -74,26 +74,25 @@ export default function DrawerPop({
     footer: ["my-drawer-footer"],
     content: ["my-drawer-content"],
   };
-  const mode = localStorage.getItem("theme") || "light";
   const drawerStyles = {
     mask: {
-      background: mode === "dark" ? "rgba(28, 28, 28, 0.85)" : "",
-      backdropFilter: mode === "dark" ? "blur(0.5px)" : "",
+      background: "var(--drawer-mask)",
+      backdropFilter: "blur(0.5px)",
     },
     body: {
-      backgroundColor: mode === "dark" ? "#2A2A2A" : background,
-      color: mode === "dark" ? "#ffffff" : undefined,
+      backgroundColor: background,
+      color: "var(--foreground)",
       padding: `${bodyPadding}`,
     },
     footer: {
-      backgroundColor: mode === "dark" && "#2A2A2A",
-      color: mode === "dark" ? "#ffffff" : undefined,
-      borderTop: mode === "dark" ? "1px solid #434343" : undefined,
+      backgroundColor: "var(--card)",
+      color: "var(--foreground)",
+      borderTop: "1px solid var(--border)",
     },
     header: {
-      backgroundColor: mode === "dark" ? "#2A2A2A" : headerBackground,
-      color: mode === "dark" ? "#ffffff" : undefined,
-      borderBottom: mode === "dark" ? "1px solid #434343" : undefined,
+      backgroundColor: headerBackground || "var(--card)",
+      color: "var(--foreground)",
+      borderBottom: "1px solid var(--border)",
     },
   };
 
@@ -145,7 +144,7 @@ export default function DrawerPop({
         ) : (
           <IoClose
             style={{
-              color: mode === "dark" ? "#ffffff" : "#000000",
+              color: "var(--foreground)",
               fontSize: 18,
             }}
           />

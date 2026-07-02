@@ -228,7 +228,7 @@ export function TopNav({ onMenuToggle, onLogout }) {
   const isLightTheme = mounted && resolvedTheme === "light";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white dark:bg-background shadow px-4 backdrop-blur md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-background shadow px-4 backdrop-blur md:px-8">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuToggle}

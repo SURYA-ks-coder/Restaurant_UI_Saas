@@ -413,6 +413,55 @@ export default function ReportsPage() {
     setModalOpen(true);
   }, []);
 
+  const triggerBlobDownload = (blob, name, format) => {
+    const ext = format === "pdf" ? "pdf" : format === "excel" ? "xlsx" : "csv";
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}.${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportAsCSV = (rawData, name) => {
+    const rows = Array.isArray(rawData) ? rawData : rawData ? [rawData] : [];
+    if (rows.length === 0) {
+      message.warning("No data available to export");
+      return;
+    }
+
+    const flatten = (obj, prefix = "") =>
+      Object.entries(obj).reduce((acc, [k, v]) => {
+        const key = prefix ? `${prefix}.${k}` : k;
+        if (v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Date))
+          Object.assign(acc, flatten(v, key));
+        else acc[key] = v ?? "";
+        return acc;
+      }, {});
+
+    const flat = rows.map((r) => flatten(r));
+    const headers = [...new Set(flat.flatMap(Object.keys))].filter(
+      (h) => !h.startsWith("_") && h !== "__v",
+    );
+
+    const escape = (val) => {
+      const s = val === null || val === undefined ? "" : String(val);
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    const csv = [
+      headers.join(","),
+      ...flat.map((row) => headers.map((h) => escape(row[h])).join(",")),
+    ].join("\n");
+
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    triggerBlobDownload(blob, name, "csv");
+  };
+
   const handleDownload = async () => {
     setDownloading(true);
     try {
@@ -446,28 +495,38 @@ export default function ReportsPage() {
 
       if (contentType.includes("application/json")) {
         const data = await response.json();
+
         if (data.statusCode === 200) {
           if (data.downloadUrl) {
-            const a = document.createElement("a");
-            a.href = data.downloadUrl;
-            a.download = `${selectedReport.name}.${downloadFormat === "pdf" ? "pdf" : "xlsx"}`;
-            a.click();
+            // Re-fetch the URL with auth so cross-origin download works
+            const fileRes = await fetch(data.downloadUrl, {
+              headers: { Authorization: `Bearer ${getAccessToken()}` },
+            });
+            if (fileRes.ok) {
+              const blob = await fileRes.blob();
+              triggerBlobDownload(blob, selectedReport.name, downloadFormat);
+            } else {
+              // Fallback: open the URL directly
+              window.open(data.downloadUrl, "_blank");
+            }
+          } else {
+            // Backend returned JSON data — export client-side as CSV
+            const reportData = data.data || data.report || data.result;
+            if (reportData) {
+              exportAsCSV(reportData, selectedReport.name);
+            } else {
+              message.warning("Report generated but no data to download.");
+            }
           }
-          message.success(data.message || "Report generated successfully");
+          message.success(data.message || "Report downloaded successfully");
           setModalOpen(false);
         } else {
           message.error(data.message || "Failed to generate report");
         }
       } else if (response.ok) {
+        // Binary file response (PDF / Excel stream)
         const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${selectedReport.name}.${downloadFormat === "pdf" ? "pdf" : "xlsx"}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        triggerBlobDownload(blob, selectedReport.name, downloadFormat);
         message.success("Report downloaded successfully");
         setModalOpen(false);
       } else {

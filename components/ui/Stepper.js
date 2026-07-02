@@ -11,7 +11,7 @@ export default function Stepper({
   className = "",
 }) {
   const [stepperSteps, setStep] = useState([]);
-  const primaryColor = localStorage.getItem("mainColor");
+  const primaryColor = "var(--primary)";
   const stepsStateRef = useRef();
 
   useEffect(() => {
@@ -91,26 +91,28 @@ export default function Stepper({
           }
         >
           <div className="relative z-50 flex flex-col items-center justify-center">
-            <div className="w-8 h-8 bg-white rounded-full 2xl:h-11 2xl:w-11 ">
+            <div className="w-8 h-8 bg-card rounded-full 2xl:h-11 2xl:w-11 ">
               <div
-                className={` flex items-center justify-center rounded-full 2xl:h-11 2xl:w-11 h-8 w-8 shadow-stepShadowInset vhcenter bg-[${primaryColor}] bg-opacity-30 border-[0.5px] border-[${primaryColor}] ${
+                className={`flex items-center justify-center rounded-full 2xl:h-11 2xl:w-11 h-8 w-8 shadow-stepShadowInset vhcenter border-[0.5px] ${
                   step.selected && step.completed
                     ? "border-opacity-40"
-                    : " border-[#E4E4E4] border-opacity-100"
+                    : "border-border border-opacity-100"
                 }`}
-                style={{ backgroundColor: `${primaryColor}44` }}
+                style={{
+                  backgroundColor: `color-mix(in oklch, ${primaryColor} 30%, transparent)`,
+                  borderColor:
+                    step.selected && step.completed ? primaryColor : undefined,
+                }}
               >
                 <div
                   style={{
-                    boxShadow: `${
-                      step.selected &&
-                      `0px 3.882px 6.211px 0px ${primaryColor}66, 0px 0.776px 1.553px 0px #ffffff66 inset`
-                      // : `none`
-                    }`,
+                    boxShadow: step.selected
+                      ? `0px 3.882px 6.211px 0px color-mix(in oklch, ${primaryColor} 40%, transparent), 0px 0.776px 1.553px 0px color-mix(in oklch, var(--primary-foreground) 40%, transparent) inset`
+                      : undefined,
                   }}
                   className={`flex items-center justify-center  text-xs 2xl:text-base font-medium rounded-full transition duration-500 ease-in-out h-5 w-5 2xl:h-8 2xl:w-8 vhcenter shadow-stepShadow
              ${
-               step.selected ? "bg-accent text-white border-accent" : "bg-white"
+               step.selected ? "bg-accent text-white border-accent" : "bg-card"
              }
             `}
                 >
@@ -119,7 +121,7 @@ export default function Stepper({
                   ) : step.selected ? (
                     <span className="text-white">{index + 1}</span>
                   ) : (
-                    <span className="text-black opacity-50">{index + 1}</span>
+                    <span className="text-foreground opacity-50">{index + 1}</span>
                   )}
                 </div>
               </div>
@@ -128,10 +130,10 @@ export default function Stepper({
               <div
                 className={`absolute top-0  text-center mt-11 2xl:mt-14 text-xs 2xl:text-base font-medium whitespace-nowrap ${
                   step.selected
-                    ? "text-black dark:text-white"
+                    ? "text-foreground"
                     : step.completed
                       ? "opacity-0 sm:opacity-100"
-                      : "text-black opacity-0 sm:opacity-50 dark:text-white"
+                      : "text-foreground opacity-0 sm:opacity-50"
                 }`}
               >
                 {step.description}
@@ -146,14 +148,14 @@ export default function Stepper({
           {stepperSteps?.length > 1 ? (
             <>
               <div
-                className={`flex-auto transition duration-500 ease-in-out h-1 bg-[#E4E4E4] dark:bg-[#393939]`}
+                className={`flex-auto transition duration-500 ease-in-out h-1 bg-border`}
               ></div>
               <div
-                className="absolute left-0 right-0 h-1 bg-[#E4E4E4] dark:bg-[#393939] z-0 rounded-full"
+                className="absolute left-0 right-0 h-1 bg-border z-0 rounded-full"
                 style={{
                   // width: `${(currentStepNumber / (steps.length - 1)) * 100}%`,
                   width: `${(presentage / (steps.length - 1)) * 100}%`,
-                  background: `linear-gradient(270deg, #00B0FF 0.01%, ${primaryColor} 25.61%)`,
+                  background: `linear-gradient(270deg, var(--accent) 0.01%, ${primaryColor} 25.61%)`,
                   transition: "width 0.5s ease",
                 }}
               />

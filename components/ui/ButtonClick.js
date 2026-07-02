@@ -53,14 +53,11 @@ export default function ButtonClick({
           ` ${
             (BtnType.toLowerCase() === "add" ||
               getButtonType() === "primary") &&
-            "bg-accent"
-          } ${
-            getButtonType() === "default" &&
-            "dark:bg-dark3 dark:hover:!bg-[#3f3f3f] dark:hover:!text-white dark:hover:!border-dark3Soft"
+            "!bg-primary"
           } ${
             danger && BtnType === "primary"
-              ? "!bg-[#D92D20]"
-              : danger && "border-[#D92D20]"
+              ? "!bg-destructive"
+              : danger && "border-destructive"
           } text-xs 2xl:text-sm font-medium w-fit flex items-center justify-center leading-6 z-50`,
           className,
         )}

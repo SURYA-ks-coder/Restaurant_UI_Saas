@@ -8,30 +8,30 @@ import { cn } from "@/lib/utils";
 import SearchBox from "./SearchBox";
 
 const statusStyles = {
-  active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  available: "bg-green-50 text-green-700 border-green-200",
+  active: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30",
+  available: "bg-green-50 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-400 dark:border-green-500/30",
 
-  draft: "bg-amber-50 text-amber-700 border-amber-200",
-  limited: "bg-orange-50 text-orange-700 border-orange-200",
+  draft: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30",
+  limited: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-400 dark:border-orange-500/30",
 
-  pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  pending: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/30",
 
-  preparing: "bg-sky-50 text-sky-700 border-sky-200",
+  preparing: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-400 dark:border-sky-500/30",
 
-  completed: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  completed: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30",
 
-  paid: "bg-teal-50 text-teal-700 border-teal-200",
+  paid: "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-400 dark:border-teal-500/30",
 
-  inactive: "bg-red-50 text-red-700 border-red-200",
-  out_of_stock: "bg-rose-50 text-rose-700 border-rose-200",
+  inactive: "bg-red-50 text-red-700 border-red-200 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30",
+  out_of_stock: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/15 dark:text-rose-400 dark:border-rose-500/30",
 
-  hidden: "bg-slate-100 text-slate-600 border-slate-200",
+  hidden: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-500/15 dark:text-slate-400 dark:border-slate-500/30",
 
-  cancelled: "bg-gray-100 text-gray-700 border-gray-300",
+  cancelled: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/30",
 
-  refunded: "bg-purple-50 text-purple-700 border-purple-200",
+  refunded: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-400 dark:border-purple-500/30",
 
-  on_hold: "bg-cyan-50 text-cyan-700 border-cyan-200",
+  on_hold: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/15 dark:text-cyan-400 dark:border-cyan-500/30",
 };
 
 function getValue(row, key) {
@@ -45,7 +45,7 @@ function StatusCell({ value }) {
     <span
       className={cn(
         "inline-flex  items-center justify-center rounded-full  px-2.5 py-1 text-xs font-medium capitalize",
-        statusStyles[statusKey] || "bg-blue-50 text-blue-700 border-blue-200",
+        statusStyles[statusKey] || "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/30",
       )}
     >
       {value || "-"}

@@ -21,7 +21,7 @@ function AccordionItem({ className, ...props }) {
   return (
     <AccordionPrimitive.Item
       className={cn(
-        "rounded-xl border border-border bg-white dark:bg-[#1e293b] overflow-hidden",
+        "rounded-xl border border-border bg-card overflow-hidden",
         className,
       )}
       {...props}

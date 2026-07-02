@@ -320,14 +320,14 @@ const SidebarNew = ({ onLogout = () => {} }) => {
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
             className="fixed top-0 left-20 z-999 w-56 h-full flex flex-col
-              bg-white dark:bg-[#0f172a]
-              border-r border-[#e4e7ec] dark:border-[#1e293b]
+              bg-sidebar
+              border-r border-sidebar-border
               shadow-[4px_0_20px_rgba(0,0,0,0.09)] dark:shadow-[4px_0_20px_rgba(0,0,0,0.5)]
               overflow-hidden"
           >
             {/* Panel header */}
-            <div className="min-h-16 flex items-center px-4 shrink-0 border-b border-[#e4e7ec] dark:border-[#1e293b]">
-              <span className="text-sm font-bold text-foreground">
+            <div className="min-h-16 flex items-center px-4 shrink-0 border-b border-sidebar-border">
+              <span className="text-sm font-bold text-sidebar-foreground">
                 {hoveredMenu.title}
               </span>
             </div>
@@ -347,13 +347,13 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                       }
                       className="w-full flex items-center justify-between px-2 py-1.5 mb-1 group"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[#9aa8bc] dark:text-[#475569] group-hover:text-foreground transition-colors">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">
                         {group.title}
                       </span>
                       <motion.span
                         animate={{ rotate: openSections[group.id] !== false ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
-                        className="text-[#9aa8bc] dark:text-[#475569]"
+                        className="text-muted-foreground"
                       >
                         <HiChevronDown className="text-sm" />
                       </motion.span>
@@ -385,7 +385,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                                   ${
                                     active
                                       ? "bg-primary text-white font-medium"
-                                      : "text-[#344054] dark:text-[#e2e8f0] hover:bg-[#f2f4f7] dark:hover:bg-[#1e293b] hover:text-foreground"
+                                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
                                   }`}
                               >
                                 {item.title}

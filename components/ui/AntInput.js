@@ -4,7 +4,7 @@ import { Input } from "antd";
 import { cn } from "@/lib/utils";
 
 const inputThemeClass =
-  "w-full !border-border  !text-foreground placeholder:!text-muted-foreground  focus:!border-primary  [&_input]:!bg-transparent [&_input]:!text-foreground [&_input::placeholder]:!text-muted-foreground";
+  "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground focus:!border-primary focus:!bg-card [&_input]:!bg-transparent [&_input]:!text-foreground [&_input::placeholder]:!text-muted-foreground";
 
 export function AntInput({
   label,

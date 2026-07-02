@@ -4,7 +4,7 @@ import { Select } from "antd";
 import { cn } from "@/lib/utils";
 
 const selectThemeClass =
-  "w-full !border-border  !text-foreground placeholder:!text-muted-foreground hover:!bg-transparent ";
+  "w-full !bg-card !border-border !text-foreground placeholder:!text-muted-foreground hover:!bg-card hover:!border-primary focus:!bg-card focus:!border-primary [&_.ant-select-selector]:!bg-transparent";
 
 export function AntSelect({
   label,
