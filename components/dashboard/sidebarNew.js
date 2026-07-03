@@ -559,22 +559,29 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                                   )
                                 }
                                 className={cn(
-                                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline transition-colors duration-150",
+                                  "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline transition-colors duration-150",
                                   active
-                                    ? "bg-primary font-semibold text-primary-foreground"
-                                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                                    ? "bg-primary! font-semibold text-primary-foreground!"
+                                    : "hover:bg-primary/10!",
                                 )}
                               >
                                 {React.isValidElement(item.icon) &&
                                   React.cloneElement(item.icon, {
                                     className: cn(
-                                      "h-4 w-4 shrink-0",
+                                      "h-4 w-4 shrink-0 transition-colors duration-150",
                                       active
-                                        ? "text-primary-foreground"
-                                        : "text-sidebar-foreground/50",
+                                        ? "text-primary-foreground!"
+                                        : "text-sidebar-foreground/50 group-hover:text-primary!",
                                     ),
                                   })}
-                                <p className="truncate text-gray-700 ">
+                                <p
+                                  className={cn(
+                                    "truncate transition-colors duration-150",
+                                    active
+                                      ? "text-primary-foreground!"
+                                      : "text-sidebar-foreground/80 group-hover:text-primary!",
+                                  )}
+                                >
                                   {item.title}
                                 </p>
                               </Link>
