@@ -174,7 +174,7 @@ function DonutChart({ data }) {
   const GAP = 1.5;
   let acc = 0;
   const slices = data?.map((d) => {
-    const len = Math.max(0, (d.value / total) * C - GAP);
+    const len = total ? Math.max(0, (d.value / total) * C - GAP) : 0;
     const off = acc;
     acc += len + GAP;
     return { ...d, len, off };
