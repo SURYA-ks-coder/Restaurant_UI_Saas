@@ -16,7 +16,27 @@ import {
   Store,
   Crown,
   Flame,
-  ChevronRight,
+  ClipboardList,
+  ListOrdered,
+  CreditCard,
+  ChefHat,
+  Table2,
+  QrCode,
+  BookOpen,
+  Boxes,
+  PackageSearch,
+  Warehouse,
+  ArrowLeftRight,
+  Trash2,
+  UserRound,
+  UsersRound,
+  Building2,
+  GitBranch,
+  SlidersHorizontal,
+  ShieldCheck,
+  Palette,
+  LayoutGrid,
+  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,36 +65,42 @@ const navItems = [
             title: "Orders",
             link: "/dashboard/orders",
             navigation: true,
+            icon: <ClipboardList />,
           },
           {
             id: 2,
             title: "Orders List",
             link: "/dashboard/ordersList",
             navigation: true,
+            icon: <ListOrdered />,
           },
           {
             id: 3,
             title: "Billing",
             link: "/dashboard/billing",
             navigation: true,
+            icon: <CreditCard />,
           },
           {
             id: 4,
             title: "Kitchen KOT",
             link: "/dashboard/kitchen",
             navigation: true,
+            icon: <ChefHat />,
           },
           {
             id: 5,
             title: "Tables",
             link: "/dashboard/tables",
             navigation: true,
+            icon: <Table2 />,
           },
           {
             id: 6,
             title: "QR Orders",
             link: "/dashboard/qr-orders",
             navigation: true,
+            icon: <QrCode />,
           },
         ],
       },
@@ -97,6 +123,7 @@ const navItems = [
             title: "Menus",
             link: "/dashboard/menus",
             navigation: true,
+            icon: <BookOpen />,
           },
         ],
       },
@@ -119,30 +146,35 @@ const navItems = [
             title: "Inventory Items",
             link: "/dashboard/inventory",
             navigation: true,
+            icon: <Boxes />,
           },
           {
             id: 2,
             title: "Stock",
             link: "/dashboard/inventory/stock",
             navigation: true,
+            icon: <PackageSearch />,
           },
           {
             id: 3,
             title: "Warehouse",
             link: "/dashboard/inventory/warehouse",
             navigation: true,
+            icon: <Warehouse />,
           },
           {
             id: 4,
             title: "Transfers",
             link: "/dashboard/inventory/transfers",
             navigation: true,
+            icon: <ArrowLeftRight />,
           },
           {
             id: 5,
             title: "Wastage",
             link: "/dashboard/inventory/wastage",
             navigation: true,
+            icon: <Trash2 />,
           },
         ],
       },
@@ -174,6 +206,7 @@ const navItems = [
             title: "All Staff",
             link: "/dashboard/staff",
             navigation: true,
+            icon: <UserRound />,
           },
           {
             id: 2,
@@ -181,6 +214,7 @@ const navItems = [
             link: "/dashboard/staff/my-team",
             navigation: true,
             hideForRoles: ["owner", "super_admin"],
+            icon: <UsersRound />,
           },
         ],
       },
@@ -203,12 +237,14 @@ const navItems = [
             title: "Restaurant Profile",
             link: "/dashboard/restaurant-profile",
             navigation: true,
+            icon: <Building2 />,
           },
           {
             id: 2,
             title: "Branch Management",
             link: "/dashboard/branch-management",
             navigation: true,
+            icon: <GitBranch />,
           },
         ],
       },
@@ -231,18 +267,21 @@ const navItems = [
             title: "General Settings",
             link: "/dashboard/settings",
             navigation: true,
+            icon: <SlidersHorizontal />,
           },
           {
             id: 2,
             title: "Privileges",
             link: "/dashboard/privileges",
             navigation: true,
+            icon: <ShieldCheck />,
           },
           {
             id: 3,
             title: "Appearance",
             link: "/dashboard/appearance",
             navigation: true,
+            icon: <Palette />,
           },
         ],
       },
@@ -255,12 +294,14 @@ const navItems = [
             title: "Owner Dashboard",
             link: "/dashboard/owner",
             navigation: true,
+            icon: <LayoutGrid />,
           },
           {
             id: 2,
             title: "Restaurants",
             link: "/dashboard/owner/add-restaurant",
             navigation: true,
+            icon: <Building />,
           },
         ],
       },
@@ -269,10 +310,6 @@ const navItems = [
 ];
 
 import { getUserRole, getMenuIds } from "@/lib/auth";
-
-const GRADIENT =
-  "linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 55%, white))";
-const GLOW = "color-mix(in oklch, var(--primary) 35%, transparent)";
 
 const SidebarNew = ({ onLogout = () => {} }) => {
   const pathname = usePathname();
@@ -298,6 +335,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
 
   const isRouteActive = (link) => {
     if (!link) return false;
+    if (link === "/dashboard") return pathname === "/dashboard";
     return pathname === link || pathname.startsWith(link + "/");
   };
 
@@ -325,64 +363,56 @@ const SidebarNew = ({ onLogout = () => {} }) => {
   return (
     <>
       {/* ══════════════════════════════════════════
-          ICON RAIL — always visible, 80 px
+          ICON RAIL — always visible, 80 px, primary bg
           ══════════════════════════════════════════ */}
-      <div className="fixed top-0 left-0 z-1000 flex h-full w-20 flex-col select-none border-r border-sidebar-border/60 bg-sidebar/95 backdrop-blur-2xl font-figtree">
+      <div className="fixed top-0 left-0 z-1000 flex h-full w-20 flex-col select-none bg-primary font-figtree">
         {/* Logo */}
-        <div className="flex min-h-[72px] shrink-0 items-center justify-center">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-2xl"
-            style={{
-              background: GRADIENT,
-              boxShadow: `0 8px 24px ${GLOW}`,
-            }}
-          >
+        <div className="flex min-h-[76px] shrink-0 items-center justify-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
             <Flame className="h-5 w-5 text-white" />
           </div>
         </div>
 
-        <div className="mx-4 h-px shrink-0 bg-sidebar-border/60" />
-
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 scrollbar-hide">
-          <ul className="flex flex-col items-center gap-1 px-2.5">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-2 scrollbar-hide">
+          <ul className="flex flex-col items-center gap-1.5">
             {visibleNavItems.map((menu) => {
               const isActive =
                 isRouteActive(menu.link) ||
                 menu.submenus?.some((g) =>
                   g.subMenu?.some((i) => isRouteActive(i.link)),
                 );
-              const showPill = hoveredMenuId === menu.id;
+              const highlighted = hoveredMenuId
+                ? hoveredMenuId === menu.id
+                : isActive;
 
               const iconNode = React.isValidElement(menu.icon)
                 ? React.cloneElement(menu.icon, {
                     className: cn(
-                      "h-[18px] w-[18px] transition-colors duration-200",
-                      showPill
-                        ? "text-white"
-                        : isActive
-                          ? "text-primary"
-                          : "text-sidebar-foreground/70 group-hover:text-sidebar-foreground",
+                      "h-[19px] w-[19px] transition-colors duration-150",
+                      highlighted
+                        ? "text-primary"
+                        : "text-white/75 group-hover:text-white",
                     ),
                   })
                 : menu.icon;
 
               const inner = (
-                <div className="flex w-full flex-col items-center gap-1 py-1.5">
-                  <div className="relative flex h-10 w-10 items-center justify-center">
-                    {showPill && (
+                <div className="flex w-full flex-col items-center gap-1 py-1">
+                  <div className="relative flex h-11 w-11 items-center justify-center">
+                    {highlighted && (
                       <motion.div
-                        layoutId="railPill"
+                        layoutId="railHighlight"
                         transition={{
                           type: "spring",
                           stiffness: 480,
                           damping: 32,
                         }}
-                        className="absolute inset-0 rounded-md bg-primary"
+                        className="absolute inset-0 rounded-md bg-white shadow-sm"
                       />
                     )}
-                    {!showPill && isActive && (
-                      <div className="absolute inset-0 rounded-md bg-primary/12" />
+                    {!highlighted && (
+                      <div className="absolute inset-0 rounded-md bg-white/10 border border-white/20 transition-colors duration-150 group-hover:bg-white/20" />
                     )}
                     <span className="relative z-10 flex h-full w-full items-center justify-center">
                       {iconNode}
@@ -390,12 +420,10 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                   </div>
                   <span
                     className={cn(
-                      "text-[9.5px] font-medium leading-none tracking-wide transition-colors duration-200",
-                      showPill
-                        ? "text-sidebar-foreground"
-                        : isActive
-                          ? "text-primary"
-                          : "text-sidebar-foreground/65 group-hover:text-sidebar-foreground",
+                      "text-[9.5px] font-medium leading-none tracking-wide transition-colors duration-150",
+                      highlighted
+                        ? "text-white"
+                        : "text-white/60 group-hover:text-white/85",
                     )}
                   >
                     {menu.shortTitle}
@@ -463,31 +491,22 @@ const SidebarNew = ({ onLogout = () => {} }) => {
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            className="fixed top-0 left-20 z-999 flex h-full w-60 flex-col overflow-hidden
+            className="fixed top-0 left-20 z-999 flex h-full w-64 flex-col overflow-hidden
               border-r border-sidebar-border/60
-              bg-sidebar/95 backdrop-blur-2xl
+              bg-sidebar
               shadow-[8px_0_32px_rgba(0,0,0,0.08)] dark:shadow-[8px_0_32px_rgba(0,0,0,0.55)]"
           >
             {/* Panel header */}
-            <div className="flex min-h-[72px] shrink-0 items-center gap-3 border-b border-sidebar-border/60 px-5">
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-white"
-                style={{ background: GRADIENT }}
-              >
-                {React.isValidElement(hoveredMenu.icon) &&
-                  React.cloneElement(hoveredMenu.icon, {
-                    className: "h-4 w-4",
-                  })}
-              </div>
-              <span className="text-sm font-bold text-sidebar-foreground">
+            <div className="flex min-h-[76px] shrink-0 items-center px-5">
+              <span className="text-lg font-bold text-primary">
                 {hoveredMenu.title}
               </span>
             </div>
 
             {/* Section groups */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-hide">
+            <nav className="flex-1 overflow-y-auto py-2 px-3 scrollbar-hide">
               {hoveredMenu.submenus.map((group) => (
-                <div key={group.id} className="mb-3">
+                <div key={group.id} className="mb-1">
                   {/* Section heading */}
                   {group.title && (
                     <button
@@ -497,9 +516,9 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                           [group.id]: !prev[group.id],
                         }))
                       }
-                      className="w-full flex items-center justify-between px-2 py-1.5 mb-1 group cursor-pointer"
+                      className="w-full flex items-center justify-between px-2 py-2 mb-0.5 group cursor-pointer"
                     >
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/60 group-hover:text-sidebar-foreground transition-colors">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-primary/70 group-hover:text-primary transition-colors">
                         {group.title}
                       </span>
                       <motion.span
@@ -507,7 +526,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                           rotate: openSections[group.id] !== false ? 180 : 0,
                         }}
                         transition={{ duration: 0.2 }}
-                        className="text-sidebar-foreground/60 group-hover:text-sidebar-foreground transition-colors"
+                        className="text-primary/70 group-hover:text-primary transition-colors"
                       >
                         <HiChevronDown className="text-sm" />
                       </motion.span>
@@ -540,21 +559,24 @@ const SidebarNew = ({ onLogout = () => {} }) => {
                                   )
                                 }
                                 className={cn(
-                                  "group/item flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm no-underline transition-colors duration-150",
+                                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm no-underline transition-colors duration-150",
                                   active
-                                    ? "bg-primary font-medium text-primary-foreground"
+                                    ? "bg-primary font-semibold text-primary-foreground"
                                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                                 )}
                               >
-                                <span>{item.title}</span>
-                                <ChevronRight
-                                  className={cn(
-                                    "h-3.5 w-3.5 shrink-0 transition-opacity",
-                                    active
-                                      ? "opacity-80"
-                                      : "opacity-0 group-hover/item:opacity-60",
-                                  )}
-                                />
+                                {React.isValidElement(item.icon) &&
+                                  React.cloneElement(item.icon, {
+                                    className: cn(
+                                      "h-4 w-4 shrink-0",
+                                      active
+                                        ? "text-primary-foreground"
+                                        : "text-sidebar-foreground/50",
+                                    ),
+                                  })}
+                                <p className="truncate text-gray-700 ">
+                                  {item.title}
+                                </p>
                               </Link>
                             </li>
                           );
