@@ -103,13 +103,16 @@ export default function SettingsPage() {
           title="Settings"
           description="Configure your restaurant settings"
         />
-        {!(selectedTab === "Printer" && (printerInnerTab !== "printers" || !canManagePrint)) && (
-          <ButtonClick
-            buttonName={"Add " + selectedTab}
-            BtnType="add"
-            handleSubmit={handleAddClick}
-          />
-        )}
+        {/* {!(
+          selectedTab === "Printer" &&
+          (printerInnerTab !== "printers" || !canManagePrint)
+        ) && ( */}
+        <ButtonClick
+          buttonName={"Add " + selectedTab}
+          BtnType="add"
+          handleSubmit={handleAddClick}
+        />
+        {/* )} */}
       </div>
       <TabsNew
         onTabChange={(id, tab) => {
@@ -228,7 +231,8 @@ export default function SettingsPage() {
           onCreated={() => setShiftRefreshKey((k) => k + 1)}
         />
       )}
-      {printerDrawerOpen && canManagePrint && (
+      {/* {printerDrawerOpen && canManagePrint && ( */}
+      {printerDrawerOpen && (
         <AddPrinter
           open={printerDrawerOpen}
           onOpenChange={setPrinterDrawerOpen}

@@ -6,6 +6,7 @@ import Table from "@/components/ui/Table";
 import { action, API, getAction } from "@/lib/API";
 import { hasPermission } from "@/lib/auth";
 import AddPrinter from "./AddPrinter";
+import ViewPrinter from "./ViewPrinter";
 
 const CONNECTION_ICONS = {
   lan: <Globe size={14} className="mr-1 inline" />,
@@ -54,9 +55,7 @@ const printerHeaders = [
     render: (value) => (
       <span
         className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-          value
-            ? "bg-emerald-50 text-emerald-700"
-            : "bg-gray-100 text-gray-600"
+          value ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"
         }`}
       >
         {value ? "Yes" : "No"}
@@ -71,6 +70,8 @@ export default function PrinterList({ refreshKey }) {
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [printerId, setPrinterId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewPrinter, setViewPrinter] = useState(null);
   const canManage = hasPermission("print:manage");
 
   useEffect(() => {
@@ -84,8 +85,8 @@ export default function PrinterList({ refreshKey }) {
       if (result?.statusCode === 200) {
         setData(result?.data?.printers || []);
       }
-    } catch {}
-    finally {
+    } catch {
+    } finally {
       setLoading(false);
     }
   };
@@ -111,14 +112,18 @@ export default function PrinterList({ refreshKey }) {
         rowKey="_id"
         loading={loading}
         searchPlaceholder="Search printer name"
-        onView={() => {}}
+        onView={(id, row) => {
+          setViewPrinter(row);
+          setViewOpen(true);
+        }}
         onEdit={
-          canManage
-            ? (id) => {
-                setPrinterId(id);
-                setDrawerOpen(true);
-              }
-            : undefined
+          // canManage
+          //   ?
+          (id) => {
+            setPrinterId(id);
+            setDrawerOpen(true);
+          }
+          // : undefined
         }
         onDelete={canManage ? handleDelete : undefined}
       />
@@ -138,6 +143,15 @@ export default function PrinterList({ refreshKey }) {
           printers={data}
         />
       )}
+
+      <ViewPrinter
+        open={viewOpen}
+        close={() => {
+          setViewOpen(false);
+          setViewPrinter(null);
+        }}
+        printer={viewPrinter}
+      />
     </div>
   );
 }
