@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Switch } from "antd";
@@ -7,67 +7,50 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
-import AntTextArea from "@/components/ui/AntTextArea";
 import DrawerPop from "@/components/ui/DrawerPop";
-import { action, API, getAction } from "@/lib/API";
+import { action, API } from "@/lib/API";
 
-const PRINTER_TYPES = [
-  { label: "Receipt Printer", value: "receipt" },
-  { label: "Kitchen Printer", value: "kitchen" },
-  { label: "Label Printer", value: "label" },
-  { label: "Barcode Printer", value: "barcode" },
+const PURPOSE_TYPES = [
+  { label: "KOT (Kitchen Order Ticket)", value: "kot" },
+  { label: "Bill", value: "bill" },
+  { label: "QR Order Slip", value: "qr_order" },
 ];
 
 const CONNECTION_TYPES = [
-  { label: "Network (Ethernet / WiFi)", value: "network" },
-  { label: "USB", value: "usb" },
-  { label: "Bluetooth", value: "bluetooth" },
-  { label: "Serial", value: "serial" },
+  { label: "LAN (network printer)", value: "lan" },
+  { label: "Browser (client-side print)", value: "browser" },
 ];
 
-const PAPER_SIZES = [
-  { label: "58 mm  (Mini Receipt)", value: "58mm" },
-  { label: "80 mm  (Standard Receipt)", value: "80mm" },
-  { label: "A4", value: "A4" },
-];
-
-const COPIES_OPTIONS = [1, 2, 3, 4, 5].map((n) => ({
-  label: `${n} ${n === 1 ? "copy" : "copies"}`,
-  value: n,
-}));
-
-const STATUS_OPTIONS = [
-  { label: "Active", value: "active" },
-  { label: "Inactive", value: "inactive" },
+const PAPER_WIDTHS = [
+  { label: "58 mm", value: "58mm" },
+  { label: "80 mm", value: "80mm" },
 ];
 
 const initialValues = {
-  printerName: "",
-  printerType: undefined,
+  name: "",
+  purpose: undefined,
+  kitchenSections: [],
   connectionType: undefined,
-  ipAddress: "",
+  ip: "",
   port: "9100",
-  paperSize: "80mm",
-  copies: 1,
-  autoPrint: false,
-  status: "active",
-  description: "",
+  paperWidth: "80mm",
+  isActive: true,
 };
 
 const validationSchema = Yup.object({
-  printerName: Yup.string()
+  name: Yup.string()
     .trim()
     .min(2, "Minimum 2 characters")
     .max(100, "Maximum 100 characters")
     .required("Printer name is required"),
-  printerType: Yup.string().required("Printer type is required"),
+  purpose: Yup.string().required("Purpose is required"),
   connectionType: Yup.string().required("Connection type is required"),
-  ipAddress: Yup.string().when("connectionType", {
-    is: "network",
+  ip: Yup.string().when("connectionType", {
+    is: "lan",
     then: (schema) =>
       schema
         .trim()
-        .required("IP address is required for network printers")
+        .required("IP address is required for LAN printers")
         .matches(
           /^(\d{1,3}\.){3}\d{1,3}$/,
           "Enter a valid IP address (e.g. 192.168.1.100)",
@@ -75,7 +58,7 @@ const validationSchema = Yup.object({
     otherwise: (schema) => schema.nullable(),
   }),
   port: Yup.number().when("connectionType", {
-    is: "network",
+    is: "lan",
     then: (schema) =>
       schema
         .typeError("Port must be a number")
@@ -84,10 +67,7 @@ const validationSchema = Yup.object({
         .max(65535, "Invalid port"),
     otherwise: (schema) => schema.nullable(),
   }),
-  paperSize: Yup.string().required("Paper size is required"),
-  copies: Yup.number().min(1).max(5).required("Number of copies is required"),
-  status: Yup.string().oneOf(["active", "inactive"]).required(),
-  description: Yup.string().trim().max(300, "Max 300 characters").nullable(),
+  paperWidth: Yup.string().required("Paper width is required"),
 });
 
 export default function AddPrinter({
@@ -95,6 +75,7 @@ export default function AddPrinter({
   onOpenChange,
   onCreated,
   updateId = null,
+  printers = [],
 }) {
   const [show, setShow] = useState(open);
   const isUpdate = Boolean(updateId);
@@ -108,28 +89,26 @@ export default function AddPrinter({
     validationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
-        const isNetwork = values.connectionType === "network";
+        const isLan = values.connectionType === "lan";
         const payload = {
-          printerName: values.printerName.trim(),
-          printerType: values.printerType,
+          name: values.name.trim(),
+          purpose: values.purpose,
+          ...(values.purpose === "kot" && {
+            kitchenSections: values.kitchenSections || [],
+          }),
           connectionType: values.connectionType,
-          ...(isNetwork && {
-            ipAddress: values.ipAddress.trim(),
+          ...(isLan && {
+            ip: values.ip.trim(),
             port: Number(values.port),
           }),
-          paperSize: values.paperSize,
-          copies: values.copies,
-          autoPrint: values.autoPrint,
-          status: values.status,
-          ...(values.description?.trim() && {
-            description: values.description.trim(),
-          }),
+          paperWidth: values.paperWidth,
+          isActive: values.isActive,
         };
 
         const result = await action(
           isUpdate
-            ? `${API.UPDATE_PRINTER}/${updateId}`
-            : API.CREATE_PRINTER,
+            ? `${API.UPDATE_PRINT_PRINTER}/${updateId}`
+            : API.CREATE_PRINT_PRINTER,
           payload,
           isUpdate ? "PATCH" : "POST",
         );
@@ -170,39 +149,30 @@ export default function AddPrinter({
     onOpenChange(false);
   };
 
-  const fetchPrinterDetails = async (id) => {
-    try {
-      const result = await getAction(`${API.GET_PRINTER_BY_ID}/${id}`);
-      if (result?.statusCode === 200 && result.data) {
-        const p = result.data;
-        formik.setValues({
-          printerName: p.printerName || "",
-          printerType: p.printerType || undefined,
-          connectionType: p.connectionType || undefined,
-          ipAddress: p.ipAddress || "",
-          port: p.port ? String(p.port) : "9100",
-          paperSize: p.paperSize || "80mm",
-          copies: p.copies || 1,
-          autoPrint: p.autoPrint || false,
-          status: p.status || "active",
-          description: p.description || "",
-        });
-      }
-    } catch {
-      message.error("Unable to fetch printer details");
-    }
-  };
-
   useEffect(() => {
     if (!open) return;
     if (updateId) {
-      fetchPrinterDetails(updateId);
+      const p = printers.find((item) => item._id === updateId);
+      if (p) {
+        formik.setValues({
+          name: p.name || "",
+          purpose: p.purpose || undefined,
+          kitchenSections: p.kitchenSections || [],
+          connectionType: p.connectionType || undefined,
+          ip: p.ip || "",
+          port: p.port ? String(p.port) : "9100",
+          paperWidth: p.paperWidth || "80mm",
+          isActive: p.isActive ?? true,
+        });
+      }
     } else {
       formik.resetForm();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, updateId]);
 
-  const isNetworkPrinter = formik.values.connectionType === "network";
+  const isLanPrinter = formik.values.connectionType === "lan";
+  const isKotPurpose = formik.values.purpose === "kot";
 
   return (
     <DrawerPop
@@ -223,23 +193,23 @@ export default function AddPrinter({
       <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
         <AntInput
           label="Printer Name *"
-          name="printerName"
-          placeholder="Eg: Main Receipt Printer, Kitchen Printer 1"
-          value={formik.values.printerName}
-          error={getError("printerName")}
+          name="name"
+          placeholder="Eg: Kitchen Printer 1, Billing Counter"
+          value={formik.values.name}
+          error={getError("name")}
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
         />
 
         <div className="grid gap-4 md:grid-cols-2">
           <AntSelect
-            label="Printer Type *"
-            placeholder="Select printer type"
-            value={formik.values.printerType}
-            error={getError("printerType")}
-            options={PRINTER_TYPES}
-            onChange={(value) => formik.setFieldValue("printerType", value)}
-            onBlur={() => formik.setFieldTouched("printerType", true)}
+            label="Purpose *"
+            placeholder="Select document type"
+            value={formik.values.purpose}
+            error={getError("purpose")}
+            options={PURPOSE_TYPES}
+            onChange={(value) => formik.setFieldValue("purpose", value)}
+            onBlur={() => formik.setFieldTouched("purpose", true)}
           />
 
           <AntSelect
@@ -250,8 +220,8 @@ export default function AddPrinter({
             options={CONNECTION_TYPES}
             onChange={(value) => {
               formik.setFieldValue("connectionType", value);
-              if (value !== "network") {
-                formik.setFieldValue("ipAddress", "");
+              if (value !== "lan") {
+                formik.setFieldValue("ip", "");
                 formik.setFieldValue("port", "9100");
               }
             }}
@@ -259,14 +229,31 @@ export default function AddPrinter({
           />
         </div>
 
-        {isNetworkPrinter && (
+        {isKotPurpose && (
+          <AntSelect
+            label="Kitchen Sections"
+            wrapperClassName="w-full"
+            placeholder="Leave empty to match every section"
+            mode="tags"
+            value={formik.values.kitchenSections}
+            options={formik.values.kitchenSections.map((section) => ({
+              label: section,
+              value: section,
+            }))}
+            onChange={(value) =>
+              formik.setFieldValue("kitchenSections", value)
+            }
+          />
+        )}
+
+        {isLanPrinter && (
           <div className="grid gap-4 md:grid-cols-2">
             <AntInput
               label="IP Address *"
-              name="ipAddress"
-              placeholder="192.168.1.100"
-              value={formik.values.ipAddress}
-              error={getError("ipAddress")}
+              name="ip"
+              placeholder="192.168.1.50"
+              value={formik.values.ip}
+              error={getError("ip")}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
             />
@@ -283,57 +270,27 @@ export default function AddPrinter({
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <AntSelect
-            label="Paper Size"
-            value={formik.values.paperSize}
-            error={getError("paperSize")}
-            options={PAPER_SIZES}
-            onChange={(value) => formik.setFieldValue("paperSize", value)}
-            onBlur={() => formik.setFieldTouched("paperSize", true)}
-          />
-          <AntSelect
-            label="Number of Copies"
-            value={formik.values.copies}
-            error={getError("copies")}
-            options={COPIES_OPTIONS}
-            onChange={(value) => formik.setFieldValue("copies", value)}
-            onBlur={() => formik.setFieldTouched("copies", true)}
-          />
-        </div>
-
         <AntSelect
-          label="Status"
-          value={formik.values.status}
-          error={getError("status")}
-          options={STATUS_OPTIONS}
-          onChange={(value) => formik.setFieldValue("status", value)}
-          onBlur={() => formik.setFieldTouched("status", true)}
+          label="Paper Width"
+          value={formik.values.paperWidth}
+          error={getError("paperWidth")}
+          options={PAPER_WIDTHS}
+          onChange={(value) => formik.setFieldValue("paperWidth", value)}
+          onBlur={() => formik.setFieldTouched("paperWidth", true)}
         />
 
         <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
           <div>
-            <p className="text-sm font-medium">Auto Print</p>
+            <p className="text-sm font-medium">Active</p>
             <p className="text-xs text-muted-foreground">
-              Automatically print when a new order is placed
+              Inactive printers are skipped when dispatching prints
             </p>
           </div>
           <Switch
-            checked={formik.values.autoPrint}
-            onChange={(checked) => formik.setFieldValue("autoPrint", checked)}
+            checked={formik.values.isActive}
+            onChange={(checked) => formik.setFieldValue("isActive", checked)}
           />
         </div>
-
-        <AntTextArea
-          label="Description / Notes"
-          name="description"
-          placeholder="Optional notes about this printer (location, special instructions, etc.)"
-          rows={3}
-          value={formik.values.description}
-          error={getError("description")}
-          onChange={formik.handleChange}
-          onBlur={formik.handleBlur}
-        />
       </div>
     </DrawerPop>
   );

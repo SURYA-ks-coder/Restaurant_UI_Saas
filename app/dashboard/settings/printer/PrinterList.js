@@ -1,26 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bluetooth, Usb, Wifi } from "lucide-react";
+import { Globe, Monitor } from "lucide-react";
 import Table from "@/components/ui/Table";
 import { action, API, getAction } from "@/lib/API";
+import { hasPermission } from "@/lib/auth";
 import AddPrinter from "./AddPrinter";
 
 const CONNECTION_ICONS = {
-  network: <Wifi size={14} className="mr-1 inline" />,
-  usb: <Usb size={14} className="mr-1 inline" />,
-  bluetooth: <Bluetooth size={14} className="mr-1 inline" />,
+  lan: <Globe size={14} className="mr-1 inline" />,
+  browser: <Monitor size={14} className="mr-1 inline" />,
+};
+
+const PURPOSE_LABELS = {
+  kot: "KOT",
+  bill: "Bill",
+  qr_order: "QR Order",
 };
 
 const printerHeaders = [
-  { title: "Printer Name", value: "printerName", type: "bold", width: 200 },
+  { title: "Printer Name", value: "name", type: "bold", width: 200 },
   {
-    title: "Type",
-    value: "printerType",
-    width: 130,
-    render: (value) => (
-      <span className="capitalize">{value || "-"}</span>
-    ),
+    title: "Purpose",
+    value: "purpose",
+    width: 120,
+    render: (value) => PURPOSE_LABELS[value] || value || "-",
   },
   {
     title: "Connection",
@@ -28,25 +32,25 @@ const printerHeaders = [
     width: 140,
     render: (value) => (
       <span className="flex items-center capitalize">
-        {CONNECTION_ICONS[value?.toLowerCase()]}
-        {value || "-"}
+        {CONNECTION_ICONS[value]}
+        {value === "lan" ? "LAN" : "Browser"}
       </span>
     ),
   },
   {
     title: "IP / Port",
-    value: "ipAddress",
+    value: "ip",
     width: 170,
     render: (value, row) =>
-      row.connectionType === "network" && value
+      row.connectionType === "lan" && value
         ? `${value} : ${row.port || 9100}`
         : "-",
   },
-  { title: "Paper Size", value: "paperSize", width: 120 },
+  { title: "Paper Width", value: "paperWidth", width: 120 },
   {
-    title: "Auto Print",
-    value: "autoPrint",
-    width: 110,
+    title: "Active",
+    value: "isActive",
+    width: 100,
     render: (value) => (
       <span
         className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -59,13 +63,6 @@ const printerHeaders = [
       </span>
     ),
   },
-  { title: "Status", value: "status", type: "status", width: 110 },
-  {
-    title: "Created",
-    value: "createdAt",
-    width: 130,
-    render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
-  },
   { title: "Actions", value: "actions", type: "action", align: "right" },
 ];
 
@@ -74,6 +71,7 @@ export default function PrinterList({ refreshKey }) {
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [printerId, setPrinterId] = useState(null);
+  const canManage = hasPermission("print:manage");
 
   useEffect(() => {
     fetchList();
@@ -82,9 +80,9 @@ export default function PrinterList({ refreshKey }) {
   const fetchList = async () => {
     setLoading(true);
     try {
-      const result = await getAction(API.GET_PRINTER_LIST);
+      const result = await getAction(API.GET_PRINT_SETTINGS);
       if (result?.statusCode === 200) {
-        setData(result?.data || []);
+        setData(result?.data?.printers || []);
       }
     } catch {}
     finally {
@@ -93,8 +91,13 @@ export default function PrinterList({ refreshKey }) {
   };
 
   const handleDelete = async (id) => {
+    if (!canManage) return;
     try {
-      const result = await action(`${API.DELETE_PRINTER}/${id}`, {}, "DELETE");
+      const result = await action(
+        `${API.DELETE_PRINT_PRINTER}/${id}`,
+        {},
+        "DELETE",
+      );
       if (result?.statusCode === 200) fetchList();
     } catch {}
   };
@@ -109,11 +112,15 @@ export default function PrinterList({ refreshKey }) {
         loading={loading}
         searchPlaceholder="Search printer name"
         onView={() => {}}
-        onEdit={(id) => {
-          setPrinterId(id);
-          setDrawerOpen(true);
-        }}
-        onDelete={handleDelete}
+        onEdit={
+          canManage
+            ? (id) => {
+                setPrinterId(id);
+                setDrawerOpen(true);
+              }
+            : undefined
+        }
+        onDelete={canManage ? handleDelete : undefined}
       />
 
       {drawerOpen && (
@@ -128,6 +135,7 @@ export default function PrinterList({ refreshKey }) {
             fetchList();
           }}
           updateId={printerId}
+          printers={data}
         />
       )}
     </div>

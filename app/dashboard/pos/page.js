@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
 import { AntInput } from "@/components/ui/AntInput";
-import { Dropdown } from "antd";
+import { Dropdown, Modal } from "antd";
+import { Printer } from "lucide-react";
 import { message } from "@/lib/message";
+import { getPrintPreviewHtml, triggerPrint } from "@/lib/print";
 
 const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
 
@@ -72,6 +74,9 @@ export default function POSPage() {
   const [gstRate, setGstRate] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastBillId, setLastBillId] = useState(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState(null);
 
   const addToCart = (item) => {
     setCart((prev) => {
@@ -282,6 +287,11 @@ export default function POSPage() {
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         message.success(result?.message || "Order completed successfully");
         setCart([]);
+        const billId = result?.data?._id;
+        setLastBillId(billId || null);
+        if (billId) {
+          printBill(billId);
+        }
         return;
       }
 
@@ -290,6 +300,29 @@ export default function POSPage() {
       message.error("Unable to complete order");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const printBill = async (billId) => {
+    const id = billId || lastBillId;
+    if (!id) return;
+    setIsPrinting(true);
+    try {
+      await triggerPrint({ endpoint: API.PRINT_BILL, id });
+    } catch (error) {
+      message.error("Unable to print bill");
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+
+  const previewBill = async () => {
+    if (!lastBillId) return;
+    try {
+      const html = await getPrintPreviewHtml(API.PRINT_BILL, lastBillId);
+      setPreviewHtml(html);
+    } catch (error) {
+      message.error("Unable to load bill preview");
     }
   };
 
@@ -508,8 +541,43 @@ export default function POSPage() {
           >
             {isSubmitting ? "Completing..." : "Complete Order"}
           </button>
+
+          {lastBillId && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => printBill()}
+                disabled={isPrinting}
+                className="flex items-center justify-center gap-2 rounded-lg border border-border py-2 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Printer className="h-4 w-4" />
+                {isPrinting ? "Printing..." : "Print Bill"}
+              </button>
+              <button
+                onClick={previewBill}
+                className="rounded-lg border border-border py-2 text-sm font-medium hover:bg-muted"
+              >
+                Preview
+              </button>
+            </div>
+          )}
         </div>
       </aside>
+
+      <Modal
+        open={Boolean(previewHtml)}
+        onCancel={() => setPreviewHtml(null)}
+        footer={null}
+        title="Bill Preview"
+        width={420}
+      >
+        {previewHtml && (
+          <iframe
+            title="bill-preview"
+            srcDoc={previewHtml}
+            className="h-[70vh] w-full rounded border border-border"
+          />
+        )}
+      </Modal>
     </div>
   );
 }

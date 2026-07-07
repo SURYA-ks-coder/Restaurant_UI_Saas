@@ -34,6 +34,9 @@ import ShiftList from "./shift/ShiftList";
 import AddShift from "./shift/AddShift";
 import PrinterList from "./printer/PrinterList";
 import AddPrinter from "./printer/AddPrinter";
+import TemplateSettings from "./printer/TemplateSettings";
+import { AntTabs } from "@/components/ui/AntTabs";
+import { hasPermission } from "@/lib/auth";
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
@@ -59,6 +62,8 @@ export default function SettingsPage() {
   const [shiftRefreshKey, setShiftRefreshKey] = useState(0);
   const [printerDrawerOpen, setPrinterDrawerOpen] = useState(false);
   const [printerRefreshKey, setPrinterRefreshKey] = useState(0);
+  const [printerInnerTab, setPrinterInnerTab] = useState("printers");
+  const canManagePrint = hasPermission("print:manage");
 
   const handleAddClick = () => {
     if (selectedTab === "Category") {
@@ -98,11 +103,13 @@ export default function SettingsPage() {
           title="Settings"
           description="Configure your restaurant settings"
         />
-        <ButtonClick
-          buttonName={"Add " + selectedTab}
-          BtnType="add"
-          handleSubmit={handleAddClick}
-        />
+        {!(selectedTab === "Printer" && (printerInnerTab !== "printers" || !canManagePrint)) && (
+          <ButtonClick
+            buttonName={"Add " + selectedTab}
+            BtnType="add"
+            handleSubmit={handleAddClick}
+          />
+        )}
       </div>
       <TabsNew
         onTabChange={(id, tab) => {
@@ -152,7 +159,23 @@ export default function SettingsPage() {
           {
             id: 9,
             title: "Printer",
-            content: <PrinterList refreshKey={printerRefreshKey} />,
+            content: (
+              <AntTabs
+                onChange={(key) => setPrinterInnerTab(key)}
+                items={[
+                  {
+                    key: "printers",
+                    label: "Printers",
+                    children: <PrinterList refreshKey={printerRefreshKey} />,
+                  },
+                  {
+                    key: "templates",
+                    label: "Templates",
+                    children: <TemplateSettings />,
+                  },
+                ]}
+              />
+            ),
           },
         ]}
       />
@@ -205,7 +228,7 @@ export default function SettingsPage() {
           onCreated={() => setShiftRefreshKey((k) => k + 1)}
         />
       )}
-      {printerDrawerOpen && (
+      {printerDrawerOpen && canManagePrint && (
         <AddPrinter
           open={printerDrawerOpen}
           onOpenChange={setPrinterDrawerOpen}

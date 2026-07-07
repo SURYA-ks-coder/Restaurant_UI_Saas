@@ -25,6 +25,7 @@ import {
   removeKotListeners,
 } from "@/components/socket/kotSocketListeners";
 import { action, API, getAction, patchAction, postAction } from "@/lib/API";
+import { triggerPrint } from "@/lib/print";
 import { Button, Checkbox, Tooltip } from "antd";
 import { FaCircleCheck } from "react-icons/fa6";
 import { MdCancel } from "react-icons/md";
@@ -121,6 +122,17 @@ export default function KitchenPage() {
   const [orders, setOrders] = useState([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [reprintingId, setReprintingId] = useState(null);
+
+  const reprintKot = async (kotId) => {
+    setReprintingId(kotId);
+    try {
+      await triggerPrint({ endpoint: API.PRINT_KOT, id: kotId });
+    } catch {
+    } finally {
+      setReprintingId(null);
+    }
+  };
 
   const filteredOrders = orders.filter(
     (order) => selectedStatus === "all" || order.status === selectedStatus,
@@ -388,7 +400,23 @@ export default function KitchenPage() {
                       {order.table} • {order.time}
                     </p>
                   </div>
-                  <Badge className={status.color}>{status.label}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={status.color}>{status.label}</Badge>
+                    <Tooltip title="Reprint KOT">
+                      <button
+                        onClick={() => reprintKot(order._id)}
+                        disabled={reprintingId === order._id}
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={cn(
+                            "h-3.5 w-3.5",
+                            reprintingId === order._id && "animate-spin",
+                          )}
+                        />
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
 
                 <div
