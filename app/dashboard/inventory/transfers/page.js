@@ -1,30 +1,31 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
   Clock,
-  Edit2,
-  Package,
   Plus,
-  Search,
-  Trash2,
+  ThumbsUp,
   Truck,
   X,
 } from "lucide-react";
-import { Popconfirm } from "antd";
 import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { action, API, getAction } from "@/lib/API";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import Table from "@/components/ui/Table";
+import DrawerPop from "@/components/ui/DrawerPop";
+import ButtonClick from "@/components/ui/ButtonClick";
+import Heading from "@/components/ui/Heading";
+import { AntInput } from "@/components/ui/AntInput";
+import { AntSelect } from "@/components/ui/AntSelect";
+import { AntTextArea } from "@/components/ui/AntTextArea";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", className: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock },
-  in_transit: { label: "In Transit", className: "bg-primary/10 text-primary border-primary/30", icon: Truck },
+  approved: { label: "Approved", className: "bg-primary/10 text-primary border-primary/30", icon: ThumbsUp },
   completed: { label: "Completed", className: "bg-success/15 text-success border-success/30", icon: CheckCircle2 },
-  cancelled: { label: "Cancelled", className: "bg-destructive/10 text-destructive border-destructive/30", icon: X },
+  rejected: { label: "Rejected", className: "bg-destructive/10 text-destructive border-destructive/30", icon: X },
 };
 
 const EMPTY_FORM = {
@@ -44,10 +45,8 @@ export default function TransfersPage() {
   const [warehouses, setWarehouses] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -56,9 +55,9 @@ export default function TransfersPage() {
     setLoading(true);
     try {
       const [transfersRes, warehousesRes, inventoryRes] = await Promise.all([
-        getAction(API.GET_TRANSFER_LIST),
+        getAction(API.GET_STOCK_TRANSFER_LIST),
         getAction(API.GET_WAREHOUSE_LIST),
-        getAction(API.GET_INVENTORY_ITEM_LIST),
+        getAction(API.GET_INVENTORY_LIST),
       ]);
       if (transfersRes?.statusCode === 200) setTransfers(transfersRes.data || []);
       if (warehousesRes?.statusCode === 200) setWarehouses(warehousesRes.data || []);
@@ -74,15 +73,6 @@ export default function TransfersPage() {
     fetchData();
   }, [fetchData]);
 
-  const filtered = transfers.filter((t) => {
-    const matchSearch =
-      t.itemName?.toLowerCase().includes(search.toLowerCase()) ||
-      t.fromWarehouse?.toLowerCase().includes(search.toLowerCase()) ||
-      t.toWarehouse?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || t.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
   const validate = () => {
     const next = {};
     if (!form.fromWarehouse) next.fromWarehouse = "Source warehouse required";
@@ -97,25 +87,7 @@ export default function TransfersPage() {
   };
 
   const openAdd = () => {
-    setEditId(null);
     setForm({ ...EMPTY_FORM, transferDate: new Date().toISOString().split("T")[0] });
-    setErrors({});
-    setDrawerOpen(true);
-  };
-
-  const openEdit = (transfer) => {
-    setEditId(transfer._id || transfer.id);
-    setForm({
-      fromWarehouse: transfer.fromWarehouse || "",
-      toWarehouse: transfer.toWarehouse || "",
-      itemName: transfer.itemName || "",
-      itemId: transfer.itemId || transfer.item?._id || "",
-      quantity: transfer.quantity || "",
-      unit: transfer.unit || "",
-      reason: transfer.reason || "",
-      transferDate: transfer.transferDate?.split("T")[0] || "",
-      notes: transfer.notes || "",
-    });
     setErrors({});
     setDrawerOpen(true);
   };
@@ -124,14 +96,10 @@ export default function TransfersPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const endpoint = editId
-        ? `${API.UPDATE_TRANSFER}/${editId}`
-        : API.CREATE_TRANSFER;
-      const method = editId ? "PATCH" : "POST";
-      const result = await action(endpoint, form, method);
+      const result = await action(API.CREATE_STOCK_TRANSFER, form, "POST");
 
       if (result?.statusCode === 200 || result?.statusCode === 201) {
-        message.success(editId ? "Transfer updated." : "Transfer created.");
+        message.success("Transfer created.");
         setDrawerOpen(false);
         fetchData();
       } else {
@@ -144,28 +112,12 @@ export default function TransfersPage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const updateStatus = async (id, endpointTemplate, status) => {
     try {
-      const result = await action(`${API.DELETE_TRANSFER}/${id}`, {}, "DELETE");
+      const result = await action(endpointTemplate.replace(":id", id), {}, "PATCH");
       if (result?.statusCode === 200) {
-        message.success("Transfer deleted.");
-        setTransfers((prev) => prev.filter((t) => (t._id || t.id) !== id));
-      } else {
-        message.error(result?.message || "Delete failed.");
-      }
-    } catch {
-      message.error("Delete failed.");
-    }
-  };
-
-  const updateStatus = async (id, status) => {
-    try {
-      const result = await action(`${API.UPDATE_TRANSFER_STATUS}/${id}`, { status }, "PATCH");
-      if (result?.statusCode === 200) {
-        message.success(`Transfer marked as ${status.replace("_", " ")}.`);
-        setTransfers((prev) =>
-          prev.map((t) => ((t._id || t.id) === id ? { ...t, status } : t)),
-        );
+        message.success(`Transfer marked as ${status}.`);
+        setTransfers((prev) => prev.map((t) => ((t._id || t.id) === id ? { ...t, status } : t)));
       } else {
         message.error(result?.message || "Status update failed.");
       }
@@ -174,310 +126,250 @@ export default function TransfersPage() {
     }
   };
 
+  const setField = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const getError = (field) => errors[field] || "";
+
+  const warehouseOptions = warehouses.map((w) => ({ label: w.name, value: w.name }));
+  const itemOptions = inventoryItems.map((item) => ({
+    label: `${item.name}${item.unit ? ` (${item.unit})` : ""}`,
+    value: item._id || item.id,
+  }));
+
   const counts = {
     all: transfers.length,
     pending: transfers.filter((t) => t.status === "pending").length,
-    in_transit: transfers.filter((t) => t.status === "in_transit").length,
+    approved: transfers.filter((t) => t.status === "approved").length,
     completed: transfers.filter((t) => t.status === "completed").length,
   };
 
-  const setField = (name, value) => {
-    setForm((p) => ({ ...p, [name]: value }));
-    if (errors[name]) setErrors((p) => ({ ...p, [name]: "" }));
-  };
+  const filteredTransfers =
+    statusFilter === "all" ? transfers : transfers.filter((t) => t.status === statusFilter);
+
+  const transferHeaders = [
+    {
+      title: "Item",
+      value: "itemName",
+      render: (value) => (
+        <span className="flex items-center gap-2 font-medium">{value || "—"}</span>
+      ),
+    },
+    {
+      title: "From → To",
+      value: "fromWarehouse",
+      render: (value, row) => (
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span>{row.fromWarehouse || "—"}</span>
+          <ArrowRight className="h-3 w-3 shrink-0" />
+          <span>{row.toWarehouse || "—"}</span>
+        </span>
+      ),
+    },
+    {
+      title: "Quantity",
+      value: "quantity",
+      render: (value, row) => (
+        <span className="font-medium">
+          {value} <span className="text-xs text-muted-foreground">{row.unit}</span>
+        </span>
+      ),
+    },
+    {
+      title: "Date",
+      value: "transferDate",
+      render: (value) => (value ? new Date(value).toLocaleDateString() : "—"),
+    },
+    { title: "Reason", value: "reason" },
+    {
+      title: "Status",
+      value: "status",
+      render: (value) => {
+        const cfg = STATUS_CONFIG[value] || STATUS_CONFIG.pending;
+        return (
+          <span className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium", cfg.className)}>
+            {cfg.label}
+          </span>
+        );
+      },
+    },
+    {
+      title: "Actions",
+      value: "actions",
+      align: "right",
+      render: (value, row) => {
+        const id = row._id || row.id;
+        if (row.status === "pending") {
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateStatus(id, API.APPROVE_STOCK_TRANSFER, "approved");
+                }}
+                className="rounded p-1.5 text-primary hover:bg-primary/10"
+                title="Approve"
+              >
+                <ThumbsUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateStatus(id, API.REJECT_STOCK_TRANSFER, "rejected");
+                }}
+                className="rounded p-1.5 text-destructive hover:bg-destructive/10"
+                title="Reject"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          );
+        }
+        if (row.status === "approved") {
+          return (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateStatus(id, API.COMPLETE_STOCK_TRANSFER, "completed");
+                }}
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-success hover:bg-success/10"
+                title="Mark Completed"
+              >
+                <Truck className="h-3.5 w-3.5" />
+                Complete
+              </button>
+            </div>
+          );
+        }
+        return null;
+      },
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Stock Transfers</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Move stock between warehouses and branches
-          </p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" />
-          New Transfer
-        </button>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Heading
+          title="Stock Transfers"
+          description="Move stock between warehouses and branches"
+        />
+        <ButtonClick
+          handleSubmit={openAdd}
+          buttonName="New Transfer"
+          icon={<Plus className="h-4 w-4" />}
+          BtnType="primary"
+        />
       </div>
 
-      {/* Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {Object.entries(counts).map(([key, val]) => {
-          const cfg = key === "all" ? { label: "All Transfers", className: "text-foreground bg-muted" } : { label: STATUS_CONFIG[key]?.label, className: STATUS_CONFIG[key]?.className };
+          const label = key === "all" ? "All Transfers" : STATUS_CONFIG[key]?.label;
           return (
-            <div key={key} className="glass-card rounded-lg p-4">
-              <p className="text-xs text-muted-foreground">{cfg.label}</p>
+            <button
+              key={key}
+              onClick={() => setStatusFilter(key)}
+              className={cn(
+                "glass-card rounded-lg p-4 text-left transition-colors",
+                statusFilter === key && "ring-2 ring-primary/40",
+              )}
+            >
+              <p className="text-xs text-muted-foreground">{label}</p>
               <p className="text-2xl font-bold">{val}</p>
-            </div>
+            </button>
           );
         })}
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search transfers…"
-            className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-4 text-sm outline-none focus:border-primary"
+      <Table
+        header={transferHeaders}
+        data={filteredTransfers}
+        title="Transfers"
+        rowKey="_id"
+        loading={loading}
+        searchPlaceholder="Search transfers…"
+      />
+
+      <DrawerPop
+        open={drawerOpen}
+        close={() => setDrawerOpen(false)}
+        header={["New Transfer", "Move stock between warehouses"]}
+        handleSubmit={handleSubmit}
+        footerBtn={["Cancel", "Save"]}
+        footerBtnDisabled={submitting}
+        loadingButton={submitting}
+        width={560}
+      >
+        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+          <AntSelect
+            label="From Warehouse *"
+            placeholder="Select source warehouse"
+            value={form.fromWarehouse || undefined}
+            error={getError("fromWarehouse")}
+            options={warehouseOptions}
+            onChange={(value) => setField("fromWarehouse", value)}
+          />
+
+          <AntSelect
+            label="To Warehouse *"
+            placeholder="Select destination warehouse"
+            value={form.toWarehouse || undefined}
+            error={getError("toWarehouse")}
+            options={warehouseOptions}
+            onChange={(value) => setField("toWarehouse", value)}
+          />
+
+          <AntSelect
+            label="Item *"
+            placeholder="Select inventory item"
+            value={form.itemId || undefined}
+            error={getError("itemId")}
+            options={itemOptions}
+            onChange={(value) => {
+              const item = inventoryItems.find((i) => (i._id || i.id) === value);
+              setField("itemId", value);
+              setField("itemName", item?.name || "");
+              setField("unit", item?.unit || "");
+            }}
+          />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <AntInput
+              label="Quantity *"
+              type="number"
+              placeholder="0"
+              value={form.quantity}
+              error={getError("quantity")}
+              onChange={(e) => setField("quantity", e.target.value)}
+            />
+            <AntInput label="Unit" value={form.unit} readOnly placeholder="Auto-filled" />
+          </div>
+
+          <AntInput
+            label="Transfer Date *"
+            type="date"
+            value={form.transferDate}
+            error={getError("transferDate")}
+            onChange={(e) => setField("transferDate", e.target.value)}
+          />
+
+          <AntInput
+            label="Reason"
+            placeholder="e.g. Branch restocking"
+            value={form.reason}
+            onChange={(e) => setField("reason", e.target.value)}
+          />
+
+          <AntTextArea
+            label="Notes"
+            placeholder="Additional notes…"
+            value={form.notes}
+            onChange={(e) => setField("notes", e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
-          {["all", "pending", "in_transit", "completed"].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                statusFilter === s
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="glass-card rounded-lg border border-border">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/40">
-                {["Item", "From → To", "Quantity", "Date", "Reason", "Status", ""].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center text-muted-foreground">Loading transfers…</td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-16 text-center text-muted-foreground">
-                    {search || statusFilter !== "all" ? "No transfers match your filters." : "No transfers yet. Create one to get started."}
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((t) => {
-                  const statusCfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.pending;
-                  const id = t._id || t.id;
-                  return (
-                    <tr key={id} className="border-b border-border/50 transition-colors hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-2 font-medium">
-                          <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                          {t.itemName || "—"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <span>{t.fromWarehouse || "—"}</span>
-                          <ArrowRight className="h-3 w-3 shrink-0" />
-                          <span>{t.toWarehouse || "—"}</span>
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {t.quantity} <span className="text-xs text-muted-foreground">{t.unit}</span>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {t.transferDate ? new Date(t.transferDate).toLocaleDateString() : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{t.reason || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn("rounded-full border px-2.5 py-0.5 text-xs font-medium", statusCfg.className)}>
-                          {statusCfg.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {t.status === "pending" && (
-                            <button
-                              onClick={() => updateStatus(id, "in_transit")}
-                              className="rounded px-2 py-1 text-xs text-primary hover:bg-primary/10"
-                              title="Mark In Transit"
-                            >
-                              <Truck className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          {t.status === "in_transit" && (
-                            <button
-                              onClick={() => updateStatus(id, "completed")}
-                              className="rounded px-2 py-1 text-xs text-success hover:bg-success/10"
-                              title="Mark Completed"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => openEdit(t)}
-                            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                          >
-                            <Edit2 className="h-3.5 w-3.5" />
-                          </button>
-                          <Popconfirm
-                            title="Delete this transfer?"
-                            onConfirm={() => handleDelete(id)}
-                            okText="Delete"
-                            okButtonProps={{ danger: true }}
-                          >
-                            <button className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </Popconfirm>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Drawer */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <div className="flex w-full max-w-md flex-col bg-background shadow-xl">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <div>
-                <h2 className="text-base font-semibold">{editId ? "Edit Transfer" : "New Transfer"}</h2>
-                <p className="text-xs text-muted-foreground">Move stock between warehouses</p>
-              </div>
-              <button onClick={() => setDrawerOpen(false)} className="rounded p-1 hover:bg-muted">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
-              <div className="space-y-1.5">
-                <Label>From Warehouse *</Label>
-                <select
-                  value={form.fromWarehouse}
-                  onChange={(e) => setField("fromWarehouse", e.target.value)}
-                  className={cn("h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary", errors.fromWarehouse ? "border-destructive" : "border-border")}
-                >
-                  <option value="">Select source warehouse</option>
-                  {warehouses.map((w) => (
-                    <option key={w._id || w.id} value={w.name}>{w.name}</option>
-                  ))}
-                </select>
-                {errors.fromWarehouse && <p className="text-xs text-destructive">{errors.fromWarehouse}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>To Warehouse *</Label>
-                <select
-                  value={form.toWarehouse}
-                  onChange={(e) => setField("toWarehouse", e.target.value)}
-                  className={cn("h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary", errors.toWarehouse ? "border-destructive" : "border-border")}
-                >
-                  <option value="">Select destination warehouse</option>
-                  {warehouses.map((w) => (
-                    <option key={w._id || w.id} value={w.name}>{w.name}</option>
-                  ))}
-                </select>
-                {errors.toWarehouse && <p className="text-xs text-destructive">{errors.toWarehouse}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Item *</Label>
-                <select
-                  value={form.itemId}
-                  onChange={(e) => {
-                    const item = inventoryItems.find((i) => (i._id || i.id) === e.target.value);
-                    setField("itemId", e.target.value);
-                    setField("itemName", item?.name || "");
-                    setField("unit", item?.unit || "");
-                  }}
-                  className={cn("h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:border-primary", errors.itemId ? "border-destructive" : "border-border")}
-                >
-                  <option value="">Select inventory item</option>
-                  {inventoryItems.map((item) => (
-                    <option key={item._id || item.id} value={item._id || item.id}>
-                      {item.name} {item.unit ? `(${item.unit})` : ""}
-                    </option>
-                  ))}
-                </select>
-                {errors.itemId && <p className="text-xs text-destructive">{errors.itemId}</p>}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Quantity *</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={form.quantity}
-                    onChange={(e) => setField("quantity", e.target.value)}
-                    className={cn(errors.quantity && "border-destructive")}
-                  />
-                  {errors.quantity && <p className="text-xs text-destructive">{errors.quantity}</p>}
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Unit</Label>
-                  <Input value={form.unit} readOnly placeholder="Auto-filled" className="bg-muted/50" />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Transfer Date *</Label>
-                <Input
-                  type="date"
-                  value={form.transferDate}
-                  onChange={(e) => setField("transferDate", e.target.value)}
-                  className={cn(errors.transferDate && "border-destructive")}
-                />
-                {errors.transferDate && <p className="text-xs text-destructive">{errors.transferDate}</p>}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Reason</Label>
-                <Input placeholder="e.g. Branch restocking" value={form.reason} onChange={(e) => setField("reason", e.target.value)} />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Notes</Label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setField("notes", e.target.value)}
-                  placeholder="Additional notes…"
-                  rows={3}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-              <button onClick={() => setDrawerOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted">
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-70"
-              >
-                {submitting ? "Saving…" : editId ? "Update" : "Create Transfer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </DrawerPop>
     </div>
   );
 }
