@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BadgeCheck,
   Building2,
+  CreditCard,
   Crown,
   FileText,
   Plus,
@@ -21,6 +22,14 @@ const quickActions = [
     href: "/dashboard/owner/add-restaurant",
     accent: "bg-primary/10 text-primary",
     border: "hover:border-primary/40",
+  },
+  {
+    title: "Subscriptions",
+    description: "View each restaurant's current plan and assign or change subscriptions.",
+    icon: CreditCard,
+    href: "/dashboard/owner/subscriptions",
+    accent: "bg-accent/10 text-accent",
+    border: "hover:border-accent/40",
   },
   {
     title: "Subscription Plans",
