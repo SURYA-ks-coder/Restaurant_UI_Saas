@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { MobileSidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import SidebarNew from "./sidebarNew";
 import { clearAuthData, getAccessToken } from "@/lib/auth";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
+import ModalAnt from "@/components/ui/ModalAnt";
+import ButtonClick from "@/components/ui/ButtonClick";
+
+// sessionStorage survives a same-tab refresh but is wiped when the tab/window
+// actually closes, so a missing marker on boot means this tab is "new" against
+// whatever session was left in localStorage — treat that as a closed-tab logout.
+const TAB_MARKER_KEY = "_dl_tab_open";
 
 function applyAppearancePrefs() {
   const root = document.documentElement;
@@ -37,6 +45,14 @@ export function DashboardLayout({ children }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // If this tab has no continuity marker, whatever session sits in localStorage
+    // belongs to a tab that was previously closed — end it before checking the token.
+    const hadTabMarker = sessionStorage.getItem(TAB_MARKER_KEY) === "1";
+    sessionStorage.setItem(TAB_MARKER_KEY, "1");
+    if (!hadTabMarker) {
+      clearAuthData();
+    }
+
     // Auth guard runs FIRST — if no token, redirect before rendering anything
     const token = getAccessToken();
     if (!token) {
@@ -47,10 +63,13 @@ export function DashboardLayout({ children }) {
     setMounted(true);
   }, [router]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     clearAuthData();
     router.replace("/login");
-  };
+  }, [router]);
+
+  const { idleOpen, idleCountdown, handleStayLoggedIn, handleIdleLogout } =
+    useIdleLogout(handleLogout);
 
   if (!mounted) {
     return <div className="min-h-screen bg-background text-foreground" />;
@@ -92,6 +111,40 @@ export function DashboardLayout({ children }) {
           {children}
         </main>
       </div>
+
+      <ModalAnt
+        isVisible={idleOpen}
+        centered={true}
+        padding="8px"
+        showCancelButton={false}
+        showOkButton={false}
+        showCloseButton={false}
+        width="440px"
+      >
+        <div className="flex flex-col gap-4 justify-center items-center pt-6 pb-2">
+          <p className="text-xl font-semibold text-center">⏱️ Session Idle</p>
+          <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+            You have been inactive for 1 hour. Do you want to stay logged in?
+          </p>
+          <p className="text-sm text-center font-medium text-red-500">
+            Logging out in{" "}
+            <span className="font-bold">{idleCountdown}</span> second
+            {idleCountdown !== 1 ? "s" : ""}...
+          </p>
+          <div className="flex gap-3">
+            <ButtonClick
+              BtnType="primary"
+              buttonName="Stay Logged In"
+              handleSubmit={handleStayLoggedIn}
+            />
+            <ButtonClick
+              BtnType="cancel"
+              buttonName="Logout"
+              handleSubmit={handleIdleLogout}
+            />
+          </div>
+        </div>
+      </ModalAnt>
     </div>
   );
 }
