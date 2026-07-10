@@ -5,6 +5,7 @@ import Table from "@/components/ui/Table";
 import { action, API, getAction } from "@/lib/API";
 import { getRestaurantId, getDefaultBranchId } from "@/lib/auth";
 import AddMenuItem from "./AddMenuItem";
+import ViewMenuItem from "./ViewMenuItem";
 
 const menuItemHeader = [
   {
@@ -57,6 +58,8 @@ export default function MenuItemList({ refreshKey }) {
   const [menuItemData, setMenuItemData] = useState([]);
   const [menuItemDrawerOpen, setMenuItemDrawerOpen] = useState(false);
   const [menuItemId, setMenuItemId] = useState(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewItemId, setViewItemId] = useState(null);
 
   useEffect(() => {
     getMenuItemList();
@@ -87,6 +90,11 @@ export default function MenuItemList({ refreshKey }) {
     } catch (error) {}
   };
 
+  const openView = (id) => {
+    setViewItemId(id);
+    setViewOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <Table
@@ -94,7 +102,8 @@ export default function MenuItemList({ refreshKey }) {
         data={menuItemData}
         title="Menu Items"
         rowKey="_id"
-        onView={() => {}}
+        onRowClick={(row) => openView(row._id)}
+        onView={(id) => openView(id)}
         onEdit={(id) => {
           setMenuItemId(id);
           setMenuItemDrawerOpen(true);
@@ -115,6 +124,15 @@ export default function MenuItemList({ refreshKey }) {
           getMenuItemList();
         }}
         updateId={menuItemId}
+      />
+
+      <ViewMenuItem
+        open={viewOpen}
+        close={() => {
+          setViewOpen(false);
+          setViewItemId(null);
+        }}
+        itemId={viewItemId}
       />
     </div>
   );
