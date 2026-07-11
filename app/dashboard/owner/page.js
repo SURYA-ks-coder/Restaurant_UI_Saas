@@ -17,7 +17,8 @@ import {
 const quickActions = [
   {
     title: "Restaurants",
-    description: "View all restaurants, register new ones, and manage existing entries.",
+    description:
+      "View all restaurants, register new ones, and manage existing entries.",
     icon: Plus,
     href: "/dashboard/owner/add-restaurant",
     accent: "bg-primary/10 text-primary",
@@ -25,20 +26,21 @@ const quickActions = [
   },
   {
     title: "Subscriptions",
-    description: "View each restaurant's current plan and assign or change subscriptions.",
+    description:
+      "View each restaurant's current plan and assign or change subscriptions.",
     icon: CreditCard,
     href: "/dashboard/owner/subscriptions",
     accent: "bg-accent/10 text-accent",
     border: "hover:border-accent/40",
   },
-  {
-    title: "Subscription Plans",
-    description: "Manage and configure available subscription tiers.",
-    icon: FileText,
-    href: "/dashboard/settings/master",
-    accent: "bg-success/10 text-success",
-    border: "hover:border-success/40",
-  },
+  // {
+  //   title: "Subscription Plans",
+  //   description: "Manage and configure available subscription tiers.",
+  //   icon: FileText,
+  //   href: "/dashboard/settings/master",
+  //   accent: "bg-success/10 text-success",
+  //   border: "hover:border-success/40",
+  // },
   {
     title: "Staff & Privileges",
     description: "Assign roles, manage staff access and permissions.",
