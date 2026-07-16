@@ -14,6 +14,7 @@ const baseFields = {
   restaurantName: "",
   ownerName: "",
   email: "",
+  adminEmail: "",
   password: "",
   mobileNumber: "",
   GSTNumber: "",
@@ -62,6 +63,10 @@ export default function AddRestaurant({
         .email("Enter a valid email")
         .required("Email is required"),
       ...(!isUpdate && {
+        adminEmail: Yup.string()
+          .trim()
+          .email("Enter a valid email")
+          .required("Admin email is required"),
         password: Yup.string()
           .min(6, "Min. 6 characters")
           .required("Password is required"),
@@ -127,6 +132,7 @@ export default function AddRestaurant({
           restaurantName: r.restaurantName || "",
           ownerName: r.ownerName || "",
           email: r.email || "",
+          adminEmail: "",
           password: "",
           mobileNumber: r.mobileNumber || "",
           GSTNumber: r.GSTNumber || "",
@@ -188,7 +194,7 @@ export default function AddRestaurant({
         isUpdate ? "Edit Restaurant" : "Register Restaurant",
         isUpdate
           ? "Update restaurant details."
-          : "Fill in business, location, and initial branch info.",
+          : "Fill in business, location, admin account, and initial branch info.",
       ]}
       footerBtn={["Cancel", isUpdate ? "Update" : "Register"]}
       handleSubmit={formik.submitForm}
@@ -211,18 +217,11 @@ export default function AddRestaurant({
             {...field("ownerName")}
           />
           <AntInput
-            label="Email"
+            label="Restaurant Email"
             type="email"
-            placeholder="owner@restaurant.com"
+            placeholder="contact@restaurant.com"
             {...field("email")}
           />
-          {!isUpdate && (
-            <AntPasswordInput
-              label="Password"
-              placeholder="Min. 6 characters"
-              {...field("password")}
-            />
-          )}
           <AntInput
             label="Mobile Number"
             placeholder="10-digit number"
@@ -309,6 +308,21 @@ export default function AddRestaurant({
 
         {!isUpdate && (
           <>
+            <SectionTitle>Admin Account Details</SectionTitle>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <AntInput
+                label="Admin Email"
+                type="email"
+                placeholder="admin@restaurant.com"
+                {...field("adminEmail")}
+              />
+              <AntPasswordInput
+                label="Password"
+                placeholder="Min. 6 characters"
+                {...field("password")}
+              />
+            </div>
+
             <SectionTitle>Initial Branch Details</SectionTitle>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <AntInput
