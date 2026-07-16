@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MobileSidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import SidebarNew from "./sidebarNew";
-import { clearAuthData, getAccessToken } from "@/lib/auth";
+import { clearAuthData, getAccessToken, TAB_MARKER_KEY } from "@/lib/auth";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import ModalAnt from "@/components/ui/ModalAnt";
 import ButtonClick from "@/components/ui/ButtonClick";
@@ -14,7 +14,7 @@ import ButtonClick from "@/components/ui/ButtonClick";
 // sessionStorage survives a same-tab refresh but is wiped when the tab/window
 // actually closes, so a missing marker on boot means this tab is "new" against
 // whatever session was left in localStorage — treat that as a closed-tab logout.
-const TAB_MARKER_KEY = "_dl_tab_open";
+// The marker (TAB_MARKER_KEY) is set by saveAuthData on login and here on boot.
 
 function applyAppearancePrefs() {
   const root = document.documentElement;
