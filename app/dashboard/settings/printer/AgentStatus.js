@@ -36,7 +36,7 @@ export default function AgentStatus() {
     try {
       const result = await action(API.GENERATE_PRINT_AGENT_KEY, {}, "POST");
       if (result?.statusCode === 200) {
-        setGeneratedKey(result?.data?.agentKey);
+        setGeneratedKey(result?.data);
       } else {
         message.error(result?.message || "Failed to generate agent key");
       }
@@ -47,10 +47,15 @@ export default function AgentStatus() {
     }
   };
 
+  // Ready-to-paste .env lines for the agent on the branch PC
+  const envSnippet = generatedKey
+    ? `BRANCH_ID=${generatedKey.branchId}\nAGENT_KEY=${generatedKey.agentKey}`
+    : "";
+
   const copyKey = async () => {
     try {
-      await navigator.clipboard.writeText(generatedKey);
-      message.success("Agent key copied");
+      await navigator.clipboard.writeText(envSnippet);
+      message.success("Copied — paste into the agent's .env file");
     } catch {
       message.error("Could not copy — select and copy it manually");
     }
@@ -96,17 +101,17 @@ export default function AgentStatus() {
         )}
       </div>
 
-      {canManage && (
-        <Tooltip title="Generate a credential for the on-site print agent app">
-          <Button
-            size="small"
-            icon={<KeyRound size={13} />}
-            onClick={() => setKeyModalOpen(true)}
-          >
-            Agent Key
-          </Button>
-        </Tooltip>
-      )}
+      {/* {canManage && ( */}
+      <Tooltip title="Generate a credential for the on-site print agent app">
+        <Button
+          size="small"
+          icon={<KeyRound size={13} />}
+          onClick={() => setKeyModalOpen(true)}
+        >
+          Agent Key
+        </Button>
+      </Tooltip>
+      {/* )} */}
 
       <ModalAnt
         isVisible={keyModalOpen}
@@ -121,15 +126,19 @@ export default function AgentStatus() {
             <p className="text-sm text-red-600 font-medium">
               Copy this key now — it will not be shown again.
             </p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 break-all rounded bg-muted px-3 py-2 text-xs">
-                {generatedKey}
-              </code>
-              <Button size="small" icon={<Copy size={13} />} onClick={copyKey} />
+            <div className="flex items-start gap-2">
+              <pre className="flex-1 overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted px-3 py-2 text-xs">
+                {envSnippet}
+              </pre>
+              <Button
+                size="small"
+                icon={<Copy size={13} />}
+                onClick={copyKey}
+              />
             </div>
             <p className="text-xs text-muted-foreground">
-              Paste it as AGENT_KEY in the print agent&apos;s .env file on the
-              restaurant PC, then restart the agent.
+              Paste both lines into the print agent&apos;s .env file on the
+              branch PC (keep the SERVER_URL line), then restart the agent.
             </p>
             <div className="flex justify-end">
               <Button size="small" onClick={closeKeyModal}>

@@ -7,6 +7,7 @@ import { action, API, getAction } from "@/lib/API";
 import { hasPermission } from "@/lib/auth";
 import AddPrinter from "./AddPrinter";
 import ViewPrinter from "./ViewPrinter";
+import AgentStatus from "./AgentStatus";
 
 const CONNECTION_ICONS = {
   lan: <Globe size={14} className="mr-1 inline" />,
@@ -105,6 +106,7 @@ export default function PrinterList({ refreshKey }) {
 
   return (
     <div className="space-y-4">
+      <AgentStatus />
       <Table
         header={printerHeaders}
         data={data}
