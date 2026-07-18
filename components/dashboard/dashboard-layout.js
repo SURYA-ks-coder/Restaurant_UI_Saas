@@ -43,6 +43,17 @@ export function DashboardLayout({ children }) {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // Keyed onto <main> so the active page remounts (and refetches) on branch switch.
+  const [branchKey, setBranchKey] = useState("");
+
+  useEffect(() => {
+    setBranchKey(localStorage.getItem("branchId") || "");
+    const onBranchChanged = (e) => {
+      setBranchKey(e.detail?.branchId ?? localStorage.getItem("branchId") ?? "");
+    };
+    window.addEventListener("branchChanged", onBranchChanged);
+    return () => window.removeEventListener("branchChanged", onBranchChanged);
+  }, []);
 
   useEffect(() => {
     // If this tab has no continuity marker, whatever session sits in localStorage
@@ -99,15 +110,19 @@ export function DashboardLayout({ children }) {
         )}
       </AnimatePresence>
 
-      {/* Sidebar is now fixed-position — content uses ml-20 (80px) offset */}
+      {/* Rail sidebar is fixed-position and desktop-only — content offsets by
+          its 80px width only at lg+; mobile navigates via the hamburger drawer */}
       <SidebarNew onLogout={handleLogout} />
 
-      <div className="ml-20 flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden lg:ml-20">
         <TopNav
           onMenuToggle={() => setMobileMenuOpen((value) => !value)}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-y-auto bg-background p-4">
+        <main
+          key={branchKey}
+          className="flex-1 overflow-y-auto bg-background p-2 sm:p-4"
+        >
           {children}
         </main>
       </div>

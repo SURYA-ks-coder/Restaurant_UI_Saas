@@ -374,7 +374,7 @@ export default function CreateUpdateRole({
 
                         <AccordionContent>
                           {group.children.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-x-8">
+                            <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
                               <div className="flex items-center py-2.5 border-b border-border/60">
                                 <Checkbox
                                   checked={permissions.has(group.id)}

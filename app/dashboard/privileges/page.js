@@ -42,7 +42,7 @@ export default function PrivilegesPage() {
 
   return (
     <div className="flex flex-col gap-4 ">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <Heading
           title="User Privileges"
           description="Establishing roles and delegating responsibilities"

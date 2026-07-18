@@ -158,7 +158,7 @@ function FoodCard({ item, onAdd }) {
         </button>
 
         {/* Category badge */}
-        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-gray-700 shadow-sm backdrop-blur-sm capitalize">
+        <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-gray-700 shadow-sm backdrop-blur-sm">
           {item.category}
         </span>
 
@@ -477,7 +477,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-5.5rem)] gap-5 overflow-hidden">
+    <div className="flex flex-col gap-5 lg:h-[calc(100vh-5.5rem)] lg:flex-row lg:overflow-hidden">
       {/* ══════════════════════════════════════════
           LEFT PANEL — menu browsing (70%)
       ══════════════════════════════════════════ */}
@@ -567,7 +567,7 @@ export default function OrdersPage() {
       {/* ══════════════════════════════════════════
           RIGHT PANEL — order cart (30%)
       ══════════════════════════════════════════ */}
-      <div className="flex w-85 shrink-0 flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-xl xl:w-95">
+      <div className="flex w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-xl lg:w-85 xl:w-95">
         {/* Panel header */}
         <div className="shrink-0 border-b border-gray-100 px-5 pb-4 pt-2">
           <div className="mb-3 flex items-center justify-between">

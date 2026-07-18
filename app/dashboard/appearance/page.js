@@ -191,7 +191,7 @@ export default function AppearancePage() {
           title="Theme"
           description="Switch between light, dark, or follow your system preference"
         />
-        <div className="mt-5 grid grid-cols-3 gap-4">
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
             { key: "light", label: "Light", Icon: Sun },
             { key: "dark", label: "Dark", Icon: Moon },

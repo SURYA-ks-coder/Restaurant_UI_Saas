@@ -363,9 +363,10 @@ const SidebarNew = ({ onLogout = () => {} }) => {
   return (
     <>
       {/* ══════════════════════════════════════════
-          ICON RAIL — always visible, 80 px, primary bg
+          ICON RAIL — desktop only (mobile uses the
+          hamburger drawer), 80 px, primary bg
           ══════════════════════════════════════════ */}
-      <div className="fixed top-0 left-0 z-1000 flex h-full w-20 flex-col select-none bg-primary font-figtree">
+      <div className="fixed top-0 left-0 z-1000 hidden h-full w-20 flex-col select-none bg-primary font-figtree lg:flex">
         {/* Logo */}
         <div className="flex min-h-[76px] shrink-0 items-center justify-center">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
@@ -491,7 +492,7 @@ const SidebarNew = ({ onLogout = () => {} }) => {
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            className="fixed top-0 left-20 z-999 flex h-full w-64 flex-col overflow-hidden
+            className="fixed top-0 left-20 z-999 hidden h-full w-64 flex-col overflow-hidden lg:flex
               border-r border-sidebar-border/60
               bg-sidebar
               shadow-[8px_0_32px_rgba(0,0,0,0.08)] dark:shadow-[8px_0_32px_rgba(0,0,0,0.55)]"

@@ -405,11 +405,11 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-5 text-foreground">
+    <div className="min-h-screen bg-background p-2 text-foreground sm:p-5">
       {/* ── Header ── */}
       <div className="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Greeting + quick stats — dark aurora card */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl border border-white/6 bg-[#0c0a1e] p-7 text-white shadow-2xl">
+        <div className="lg:col-span-2 relative overflow-hidden rounded-3xl border border-white/6 bg-[#0c0a1e] p-5 text-white shadow-2xl sm:p-7">
           {/* Aurora glow orbs */}
           <div className="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-violet-700/50 blur-[100px]" />
           <div className="pointer-events-none absolute right-8 top-0 h-60 w-60 rounded-full bg-indigo-500/30 blur-[80px]" />
@@ -429,7 +429,7 @@ export default function DashboardPage() {
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-violet-400/40 to-transparent" />
 
           {/* Greeting row */}
-          <div className="relative z-10 mb-8 flex items-start justify-between">
+          <div className="relative z-10 mb-8 flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
@@ -437,7 +437,7 @@ export default function DashboardPage() {
                   {dateStr}
                 </p>
               </div>
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                 {greeting}, Admin 👋
               </h1>
               <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/5 px-3 py-1.5 backdrop-blur-sm">
@@ -486,7 +486,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stat tiles */}
-          <div className="relative z-10 grid grid-cols-4 gap-3">
+          <div className="relative z-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {HEADER_STATS.map(({ label, value, Icon, isSplit }, i) => {
               const accent = [
                 {
