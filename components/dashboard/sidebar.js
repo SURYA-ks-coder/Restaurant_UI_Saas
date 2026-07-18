@@ -1,12 +1,17 @@
 "use client";
 
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart3,
   ChefHat,
+  ChevronDown,
   ChevronLeft,
+  Flame,
   LayoutDashboard,
+  LogOut,
   Package,
   QrCode,
   Receipt,
@@ -18,6 +23,8 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { navItems as menuTree } from "./sidebarNew";
+import { getMenuIds, getUserRole } from "@/lib/auth";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -126,28 +133,236 @@ export function Sidebar({ collapsed, onToggle }) {
   );
 }
 
-export function MobileSidebar({ onClose }) {
+/* ═══════════════════════════════════════════════════════════
+   MOBILE DRAWER — mirrors the desktop rail's grouped nav tree
+   (imported from sidebarNew) with accordion sections
+   ═══════════════════════════════════════════════════════════ */
+
+const cloneIcon = (icon, className) =>
+  React.isValidElement(icon)
+    ? React.cloneElement(icon, { className })
+    : icon;
+
+export function MobileSidebar({ onClose, onLogout = () => {} }) {
+  const pathname = usePathname();
+  const [openId, setOpenId] = useState(null);
+  const [role, setRole] = useState("");
+  const [allowedMenuIds, setAllowedMenuIds] = useState(null);
+
+  useEffect(() => {
+    setRole(getUserRole());
+    const ids = getMenuIds();
+    setAllowedMenuIds(ids.length > 0 ? new Set(ids) : null);
+  }, []);
+
+  const isRouteActive = (link) => {
+    if (!link) return false;
+    if (link === "/dashboard") return pathname === "/dashboard";
+    return pathname === link || pathname.startsWith(link + "/");
+  };
+
+  // Start with the section holding the current route expanded
+  useEffect(() => {
+    const activeGroup = menuTree.find((m) =>
+      m.submenus?.some((g) => g.subMenu?.some((i) => isRouteActive(i.link))),
+    );
+    if (activeGroup) setOpenId(activeGroup.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  const visibleItems = allowedMenuIds
+    ? menuTree.filter((m) => allowedMenuIds.has(m.id))
+    : menuTree;
+
   return (
-    <aside className="h-screen w-80 max-w-[85vw] border-r border-border bg-sidebar">
-      <div className="flex h-16 items-center justify-between px-4">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-3"
-          onClick={onClose}
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ChefHat className="h-5 w-5" />
+    <aside className="flex h-screen w-80 max-w-[86vw] flex-col overflow-hidden rounded-r-3xl bg-sidebar shadow-2xl">
+      {/* ── Header ── */}
+      <div className="relative shrink-0 overflow-hidden bg-primary px-5 pb-6 pt-5">
+        {/* soft glow accents */}
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-14 -left-8 h-32 w-32 rounded-full bg-black/15 blur-2xl" />
+
+        <div className="relative flex items-start justify-between">
+          <Link
+            href="/dashboard"
+            onClick={onClose}
+            className="flex items-center gap-3"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
+              <Flame className="h-5 w-5 text-white" />
+            </span>
+            <span>
+              <span className="block text-lg font-bold leading-tight text-white">
+                Flavor Hub
+              </span>
+              <span className="block text-[11px] text-white/60">
+                Restaurant Suite
+              </span>
+            </span>
+          </Link>
+          <button
+            onClick={onClose}
+            aria-label="Close menu"
+            className="rounded-xl bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+
+        {role && (
+          <span className="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/80 ring-1 ring-white/20">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+            {role.replace(/_/g, " ")}
           </span>
-          <span className="text-lg font-semibold">Flavor Hub</span>
-        </Link>
+        )}
+      </div>
+
+      {/* ── Nav ── */}
+      <nav className="flex-1 overflow-y-auto px-3 py-3">
+        <ul className="space-y-1">
+          {visibleItems.map((menu) => {
+            const childLinks = (menu.submenus ?? [])
+              .flatMap((g) => g.subMenu ?? [])
+              .filter(
+                (i) =>
+                  i.navigation &&
+                  i.link &&
+                  !i.hideForRoles?.includes(role),
+              );
+            const hasChildren = childLinks.length > 0;
+            const groupActive = hasChildren
+              ? childLinks.some((i) => isRouteActive(i.link))
+              : isRouteActive(menu.link);
+            const open = openId === menu.id;
+
+            const iconTile = (
+              <span
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors",
+                  groupActive
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
+                {cloneIcon(menu.icon, "h-4.5 w-4.5")}
+              </span>
+            );
+
+            if (!hasChildren) {
+              return (
+                <li key={menu.id}>
+                  <Link
+                    href={menu.link}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center gap-3 rounded-2xl px-2.5 py-2 transition-colors",
+                      groupActive ? "bg-primary/8" : "hover:bg-muted/60",
+                    )}
+                  >
+                    {iconTile}
+                    <span
+                      className={cn(
+                        "flex-1 text-sm font-medium",
+                        groupActive ? "text-primary" : "text-foreground",
+                      )}
+                    >
+                      {menu.title}
+                    </span>
+                    {groupActive && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
+                  </Link>
+                </li>
+              );
+            }
+
+            return (
+              <li key={menu.id}>
+                <button
+                  onClick={() => setOpenId(open ? null : menu.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors",
+                    groupActive && !open ? "bg-primary/8" : "hover:bg-muted/60",
+                  )}
+                >
+                  {iconTile}
+                  <span
+                    className={cn(
+                      "flex-1 text-sm font-medium",
+                      groupActive ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {menu.title}
+                  </span>
+                  <motion.span
+                    animate={{ rotate: open ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-muted-foreground"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </motion.span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <ul className="ml-5.5 space-y-0.5 border-l-2 border-border/70 py-1.5 pl-3.5">
+                        {childLinks.map((item) => {
+                          const active = isRouteActive(item.link);
+                          return (
+                            <li key={item.id}>
+                              <Link
+                                href={item.link}
+                                onClick={onClose}
+                                className={cn(
+                                  "flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition-colors",
+                                  active
+                                    ? "bg-primary font-semibold text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                                )}
+                              >
+                                {cloneIcon(
+                                  item.icon,
+                                  cn(
+                                    "h-4 w-4 shrink-0",
+                                    active
+                                      ? "text-primary-foreground"
+                                      : "text-muted-foreground",
+                                  ),
+                                )}
+                                <span className="truncate">{item.title}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* ── Footer ── */}
+      <div className="shrink-0 border-t border-border px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button
-          onClick={onClose}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          onClick={onLogout}
+          className="flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition-colors hover:bg-destructive/10"
         >
-          <X className="h-5 w-5" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+            <LogOut className="h-4.5 w-4.5" />
+          </span>
+          <span className="text-sm font-medium text-destructive">Log out</span>
         </button>
       </div>
-      <NavLinks onNavigate={onClose} />
     </aside>
   );
 }

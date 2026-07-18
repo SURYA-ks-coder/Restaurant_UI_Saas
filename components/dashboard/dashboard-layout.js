@@ -104,7 +104,10 @@ export function DashboardLayout({ children }) {
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
               onClick={(event) => event.stopPropagation()}
             >
-              <MobileSidebar onClose={() => setMobileMenuOpen(false)} />
+              <MobileSidebar
+                onClose={() => setMobileMenuOpen(false)}
+                onLogout={handleLogout}
+              />
             </motion.div>
           </motion.div>
         )}
