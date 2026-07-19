@@ -57,13 +57,14 @@ export default function StockPage() {
       if (result?.statusCode === 200) {
         setStockList(
           (result.data || []).map((item) => {
-            const currentStock = item.currentStock ?? item.stock ?? 0;
-            const par = item.par ?? item.parLevel ?? 0;
+            const currentStock = item.stockQuantity ?? 0;
+            const par = item.minimumStock ?? 0;
             return {
               ...item,
+              name: item.materialName,
               currentStock,
               par,
-              cost: item.cost ?? item.unitCost ?? "—",
+              cost: item.purchasePrice ? `₹${item.purchasePrice}` : "—",
               status: getStockStatus(currentStock, par),
             };
           }),
@@ -116,8 +117,7 @@ export default function StockPage() {
       ).replace(":id", id);
       const result = await action(endpoint, {
         quantity: Number(adjustForm.quantity),
-        reason: adjustForm.reason,
-        notes: adjustForm.notes,
+        notes: [adjustForm.reason, adjustForm.notes].filter(Boolean).join(" — "),
       });
 
       if (result?.statusCode === 200 || result?.statusCode === 201) {
@@ -391,32 +391,36 @@ export default function StockPage() {
               <div className="py-12 text-center text-sm text-muted-foreground">No adjustment history yet.</div>
             ) : (
               <div className="space-y-3">
-                {(historyMap[historyItem._id || historyItem.id] || []).map((entry, idx) => (
-                  <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                    <div
-                      className={cn(
-                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
-                        entry.type === "add" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive",
-                      )}
-                    >
-                      {entry.type === "add" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className={cn("text-sm font-semibold", entry.type === "add" ? "text-success" : "text-destructive")}>
-                          {entry.type === "add" ? "+" : "-"}
-                          {entry.quantity} {historyItem.unit}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : "—"}
-                        </span>
+                {(historyMap[historyItem._id || historyItem.id] || []).map((entry, idx) => {
+                  const isAdd = Number(entry.quantity) >= 0;
+                  return (
+                    <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                      <div
+                        className={cn(
+                          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                          isAdd ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive",
+                        )}
+                      >
+                        {isAdd ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />}
                       </div>
-                      <p className="mt-0.5 text-xs font-medium">{entry.reason}</p>
-                      {entry.notes && <p className="mt-0.5 truncate text-xs text-muted-foreground">{entry.notes}</p>}
-                      {entry.adjustedBy && <p className="mt-0.5 text-xs text-muted-foreground">By: {entry.adjustedBy}</p>}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className={cn("text-sm font-semibold", isAdd ? "text-success" : "text-destructive")}>
+                            {isAdd ? "+" : "-"}
+                            {Math.abs(Number(entry.quantity))} {historyItem.unit}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "—"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs font-medium capitalize">
+                          {(entry.type || "").replace(/_/g, " ")} · Balance: {entry.updatedQuantity} {historyItem.unit}
+                        </p>
+                        {entry.notes && <p className="mt-0.5 truncate text-xs text-muted-foreground">{entry.notes}</p>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

@@ -33,17 +33,17 @@ const EMPTY_FORM = {
 };
 
 const itemHeaders = [
-  { title: "Item Name", value: "name", type: "bold", width: 200 },
+  { title: "Item Name", value: "materialName", type: "bold", width: 200 },
   { title: "Category", value: "category" },
   { title: "Unit", value: "unit", width: 90 },
   {
-    title: "Par Level",
-    value: "par",
-    render: (value, row) => (row.par ? `${row.par} ${row.unit || ""}` : "—"),
+    title: "Min Stock",
+    value: "minimumStock",
+    render: (value, row) => (value ? `${value} ${row.unit || ""}` : "—"),
   },
   {
     title: "Unit Cost",
-    value: "cost",
+    value: "purchasePrice",
     render: (value) => (value ? `₹${value}` : "—"),
   },
   { title: "Supplier", value: "supplier" },
@@ -99,11 +99,11 @@ export default function InventoryPage() {
   const openEdit = (id, item) => {
     setEditId(id);
     setForm({
-      name: item.name || "",
+      name: item.materialName || item.name || "",
       category: item.category || "",
       unit: item.unit || "kg",
-      par: item.par ?? item.parLevel ?? "",
-      cost: item.cost ?? item.unitCost ?? "",
+      par: item.minimumStock ?? "",
+      cost: item.purchasePrice ?? "",
       supplier: item.supplier || "",
     });
     setErrors({});
@@ -116,7 +116,15 @@ export default function InventoryPage() {
     try {
       const endpoint = editId ? `${API.UPDATE_INVENTORY}/${editId}` : API.CREATE_INVENTORY;
       const method = editId ? "PATCH" : "POST";
-      const result = await action(endpoint, form, method);
+      const payload = {
+        materialName: form.name,
+        category: form.category,
+        unit: form.unit,
+        minimumStock: Number(form.par) || 0,
+        purchasePrice: Number(form.cost) || 0,
+        supplier: form.supplier,
+      };
+      const result = await action(endpoint, payload, method);
 
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         message.success(editId ? "Item updated." : "Item created.");
@@ -237,7 +245,7 @@ export default function InventoryPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <AntInput
-              label="Par Level"
+              label="Minimum Stock"
               type="number"
               placeholder="e.g. 20"
               value={form.par}

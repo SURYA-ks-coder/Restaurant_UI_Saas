@@ -37,6 +37,8 @@ import {
   Palette,
   LayoutGrid,
   Building,
+  ShoppingCart,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -154,6 +156,20 @@ export const navItems = [
             link: "/dashboard/inventory/stock",
             navigation: true,
             icon: <PackageSearch />,
+          },
+          {
+            id: 6,
+            title: "Purchases",
+            link: "/dashboard/inventory/purchases",
+            navigation: true,
+            icon: <ShoppingCart />,
+          },
+          {
+            id: 7,
+            title: "Stock Count",
+            link: "/dashboard/inventory/stock-count",
+            navigation: true,
+            icon: <ClipboardCheck />,
           },
           {
             id: 3,
