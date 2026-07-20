@@ -40,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getSocket } from "@/components/services/socket";
-import { getAction, API } from "@/lib/API";
+import { getAction, patchAction, API } from "@/lib/API";
 import { getUserData } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -60,6 +60,8 @@ const NOTIFICATION_ICON_MAP = {
   // Reservations
   reservation_confirmed: { Icon: CalendarCheck, color: "text-violet-500" },
   reservation_cancelled: { Icon: CalendarX, color: "text-rose-500" },
+  // Table-side service requests
+  waiter_alert: { Icon: Bell, color: "text-rose-500" },
   // Milestones / misc
   sales_milestone: { Icon: TrendingUp, color: "text-emerald-500" },
   table_closed: { Icon: LayoutGrid, color: "text-blue-500" },
@@ -130,8 +132,8 @@ export function TopNav({ onMenuToggle, onLogout }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [profileHref, setProfileHref] = useState("/dashboard/staff");
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [unreadCount, setUnreadCount] = useState(INITIAL_NOTIFICATIONS.length);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { resolvedTheme, setTheme } = useTheme();
 
   // ── Branch selector state ──────────────────────────────────────────────────
@@ -230,10 +232,34 @@ export function TopNav({ onMenuToggle, onLogout }) {
     fetchMe();
   }, []);
 
+  // Notification history now persists server-side, so the bell survives a
+  // refresh/reconnect instead of only showing whatever arrived live.
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    const fetchNotifications = async () => {
+      try {
+        const result = await getAction(API.GET_NOTIFICATIONS);
+        if (result?.statusCode === 200) {
+          const items = (result.data?.items || []).map((n) => ({
+            id: n._id,
+            type: n.type,
+            title: n.title,
+            description: n.message,
+            timestamp: n.createdAt,
+          }));
+          setNotifications(items);
+          setUnreadCount(result.data?.unreadCount || 0);
+        }
+      } catch {
+        // keep whatever has arrived live over the socket
+      }
+    };
 
+    fetchNotifications();
+    window.addEventListener("branchChanged", fetchNotifications);
+    return () => window.removeEventListener("branchChanged", fetchNotifications);
+  }, []);
+
+  useEffect(() => {
     const handleNotification = (notification) => {
       const newEntry = {
         id: Date.now(),
@@ -246,12 +272,31 @@ export function TopNav({ onMenuToggle, onLogout }) {
       setUnreadCount((prev) => prev + 1);
     };
 
-    socket.on("notification:new", handleNotification);
-    return () => socket.off("notification:new", handleNotification);
+    // The socket connects asynchronously (see dashboard-layout.js), so it may
+    // not exist yet on first mount — poll until it's available instead of
+    // giving up permanently.
+    let attachedSocket = null;
+    const attach = () => {
+      const socket = getSocket();
+      if (!socket || socket === attachedSocket) return;
+      attachedSocket = socket;
+      socket.on("notification:new", handleNotification);
+    };
+
+    attach();
+    const pollId = setInterval(attach, 1000);
+
+    return () => {
+      clearInterval(pollId);
+      if (attachedSocket)
+        attachedSocket.off("notification:new", handleNotification);
+    };
   }, []);
 
   const handleDropdownOpen = (open) => {
-    if (open) setUnreadCount(0);
+    if (!open || unreadCount === 0) return;
+    setUnreadCount(0);
+    patchAction(API.MARK_NOTIFICATIONS_READ, {}).catch(() => {});
   };
 
   const isLightTheme = mounted && resolvedTheme === "light";

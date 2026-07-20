@@ -7,6 +7,8 @@ import { MobileSidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
 import SidebarNew from "./sidebarNew";
 import { clearAuthData, getAccessToken, TAB_MARKER_KEY } from "@/lib/auth";
+import { connectSocket } from "@/components/services/socket";
+import { joinBranch } from "@/components/socket/kotSocketActions";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import ModalAnt from "@/components/ui/ModalAnt";
 import ButtonClick from "@/components/ui/ButtonClick";
@@ -49,10 +51,23 @@ export function DashboardLayout({ children }) {
   useEffect(() => {
     setBranchKey(localStorage.getItem("branchId") || "");
     const onBranchChanged = (e) => {
-      setBranchKey(e.detail?.branchId ?? localStorage.getItem("branchId") ?? "");
+      const branchId = e.detail?.branchId ?? localStorage.getItem("branchId") ?? "";
+      setBranchKey(branchId);
+      if (branchId) joinBranch(branchId);
     };
     window.addEventListener("branchChanged", onBranchChanged);
     return () => window.removeEventListener("branchChanged", onBranchChanged);
+  }, []);
+
+  useEffect(() => {
+    // Establish the realtime connection once per session so the bell (TopNav)
+    // and any other dashboard page can receive notification:new / order events,
+    // instead of relying on the Kitchen page happening to be open.
+    const token = getAccessToken();
+    if (!token) return;
+    connectSocket({ token });
+    const branchId = localStorage.getItem("branchId");
+    if (branchId) joinBranch(branchId);
   }, []);
 
   useEffect(() => {

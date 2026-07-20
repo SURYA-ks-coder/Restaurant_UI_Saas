@@ -10,16 +10,18 @@ export const joinDashboard = (branchId) => {
 
 export const joinBranch = (branchId) => {
   const socket = getSocket();
+  if (!socket) return;
 
-  socket.emit(`branch:${branchId}`, {
+  socket.emit("branch:join", {
     branchId,
   });
 };
 
 export const leaveBranch = (branchId) => {
   const socket = getSocket();
+  if (!socket) return;
 
-  socket.emit(`branch:${branchId}:leave`, {
+  socket.emit("branch:leave", {
     branchId,
   });
 };

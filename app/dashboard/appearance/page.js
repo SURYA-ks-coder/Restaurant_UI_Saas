@@ -61,7 +61,7 @@ const LANGUAGES = [
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-function applyAccentColor(hue) {
+function applyAccentColor(hue, hex) {
   const root = document.documentElement;
   const isDark = root.classList.contains("dark");
   const L = isDark ? "0.7" : "0.58";
@@ -71,6 +71,15 @@ function applyAccentColor(hue) {
   root.style.setProperty("--ring", val);
   root.style.setProperty("--sidebar-primary", val);
   root.style.setProperty("--sidebar-ring", val);
+
+  // AntD components (Switch, Checkbox, Radio, Button, ...) can't read the
+  // CSS var above, so hand them the resolved hex via a global event.
+  if (hex) {
+    localStorage.setItem("themeAccentHex", hex);
+    window.dispatchEvent(
+      new CustomEvent("accent-color-change", { detail: { hex } }),
+    );
+  }
 }
 
 function applyRadius(radius) {
@@ -135,15 +144,15 @@ export default function AppearancePage() {
     setQrShowImages(qrImgs);
     setQrTableMode(qrTable);
 
-    applyAccentColor(h);
+    applyAccentColor(h, ACCENT_COLORS.find((c) => c.hue === h)?.hex);
     applyRadius(r);
     applyFontSize(f);
     applyDirection(dir);
   }, []);
 
-  const handleAccent = (hue) => {
+  const handleAccent = (hue, hex) => {
     setAccentHue(hue);
-    applyAccentColor(hue);
+    applyAccentColor(hue, hex);
     localStorage.setItem("themeHue", String(hue));
   };
 
@@ -233,7 +242,7 @@ export default function AppearancePage() {
           {ACCENT_COLORS.map((color) => (
             <button
               key={color.hue}
-              onClick={() => handleAccent(color.hue)}
+              onClick={() => handleAccent(color.hue, color.hex)}
               title={color.name}
               className={cn(
                 "relative h-9 w-9 rounded-lg transition-all",
