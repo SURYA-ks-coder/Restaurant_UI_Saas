@@ -23,8 +23,12 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navItems as menuTree } from "./sidebarNew";
-import { getMenuIds, getUserRole } from "@/lib/auth";
+import {
+  navItems as menuTree,
+  getAllowedPermissionIds,
+  filterNavItemsByPermissions,
+} from "./sidebarNew";
+import { getUserRole } from "@/lib/auth";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -150,9 +154,9 @@ export function MobileSidebar({ onClose, onLogout = () => {} }) {
   const [allowedMenuIds, setAllowedMenuIds] = useState(null);
 
   useEffect(() => {
-    setRole(getUserRole());
-    const ids = getMenuIds();
-    setAllowedMenuIds(ids.length > 0 ? new Set(ids) : null);
+    const loggedRole = getUserRole();
+    setRole(loggedRole);
+    setAllowedMenuIds(getAllowedPermissionIds(loggedRole));
   }, []);
 
   const isRouteActive = (link) => {
@@ -170,9 +174,7 @@ export function MobileSidebar({ onClose, onLogout = () => {} }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  const visibleItems = allowedMenuIds
-    ? menuTree.filter((m) => allowedMenuIds.has(m.id))
-    : menuTree;
+  const visibleItems = filterNavItemsByPermissions(menuTree, allowedMenuIds);
 
   return (
     <aside className="flex h-screen w-80 max-w-[86vw] flex-col overflow-hidden rounded-r-3xl bg-sidebar shadow-2xl">

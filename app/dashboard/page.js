@@ -27,6 +27,7 @@ import {
   Zap,
 } from "lucide-react";
 import { action, getAction, API } from "@/lib/API";
+import { getUserData } from "@/lib/auth";
 import dayjs from "dayjs";
 
 /* ── data ──────────────────────────────────────────────────────────────── */
@@ -232,10 +233,15 @@ export default function DashboardPage() {
   const [recentActivities, setRecentActivities] = useState([]);
   const [customerSummary, setCustomerSummary] = useState({});
   const [branchPerformance, setBranchPerformance] = useState([]);
+  const [userName, setUserName] = useState("");
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    setUserName(getUserData()?.name || "");
   }, []);
 
   const hour = now.getHours();
@@ -438,7 +444,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                {greeting}, Admin 👋
+                {greeting}, {userName || "Admin"} 👋
               </h1>
               <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/5 px-3 py-1.5 backdrop-blur-sm">
                 <Clock className="h-3 w-3 text-white/30" />
@@ -524,10 +530,8 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-2xl font-bold tabular-nums">
                     {isSplit
-                      ? liveOrders[value]?.occupied +
-                        "/" +
-                        liveOrders[value]?.total
-                      : liveOrders[value]}
+                      ? `${liveOrders[value]?.occupied ?? 0}/${liveOrders[value]?.total ?? 0}`
+                      : (liveOrders[value] ?? 0)}
                   </p>
                   <p className="mt-1 text-[11px] text-white/40">{label}</p>
                 </div>

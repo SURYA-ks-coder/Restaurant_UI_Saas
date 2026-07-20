@@ -42,6 +42,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// permissionId values reference the privileges menu catalog returned by
+// API.GET_MENU_LIST (see FALLBACK_MENU_LIST in privileges/CreateUpdateRole.js).
+// A leaf without a permissionId is only visible to owner / super_admin.
 export const navItems = [
   {
     id: 1,
@@ -49,6 +52,7 @@ export const navItems = [
     shortTitle: "Dash",
     icon: <LayoutDashboard />,
     link: "/dashboard",
+    permissionId: 1,
   },
 
   // ================= Operations =================
@@ -68,6 +72,7 @@ export const navItems = [
             link: "/dashboard/orders",
             navigation: true,
             icon: <ClipboardList />,
+            permissionId: 3,
           },
           {
             id: 2,
@@ -75,6 +80,7 @@ export const navItems = [
             link: "/dashboard/ordersList",
             navigation: true,
             icon: <ListOrdered />,
+            permissionId: 4,
           },
           {
             id: 3,
@@ -82,6 +88,7 @@ export const navItems = [
             link: "/dashboard/billing",
             navigation: true,
             icon: <CreditCard />,
+            permissionId: 5,
           },
           {
             id: 4,
@@ -89,6 +96,7 @@ export const navItems = [
             link: "/dashboard/kitchen",
             navigation: true,
             icon: <ChefHat />,
+            permissionId: 8,
           },
           {
             id: 5,
@@ -96,6 +104,7 @@ export const navItems = [
             link: "/dashboard/tables",
             navigation: true,
             icon: <Table2 />,
+            permissionId: 7,
           },
           {
             id: 6,
@@ -103,6 +112,7 @@ export const navItems = [
             link: "/dashboard/qr-orders",
             navigation: true,
             icon: <QrCode />,
+            permissionId: 10,
           },
         ],
       },
@@ -126,6 +136,7 @@ export const navItems = [
             link: "/dashboard/menus",
             navigation: true,
             icon: <BookOpen />,
+            permissionId: 9,
           },
         ],
       },
@@ -149,6 +160,7 @@ export const navItems = [
             link: "/dashboard/inventory",
             navigation: true,
             icon: <Boxes />,
+            permissionId: 12,
           },
           {
             id: 2,
@@ -156,6 +168,7 @@ export const navItems = [
             link: "/dashboard/inventory/stock",
             navigation: true,
             icon: <PackageSearch />,
+            permissionId: 12,
           },
           {
             id: 8,
@@ -163,6 +176,7 @@ export const navItems = [
             link: "/dashboard/inventory/recipes",
             navigation: true,
             icon: <ChefHat />,
+            permissionId: 12,
           },
           {
             id: 6,
@@ -170,6 +184,7 @@ export const navItems = [
             link: "/dashboard/inventory/purchases",
             navigation: true,
             icon: <ShoppingCart />,
+            permissionId: 12,
           },
           {
             id: 7,
@@ -177,6 +192,7 @@ export const navItems = [
             link: "/dashboard/inventory/stock-count",
             navigation: true,
             icon: <ClipboardCheck />,
+            permissionId: 12,
           },
           {
             id: 3,
@@ -184,6 +200,7 @@ export const navItems = [
             link: "/dashboard/inventory/warehouse",
             navigation: true,
             icon: <Warehouse />,
+            permissionId: 12,
           },
           {
             id: 4,
@@ -191,6 +208,7 @@ export const navItems = [
             link: "/dashboard/inventory/transfers",
             navigation: true,
             icon: <ArrowLeftRight />,
+            permissionId: 12,
           },
           {
             id: 5,
@@ -198,6 +216,7 @@ export const navItems = [
             link: "/dashboard/inventory/wastage",
             navigation: true,
             icon: <Trash2 />,
+            permissionId: 12,
           },
         ],
       },
@@ -211,6 +230,7 @@ export const navItems = [
     shortTitle: "Reports",
     icon: <BarChart3 />,
     link: "/dashboard/reports",
+    permissionId: 16,
   },
 
   // ================= Staff =================
@@ -230,6 +250,7 @@ export const navItems = [
             link: "/dashboard/staff",
             navigation: true,
             icon: <UserRound />,
+            permissionId: 15,
           },
           {
             id: 2,
@@ -238,6 +259,7 @@ export const navItems = [
             navigation: true,
             hideForRoles: ["owner", "super_admin"],
             icon: <UsersRound />,
+            permissionId: 15,
           },
         ],
       },
@@ -261,6 +283,7 @@ export const navItems = [
             link: "/dashboard/restaurant-profile",
             navigation: true,
             icon: <Building2 />,
+            permissionId: 17,
           },
           {
             id: 2,
@@ -268,6 +291,7 @@ export const navItems = [
             link: "/dashboard/branch-management",
             navigation: true,
             icon: <GitBranch />,
+            permissionId: 17,
           },
         ],
       },
@@ -291,6 +315,7 @@ export const navItems = [
             link: "/dashboard/settings",
             navigation: true,
             icon: <SlidersHorizontal />,
+            permissionId: 18,
           },
           {
             id: 2,
@@ -298,6 +323,7 @@ export const navItems = [
             link: "/dashboard/privileges",
             navigation: true,
             icon: <ShieldCheck />,
+            permissionId: 19,
           },
           {
             id: 3,
@@ -305,6 +331,7 @@ export const navItems = [
             link: "/dashboard/appearance",
             navigation: true,
             icon: <Palette />,
+            permissionId: 18,
           },
         ],
       },
@@ -332,7 +359,39 @@ export const navItems = [
   },
 ];
 
-import { getUserRole, getMenuIds } from "@/lib/auth";
+import { getUserRole, getMenuIds, getPermissionIds } from "@/lib/auth";
+
+// Reads the logged-in user's allowed permission ids (login response `menus`,
+// falling back to `permissionIds`). Returns null for full access — owner /
+// super_admin, or legacy sessions with no permission list saved.
+export function getAllowedPermissionIds(role) {
+  if (role === "owner" || role === "super_admin") return null;
+  const ids = getMenuIds();
+  const effective = ids.length > 0 ? ids : getPermissionIds();
+  return effective.length > 0 ? new Set(effective) : null;
+}
+
+// Prunes the nav tree to leaves whose permissionId is allowed. Leaves without
+// a permissionId (e.g. Owner Tools) are dropped; groups and top-level entries
+// with no remaining children disappear. allowedIds === null keeps everything.
+export function filterNavItemsByPermissions(items, allowedIds) {
+  if (!allowedIds) return items;
+  const canSee = (item) =>
+    item.permissionId != null && allowedIds.has(item.permissionId);
+
+  return items
+    .map((menu) => {
+      if (!menu.submenus) return canSee(menu) ? menu : null;
+      const submenus = menu.submenus
+        .map((group) => {
+          const subMenu = (group.subMenu || []).filter(canSee);
+          return subMenu.length > 0 ? { ...group, subMenu } : null;
+        })
+        .filter(Boolean);
+      return submenus.length > 0 ? { ...menu, submenus } : null;
+    })
+    .filter(Boolean);
+}
 
 const SidebarNew = ({ onLogout = () => {} }) => {
   const pathname = usePathname();
@@ -343,14 +402,12 @@ const SidebarNew = ({ onLogout = () => {} }) => {
   const [allowedMenuIds, setAllowedMenuIds] = useState(null);
 
   React.useEffect(() => {
-    setLoggedRole(getUserRole());
-    const ids = getMenuIds();
-    setAllowedMenuIds(ids.length > 0 ? new Set(ids) : null);
+    const role = getUserRole();
+    setLoggedRole(role);
+    setAllowedMenuIds(getAllowedPermissionIds(role));
   }, []);
 
-  const visibleNavItems = allowedMenuIds
-    ? navItems.filter((m) => allowedMenuIds.has(m.id))
-    : navItems;
+  const visibleNavItems = filterNavItemsByPermissions(navItems, allowedMenuIds);
 
   const hoveredMenu =
     visibleNavItems.find((m) => m.id === hoveredMenuId) ?? null;
