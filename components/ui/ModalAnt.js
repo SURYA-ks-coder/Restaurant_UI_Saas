@@ -30,7 +30,7 @@ export default function ModalAnt({
       width={width}
       title={title}
       closable={showCloseButton}
-      maskClosable={maskClosable}
+      mask={{ closable: maskClosable }}
       footer={hasFooter ? undefined : null}
       okButtonProps={{ style: { display: showOkButton ? undefined : "none" } }}
       cancelButtonProps={{

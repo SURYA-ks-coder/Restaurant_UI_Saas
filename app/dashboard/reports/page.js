@@ -821,7 +821,7 @@ export default function ReportsPage() {
         width={480}
         centered
         closable={!downloading}
-        maskClosable={!downloading}
+        mask={{ closable: !downloading }}
         styles={{
           content: { borderRadius: "16px", padding: "0" },
           body: { padding: "0" },
