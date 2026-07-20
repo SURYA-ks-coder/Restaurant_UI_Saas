@@ -120,28 +120,28 @@ export const navItems = [
   },
 
   // ================= Menu =================
-  {
-    id: 3,
-    title: "Menu",
-    shortTitle: "Menu",
-    icon: <UtensilsCrossed />,
-    submenus: [
-      {
-        id: 1,
-        title: "Menu Management",
-        subMenu: [
-          {
-            id: 1,
-            title: "Menus",
-            link: "/dashboard/menus",
-            navigation: true,
-            icon: <BookOpen />,
-            permissionId: 9,
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 3,
+  //   title: "Menu",
+  //   shortTitle: "Menu",
+  //   icon: <UtensilsCrossed />,
+  //   submenus: [
+  //     {
+  //       id: 1,
+  //       title: "Menu Management",
+  //       subMenu: [
+  //         {
+  //           id: 1,
+  //           title: "Menus",
+  //           link: "/dashboard/menus",
+  //           navigation: true,
+  //           icon: <BookOpen />,
+  //           permissionId: 9,
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // },
 
   // ================= Inventory =================
   {
@@ -234,37 +234,15 @@ export const navItems = [
   },
 
   // ================= Staff =================
-  {
-    id: 6,
-    title: "Staff",
-    shortTitle: "Staff",
-    icon: <Users />,
-    submenus: [
-      {
-        id: 1,
-        title: "Team",
-        subMenu: [
-          {
-            id: 1,
-            title: "All Staff",
-            link: "/dashboard/staff",
-            navigation: true,
-            icon: <UserRound />,
-            permissionId: 15,
-          },
-          {
-            id: 2,
-            title: "My Team",
-            link: "/dashboard/staff/my-team",
-            navigation: true,
-            hideForRoles: ["owner", "super_admin"],
-            icon: <UsersRound />,
-            permissionId: 15,
-          },
-        ],
-      },
-    ],
-  },
+  // {
+  //   id: 6,
+  //   title: "Staff",
+  //   shortTitle: "Staff",
+  //   icon: <Users />,
+  //   submenus: [
+
+  //   ],
+  // },
 
   // ================= Restaurant =================
   {
@@ -295,6 +273,29 @@ export const navItems = [
           },
         ],
       },
+      {
+        id: 2,
+        title: "Team",
+        subMenu: [
+          {
+            id: 1,
+            title: "All Staff",
+            link: "/dashboard/staff",
+            navigation: true,
+            icon: <UserRound />,
+            permissionId: 15,
+          },
+          {
+            id: 2,
+            title: "My Team",
+            link: "/dashboard/staff/my-team",
+            navigation: true,
+            hideForRoles: ["owner", "super_admin"],
+            icon: <UsersRound />,
+            permissionId: 15,
+          },
+        ],
+      },
     ],
   },
 
@@ -302,7 +303,7 @@ export const navItems = [
   {
     id: 8,
     title: "Administration",
-    shortTitle: "Admin",
+    shortTitle: "Settings",
     icon: <Settings />,
     submenus: [
       {
@@ -311,10 +312,10 @@ export const navItems = [
         subMenu: [
           {
             id: 1,
-            title: "General Settings",
-            link: "/dashboard/settings",
+            title: "Appearance",
+            link: "/dashboard/appearance",
             navigation: true,
-            icon: <SlidersHorizontal />,
+            icon: <Palette />,
             permissionId: 18,
           },
           {
@@ -327,10 +328,10 @@ export const navItems = [
           },
           {
             id: 3,
-            title: "Appearance",
-            link: "/dashboard/appearance",
+            title: "General Settings",
+            link: "/dashboard/settings",
             navigation: true,
-            icon: <Palette />,
+            icon: <SlidersHorizontal />,
             permissionId: 18,
           },
         ],
@@ -408,6 +409,8 @@ const SidebarNew = ({ onLogout = () => {} }) => {
   }, []);
 
   const visibleNavItems = filterNavItemsByPermissions(navItems, allowedMenuIds);
+  const settingsMenu = visibleNavItems.find((m) => m.id === 8) ?? null;
+  const mainNavItems = visibleNavItems.filter((m) => m.id !== 8);
 
   const hoveredMenu =
     visibleNavItems.find((m) => m.id === hoveredMenuId) ?? null;
@@ -440,6 +443,77 @@ const SidebarNew = ({ onLogout = () => {} }) => {
     }
   };
 
+  const renderRailItem = (menu) => {
+    const isActive =
+      isRouteActive(menu.link) ||
+      menu.submenus?.some((g) => g.subMenu?.some((i) => isRouteActive(i.link)));
+    const highlighted = hoveredMenuId ? hoveredMenuId === menu.id : isActive;
+
+    const iconNode = React.isValidElement(menu.icon)
+      ? React.cloneElement(menu.icon, {
+          className: cn(
+            "h-[19px] w-[19px] transition-colors duration-150",
+            highlighted ? "text-primary" : "text-white/75 group-hover:text-white",
+          ),
+        })
+      : menu.icon;
+
+    const inner = (
+      <div className="flex w-full flex-col items-center gap-1 py-1">
+        <div className="relative flex h-11 w-11 items-center justify-center">
+          {highlighted && (
+            <motion.div
+              layoutId="railHighlight"
+              transition={{
+                type: "spring",
+                stiffness: 480,
+                damping: 32,
+              }}
+              className="absolute inset-0 rounded-md bg-white shadow-sm"
+            />
+          )}
+          {!highlighted && (
+            <div className="absolute inset-0 rounded-md bg-white/10 border border-white/20 transition-colors duration-150 group-hover:bg-white/20" />
+          )}
+          <span className="relative z-10 flex h-full w-full items-center justify-center">
+            {iconNode}
+          </span>
+        </div>
+        <span
+          className={cn(
+            "text-[9.5px] font-medium leading-none tracking-wide transition-colors duration-150",
+            highlighted ? "text-white" : "text-white/60 group-hover:text-white/85",
+          )}
+        >
+          {menu.shortTitle}
+        </span>
+      </div>
+    );
+
+    return (
+      <li key={menu.id} className="w-full">
+        {menu.link ? (
+          <Link
+            href={menu.link}
+            className="group flex w-full"
+            onMouseEnter={() => handleIconEnter(menu.id)}
+            onMouseLeave={scheduleClose}
+          >
+            {inner}
+          </Link>
+        ) : (
+          <button
+            className="group flex w-full cursor-pointer"
+            onMouseEnter={() => handleIconEnter(menu.id)}
+            onMouseLeave={scheduleClose}
+          >
+            {inner}
+          </button>
+        )}
+      </li>
+    );
+  };
+
   return (
     <>
       {/* ══════════════════════════════════════════
@@ -457,86 +531,18 @@ const SidebarNew = ({ onLogout = () => {} }) => {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2.5 py-2 scrollbar-hide">
           <ul className="flex flex-col items-center gap-1.5">
-            {visibleNavItems.map((menu) => {
-              const isActive =
-                isRouteActive(menu.link) ||
-                menu.submenus?.some((g) =>
-                  g.subMenu?.some((i) => isRouteActive(i.link)),
-                );
-              const highlighted = hoveredMenuId
-                ? hoveredMenuId === menu.id
-                : isActive;
-
-              const iconNode = React.isValidElement(menu.icon)
-                ? React.cloneElement(menu.icon, {
-                    className: cn(
-                      "h-[19px] w-[19px] transition-colors duration-150",
-                      highlighted
-                        ? "text-primary"
-                        : "text-white/75 group-hover:text-white",
-                    ),
-                  })
-                : menu.icon;
-
-              const inner = (
-                <div className="flex w-full flex-col items-center gap-1 py-1">
-                  <div className="relative flex h-11 w-11 items-center justify-center">
-                    {highlighted && (
-                      <motion.div
-                        layoutId="railHighlight"
-                        transition={{
-                          type: "spring",
-                          stiffness: 480,
-                          damping: 32,
-                        }}
-                        className="absolute inset-0 rounded-md bg-white shadow-sm"
-                      />
-                    )}
-                    {!highlighted && (
-                      <div className="absolute inset-0 rounded-md bg-white/10 border border-white/20 transition-colors duration-150 group-hover:bg-white/20" />
-                    )}
-                    <span className="relative z-10 flex h-full w-full items-center justify-center">
-                      {iconNode}
-                    </span>
-                  </div>
-                  <span
-                    className={cn(
-                      "text-[9.5px] font-medium leading-none tracking-wide transition-colors duration-150",
-                      highlighted
-                        ? "text-white"
-                        : "text-white/60 group-hover:text-white/85",
-                    )}
-                  >
-                    {menu.shortTitle}
-                  </span>
-                </div>
-              );
-
-              return (
-                <li key={menu.id} className="w-full">
-                  {menu.link ? (
-                    <Link
-                      href={menu.link}
-                      className="group flex w-full"
-                      onMouseEnter={() => handleIconEnter(menu.id)}
-                      onMouseLeave={scheduleClose}
-                    >
-                      {inner}
-                    </Link>
-                  ) : (
-                    <button
-                      className="group flex w-full cursor-pointer"
-                      onMouseEnter={() => handleIconEnter(menu.id)}
-                      onMouseLeave={scheduleClose}
-                    >
-                      {inner}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
+            {mainNavItems.map(renderRailItem)}
           </ul>
         </nav>
+
+        {/* Settings — pinned to bottom */}
+        {settingsMenu && (
+          <div className="shrink-0 border-t border-white/10 px-2.5 py-2">
+            <ul className="flex flex-col items-center">
+              {renderRailItem(settingsMenu)}
+            </ul>
+          </div>
+        )}
 
         {/* Role + Logout */}
         {/* <div className="shrink-0 space-y-2 px-2.5 py-3">
