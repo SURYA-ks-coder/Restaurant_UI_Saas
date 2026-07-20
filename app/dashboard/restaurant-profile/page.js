@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAction, API } from "@/lib/API";
+import { getRestaurantId } from "@/lib/auth";
 import AddBranch from "./Branch/AddBranch";
 import AddManager from "./Manager/AddManager";
 import { FaPen } from "react-icons/fa6";
@@ -126,6 +127,7 @@ const normalizeManager = (manager) => ({
 });
 
 export default function RestaurantProfilePage() {
+  const [restaurant, setRestaurant] = useState(null);
   const [branchRows, setBranchRows] = useState(branches);
   const [managerRows, setManagerRows] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(branches[0].code);
@@ -151,6 +153,22 @@ export default function RestaurantProfilePage() {
   const activeBranch =
     normalizedBranches.find((b) => getEntityId(b) === selectedBranch) ??
     normalizedBranches[0];
+
+  // Restaurant profile of the logged-in tenant (onboarding/getRestaurantById).
+  const fetchRestaurant = async () => {
+    try {
+      const restaurantId = getRestaurantId();
+      if (!restaurantId) return;
+      const result = await getAction(
+        `${API.GET_RESTAURANT_BY_ID}/${restaurantId}`,
+      );
+      if (result?.statusCode === 200 && result?.data) {
+        setRestaurant(result.data);
+      }
+    } catch {
+      // keep the placeholder details
+    }
+  };
 
   // Active managers of this restaurant, scoped to the branch picked in the
   // navbar (getAction appends restaurantId/branchId automatically).
@@ -181,6 +199,7 @@ export default function RestaurantProfilePage() {
   };
 
   useEffect(() => {
+    fetchRestaurant();
     fetchManagers();
     fetchBranches();
     // Refetch when the navbar branch selector changes — the manager list is
@@ -193,6 +212,23 @@ export default function RestaurantProfilePage() {
   const activeManagerCount = normalizedManagers.filter(
     (m) => m.status === "active",
   ).length;
+
+  // Display-ready restaurant details with placeholders until the fetch lands.
+  const info = {
+    name: restaurant?.restaurantName || "Restaurant",
+    status: restaurant?.status || "active",
+    email: restaurant?.email || "No email",
+    phone: restaurant?.mobileNumber || "No phone",
+    gst: restaurant?.GSTNumber || "",
+    plan: restaurant?.subscriptionPlan || "Free Plan",
+    currency: restaurant?.currency || "INR",
+    timezone: restaurant?.timezone || "Asia/Kolkata",
+    domain: restaurant?.customDomain || restaurant?.subdomain || "",
+    location: [restaurant?.city, restaurant?.state, restaurant?.country]
+      .filter(Boolean)
+      .join(", "),
+    logo: restaurant?.logo || "",
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -219,40 +255,61 @@ export default function RestaurantProfilePage() {
       {/* Restaurant Overview Card */}
       <section className="glass-card mb-6 rounded-lg p-5">
         <div className="flex items-start gap-5">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Store className="h-8 w-8" />
-          </div>
+          {info.logo ? (
+            <img
+              src={info.logo}
+              alt={info.name}
+              className="h-16 w-16 shrink-0 rounded-xl border border-border object-cover"
+            />
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Store className="h-8 w-8" />
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-bold">Flavor Hub</h2>
-              <span className="rounded-full bg-success/10 px-3 py-1 text-xs font-medium text-success">
-                Active
+              <h2 className="text-2xl font-bold">{info.name}</h2>
+              <span
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium capitalize",
+                  info.status === "active"
+                    ? "bg-success/10 text-success"
+                    : "bg-warning/10 text-warning",
+                )}
+              >
+                {info.status}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
-                <Mail className="h-4 w-4" /> surya@gmail.com
+                <Mail className="h-4 w-4" /> {info.email}
               </span>
               <span className="flex items-center gap-1.5">
-                <Phone className="h-4 w-4" /> +91 98765 43210
+                <Phone className="h-4 w-4" /> {info.phone}
               </span>
-              <span className="flex items-center gap-1.5">
-                <Landmark className="h-4 w-4" /> GSTIN: 33ABCDE1234F1Z5
-              </span>
+              {info.gst && (
+                <span className="flex items-center gap-1.5">
+                  <Landmark className="h-4 w-4" /> GSTIN: {info.gst}
+                </span>
+              )}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Premium Plan
+              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium capitalize text-primary">
+                {info.plan}
               </span>
               <span className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                INR · Asia/Kolkata
+                {info.currency} · {info.timezone}
               </span>
-              <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                <Globe2 className="h-3 w-3" /> surya-food.restaurant.com
-              </span>
-              <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                <MapPin className="h-3 w-3" /> Chennai, Tamil Nadu, India
-              </span>
+              {info.domain && (
+                <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                  <Globe2 className="h-3 w-3" /> {info.domain}
+                </span>
+              )}
+              {info.location && (
+                <span className="flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" /> {info.location}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -260,8 +317,8 @@ export default function RestaurantProfilePage() {
         <div className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-5 md:grid-cols-4">
           <MetricCard label="Total Branches" value={normalizedBranches.length} />
           <MetricCard label="Active Managers" value={activeManagerCount} />
-          <MetricCard label="Currency" value="INR" />
-          <MetricCard label="Timezone" value="Asia/Kolkata" />
+          <MetricCard label="Currency" value={info.currency} />
+          <MetricCard label="Timezone" value={info.timezone} />
         </div>
       </section>
 
@@ -518,7 +575,7 @@ export default function RestaurantProfilePage() {
               Preview for this branch.
             </p>
             <div className="rounded-lg bg-muted/30 p-4 text-center">
-              <p className="text-lg font-semibold">Flavor Hub</p>
+              <p className="text-lg font-semibold">{info.name}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {activeBranch.name}
               </p>
@@ -526,9 +583,11 @@ export default function RestaurantProfilePage() {
                 {activeBranch.address}
               </p>
               <div className="my-4 border-t border-dashed border-border" />
-              <p className="text-xs text-muted-foreground">
-                GSTIN: 29ABCDE1234F1Z5
-              </p>
+              {info.gst && (
+                <p className="text-xs text-muted-foreground">
+                  GSTIN: {info.gst}
+                </p>
+              )}
               <p className="mt-2 text-xs text-muted-foreground">
                 Thank you for dining with us
               </p>

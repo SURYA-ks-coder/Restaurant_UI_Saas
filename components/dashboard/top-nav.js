@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getSocket } from "@/components/services/socket";
 import { getAction, API } from "@/lib/API";
+import { getUserData } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -106,6 +107,15 @@ const INITIAL_NOTIFICATIONS = [
     timestamp: new Date(Date.now() - 120 * 60000).toISOString(),
   },
 ];
+
+const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "U";
 
 const relativeTime = (ts) => {
   const mins = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
@@ -192,13 +202,32 @@ export function TopNav({ onMenuToggle, onLogout }) {
   });
   // ──────────────────────────────────────────────────────────────────────────
 
+  // ── Logged-in user (shown in the profile chip) ────────────────────────────
+  const [currentUser, setCurrentUser] = useState(null);
+
   useEffect(() => {
     setMounted(true);
-    const userId =
-      localStorage.getItem("userId") ||
-      localStorage.getItem("staffId") ||
-      localStorage.getItem("_id");
+
+    // Instant: details saved at login (name, email, roleName).
+    const stored = getUserData();
+    if (stored?.name || stored?.email) setCurrentUser(stored);
+    const userId = stored?.userId || localStorage.getItem("userId");
     if (userId) setProfileHref(`/dashboard/staff/${userId}`);
+
+    // Fresh: re-fetch from the server in case profile/role changed.
+    const fetchMe = async () => {
+      try {
+        const result = await getAction(API.GET_ME);
+        const user = result?.data?.user;
+        if (result?.statusCode === 200 && user) {
+          setCurrentUser((prev) => ({ ...prev, ...user }));
+          if (user.id) setProfileHref(`/dashboard/staff/${user.id}`);
+        }
+      } catch {
+        // keep the stored details
+      }
+    };
+    fetchMe();
   }, []);
 
   useEffect(() => {
@@ -533,18 +562,37 @@ export function TopNav({ onMenuToggle, onLogout }) {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-3 rounded-lg p-1.5 hover:bg-muted">
               <Avatar className="h-8 w-8">
-                <AvatarFallback>AD</AvatarFallback>
+                {currentUser?.profileImage && (
+                  <AvatarImage
+                    src={currentUser.profileImage}
+                    alt={currentUser?.name || "User"}
+                  />
+                )}
+                <AvatarFallback>
+                  {getInitials(currentUser?.name)}
+                </AvatarFallback>
               </Avatar>
               <span className="hidden text-left md:block">
-                <span className="block text-sm font-medium">Alex Drake</span>
-                <span className="block text-xs text-muted-foreground">
-                  Manager
+                <span className="block max-w-32 truncate text-sm font-medium">
+                  {currentUser?.name || "My Account"}
+                </span>
+                <span className="block max-w-32 truncate text-xs text-muted-foreground capitalize">
+                  {currentUser?.roleName || currentUser?.role || "Staff"}
                 </span>
               </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <span className="block text-sm font-medium">
+                {currentUser?.name || "My Account"}
+              </span>
+              {currentUser?.email && (
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {currentUser.email}
+                </span>
+              )}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href={profileHref}>Staff Profile</Link>
