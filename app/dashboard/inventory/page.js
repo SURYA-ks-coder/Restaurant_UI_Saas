@@ -84,7 +84,7 @@ export default function InventoryPage() {
   const validate = () => {
     const next = {};
     if (!form.name.trim()) next.name = "Item name is required";
-    if (!form.category.trim()) next.category = "Category is required";
+    // if (!form.category.trim()) next.category = "Category is required";
     if (!form.unit) next.unit = "Unit is required";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -247,23 +247,23 @@ export default function InventoryPage() {
           />
 
           <div className="grid gap-4 md:grid-cols-2">
-            <AntInput
-              label="Category *"
+            {/* <AntInput
+              label="Category"
               placeholder="e.g. Seafood"
               value={form.category}
               error={getError("category")}
               onChange={(e) => setField("category", e.target.value)}
-            />
+            /> */}
             <AntSelect
-              label="Unit *"
+              label="Unit"
               value={form.unit}
               error={getError("unit")}
               options={UNIT_OPTIONS}
               onChange={(value) => setField("unit", value)}
             />
-          </div>
+            {/* </div> */}
 
-          <div className="grid gap-4 md:grid-cols-2">
+            {/* <div className="grid gap-4 md:grid-cols-2"> */}
             <AntInput
               label="Minimum Stock"
               type="number"

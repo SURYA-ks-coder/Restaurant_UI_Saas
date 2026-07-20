@@ -1,39 +1,25 @@
 "use client";
 
-import { Input } from "antd";
+import { DatePicker } from "antd";
 import { cn } from "@/lib/utils";
-import {
-  FieldIcon,
-  resolveFieldIcon,
-  InputFallbackIcon,
-  PasswordFallbackIcon,
-} from "@/components/ui/field-icons";
+import { FieldIcon } from "@/components/ui/field-icons";
 
-const inputThemeClass =
-  "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground focus:!border-primary focus:!bg-card [&_input]:!bg-transparent [&_input]:!text-foreground [&_input::placeholder]:!text-muted-foreground";
+const pickerThemeClass =
+  "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground hover:!bg-card focus:!border-primary focus:!bg-card [&_.ant-picker-suffix]:!text-primary [&_.ant-picker-clear]:!text-destructive";
 
-export function AntInput({
+export function AntDateSelect({
   label,
   error,
   className,
   wrapperClassName,
+  placeholder = "Select date",
   size = "large",
   variant = "filled",
+  format = "DD/MM/YYYY",
   required = false,
   icon,
   ...props
 }) {
-  const resolvedIcon =
-    icon === undefined
-      ? resolveFieldIcon({
-          type: props.type,
-          label,
-          name: props.name,
-          placeholder: props.placeholder,
-          fallback: InputFallbackIcon,
-        })
-      : icon;
-
   return (
     <label className={cn("block", wrapperClassName)}>
       {label && (
@@ -42,16 +28,14 @@ export function AntInput({
           {required && <span className="ml-0.5 text-destructive">*</span>}
         </span>
       )}
-      <Input
+      <DatePicker
         size={size}
         variant={variant}
         status={error ? "error" : undefined}
-        prefix={
-          resolvedIcon ? (
-            <FieldIcon icon={resolvedIcon} error={!!error} />
-          ) : undefined
-        }
-        className={cn(inputThemeClass, className, error && "!border-rose-400")}
+        format={format}
+        placeholder={placeholder}
+        prefix={icon ? <FieldIcon icon={icon} error={!!error} /> : undefined}
+        className={cn(pickerThemeClass, className)}
         {...props}
       />
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
@@ -59,20 +43,18 @@ export function AntInput({
   );
 }
 
-export function AntPasswordInput({
+export function AntDateRangeSelect({
   label,
   error,
   className,
   wrapperClassName,
+  placeholder = ["From date", "To date"],
   size = "large",
   variant = "filled",
+  format = "DD/MM/YYYY",
   required = false,
-  icon,
   ...props
 }) {
-  const resolvedIcon =
-    icon === undefined ? <PasswordFallbackIcon /> : icon;
-
   return (
     <label className={cn("block", wrapperClassName)}>
       {label && (
@@ -81,19 +63,18 @@ export function AntPasswordInput({
           {required && <span className="ml-0.5 text-destructive">*</span>}
         </span>
       )}
-      <Input.Password
+      <DatePicker.RangePicker
         size={size}
         variant={variant}
         status={error ? "error" : undefined}
-        prefix={
-          resolvedIcon ? (
-            <FieldIcon icon={resolvedIcon} error={!!error} />
-          ) : undefined
-        }
-        className={cn(inputThemeClass, className)}
+        format={format}
+        placeholder={placeholder}
+        className={cn(pickerThemeClass, className)}
         {...props}
       />
       {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </label>
   );
 }
+
+export default AntDateSelect;

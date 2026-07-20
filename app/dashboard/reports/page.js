@@ -1,7 +1,11 @@
 ﻿"use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { DatePicker, Modal, Select, Skeleton } from "antd";
+import { Modal, Select, Skeleton } from "antd";
+import {
+  AntDateSelect,
+  AntDateRangeSelect,
+} from "@/components/ui/AntDateSelect";
 import { message } from "@/lib/message";
 import {
   BarChart3,
@@ -23,8 +27,6 @@ import { cn } from "@/lib/utils";
 import { getAction, API, URL as API_URL } from "@/lib/API";
 import { getAccessToken } from "@/lib/auth";
 import dayjs from "dayjs";
-
-const { RangePicker } = DatePicker;
 
 // ─── Report Categories ────────────────────────────────────────────────────────
 
@@ -589,33 +591,23 @@ export default function ReportsPage() {
         );
       case "dateRange":
         return (
-          <div key="dateRange" className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">
-              Date Range
-            </label>
-            <RangePicker
-              size="large"
-              className="w-full"
-              value={formValues.dateRange}
-              onChange={(dates) => setField("dateRange", dates)}
-              format="DD/MM/YYYY"
-              placeholder={["From Date", "To Date"]}
-            />
-          </div>
+          <AntDateRangeSelect
+            key="dateRange"
+            label="Date Range"
+            value={formValues.dateRange}
+            onChange={(dates) => setField("dateRange", dates)}
+            placeholder={["From Date", "To Date"]}
+          />
         );
       case "date":
         return (
-          <div key="date" className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Date</label>
-            <DatePicker
-              size="large"
-              className="w-full"
-              value={formValues.date}
-              onChange={(date) => setField("date", date)}
-              format="DD/MM/YYYY"
-              placeholder="Select Date"
-            />
-          </div>
+          <AntDateSelect
+            key="date"
+            label="Date"
+            value={formValues.date}
+            onChange={(date) => setField("date", date)}
+            placeholder="Select Date"
+          />
         );
       case "department":
         return (

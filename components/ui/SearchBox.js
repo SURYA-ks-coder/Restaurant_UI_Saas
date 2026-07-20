@@ -7,7 +7,7 @@ import { FiXCircle } from "react-icons/fi";
 export default function SearchBox({
   placeholder = "",
   value = "",
-  icon = <LuSearch />,
+  icon = <LuSearch className="text-primary" />,
   error = "",
   className = "",
   parentClass = "",

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChefHat, IndianRupee, Plus, Trash2, UtensilsCrossed } from "lucide-react";
+import {
+  ChefHat,
+  IndianRupee,
+  Plus,
+  Trash2,
+  UtensilsCrossed,
+} from "lucide-react";
 import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { action, API, getAction, patchAction } from "@/lib/API";
@@ -11,6 +17,7 @@ import ButtonClick from "@/components/ui/ButtonClick";
 import Heading from "@/components/ui/Heading";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
+import { getDefaultBranchId, getRestaurantId } from "@/lib/auth";
 
 const EMPTY_LINE = { inventoryItemId: "", quantity: "" };
 
@@ -32,7 +39,10 @@ export default function RecipesPage() {
     try {
       const [recipeRes, menuRes, inventoryRes] = await Promise.all([
         getAction(`${API.GET_RECIPE_LIST}?limit=100`),
-        getAction(API.GET_MENU_ITEM_LIST),
+        action(API.GET_MENU_ITEM_LIST, {
+          restaurantId: getRestaurantId(),
+          branchId: getDefaultBranchId(),
+        }),
         getAction(`${API.GET_INVENTORY_LIST}?limit=100&status=active`),
       ]);
       if (recipeRes?.statusCode === 200) setRecipes(recipeRes.data || []);
@@ -107,7 +117,9 @@ export default function RecipesPage() {
 
   const addLine = () => setLines((prev) => [...prev, { ...EMPTY_LINE }]);
   const removeLine = (index) =>
-    setLines((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    setLines((prev) =>
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+    );
 
   const openAdd = () => {
     setEditId(null);
@@ -134,7 +146,8 @@ export default function RecipesPage() {
     const next = {};
     if (!menuItemId) next.menuItemId = "Select a menu item";
     const validLines = lines.filter((l) => l.inventoryItemId);
-    if (validLines.length === 0) next.ingredients = "Add at least one ingredient";
+    if (validLines.length === 0)
+      next.ingredients = "Add at least one ingredient";
     else if (validLines.some((l) => !l.quantity || Number(l.quantity) <= 0))
       next.ingredients = "Every ingredient needs a quantity above 0";
     setErrors(next);
@@ -176,11 +189,17 @@ export default function RecipesPage() {
     const label = recipe.menuItemId?.itemName || "this menu item";
     if (
       typeof window !== "undefined" &&
-      !window.confirm(`Delete the recipe for ${label}? Stock will no longer auto-deduct for it.`)
+      !window.confirm(
+        `Delete the recipe for ${label}? Stock will no longer auto-deduct for it.`,
+      )
     )
       return;
     try {
-      const result = await action(`${API.DELETE_RECIPE}/${recipe._id}`, {}, "DELETE");
+      const result = await action(
+        `${API.DELETE_RECIPE}/${recipe._id}`,
+        {},
+        "DELETE",
+      );
       if (result?.statusCode === 200) {
         message.success("Recipe deleted.");
         fetchData();
@@ -240,7 +259,8 @@ export default function RecipesPage() {
                 key={idx}
                 className="rounded-full bg-muted px-2 py-0.5 text-xs"
               >
-                {inv?.materialName || "Unknown"} · {ing.quantity} {inv?.unit || ""}
+                {inv?.materialName || "Unknown"} · {ing.quantity}{" "}
+                {inv?.unit || ""}
               </span>
             );
           })}
@@ -301,8 +321,16 @@ export default function RecipesPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className="glass-card flex items-center gap-4 rounded-lg p-4">
-            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", s.color)}>
+          <div
+            key={s.label}
+            className="glass-card flex items-center gap-4 rounded-lg p-4"
+          >
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                s.color,
+              )}
+            >
               <s.icon className="h-5 w-5" />
             </div>
             <div>
@@ -335,9 +363,9 @@ export default function RecipesPage() {
         loadingButton={submitting}
         width={640}
       >
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+        <div className="flex-1 space-y-5 overflow-y-auto p-2">
           <AntSelect
-            label="Menu Item *"
+            label="Menu Item"
             placeholder="Select menu item"
             value={menuItemId || undefined}
             options={menuItemOptions}
@@ -350,11 +378,15 @@ export default function RecipesPage() {
               if (errors.menuItemId)
                 setErrors((prev) => ({ ...prev, menuItemId: "" }));
             }}
+            required
           />
 
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-medium">Ingredients *</span>
+              <span className="text-sm font-medium">
+                Ingredients
+                <span className="text-destructive">*</span>
+              </span>
               <button
                 onClick={addLine}
                 className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
@@ -378,14 +410,18 @@ export default function RecipesPage() {
                       options={ingredientOptions}
                       showSearch
                       optionFilterProp="label"
-                      onChange={(value) => setLineField(index, "inventoryItemId", value)}
+                      onChange={(value) =>
+                        setLineField(index, "inventoryItemId", value)
+                      }
                     />
                     <AntInput
                       label={index === 0 ? "Qty / serving" : undefined}
                       type="number"
                       placeholder={selected ? `in ${selected.unit}` : "0"}
                       value={line.quantity}
-                      onChange={(e) => setLineField(index, "quantity", e.target.value)}
+                      onChange={(e) =>
+                        setLineField(index, "quantity", e.target.value)
+                      }
                     />
                     <div className="pb-2 text-right text-sm font-semibold">
                       ₹{lineCost(line).toFixed(2)}
@@ -402,11 +438,15 @@ export default function RecipesPage() {
               })}
             </div>
             {errors.ingredients && (
-              <p className="mt-1 text-xs text-destructive">{errors.ingredients}</p>
+              <p className="mt-1 text-xs text-destructive">
+                {errors.ingredients}
+              </p>
             )}
 
             <div className="mt-3 flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
-              <span className="text-sm font-medium">Est. Ingredient Cost / Serving</span>
+              <span className="text-sm font-medium">
+                Est. Ingredient Cost / Serving
+              </span>
               <span className="text-lg font-bold">₹{totalCost.toFixed(2)}</span>
             </div>
           </div>

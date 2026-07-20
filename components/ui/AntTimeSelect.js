@@ -2,6 +2,10 @@
 
 import { TimePicker } from "antd";
 import { cn } from "@/lib/utils";
+import { FieldIcon } from "@/components/ui/field-icons";
+
+const selectThemeClass =
+  "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground hover:!bg-card focus:!border-primary focus:!bg-card [&_.ant-picker-suffix]:!text-primary [&_.ant-picker-clear]:!text-destructive";
 
 export function AntTimeSelect({
   label,
@@ -14,14 +18,18 @@ export function AntTimeSelect({
   size = "large",
   variant = "filled",
   use12Hours = true,
+  required = false,
+  icon,
   ...props
 }) {
-  const selectThemeClass =
-    "w-full !border-border !bg-card !text-foreground placeholder:!text-muted-foreground hover:!bg-card focus:!border-primary focus:!bg-card ";
-
   return (
     <label className={cn("block", wrapperClassName)}>
-      {label && <span className="mb-2 block text-sm font-medium">{label}</span>}
+      {label && (
+        <span className="mb-2 block text-sm font-medium">
+          {label}
+          {required && <span className="ml-0.5 text-destructive">*</span>}
+        </span>
+      )}
       <TimePicker
         size={size}
         variant={variant}
@@ -30,6 +38,7 @@ export function AntTimeSelect({
         // minuteStep={minuteStep}
         placeholder={placeholder}
         use12Hours={use12Hours}
+        prefix={icon ? <FieldIcon icon={icon} error={!!error} /> : undefined}
         className={cn(selectThemeClass, className)}
         {...props}
       />

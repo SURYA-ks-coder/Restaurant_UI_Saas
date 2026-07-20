@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DatePicker } from "antd";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import dayjs from "dayjs";
@@ -9,6 +8,7 @@ import DrawerPop from "@/components/ui/DrawerPop";
 import { AntInput, AntPasswordInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 import AntTextArea from "@/components/ui/AntTextArea";
+import { AntDateSelect } from "@/components/ui/AntDateSelect";
 import { action, API, getAction } from "@/lib/API";
 import { message } from "@/lib/message";
 import { getRestaurantId } from "@/lib/auth";
@@ -414,27 +414,21 @@ export default function AddManager({ open, onOpenChange, onSaved, updateId }) {
               onChange={(value) => formik.setFieldValue("gender", value || null)}
               onBlur={() => formik.setFieldTouched("gender", true)}
             />
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Date of Birth</label>
-              <DatePicker
-                className="w-full"
-                value={formik.values.dateOfBirth ? dayjs(formik.values.dateOfBirth) : null}
-                onChange={(date) =>
-                  formik.setFieldValue("dateOfBirth", date ? date.toISOString() : null)
-                }
-                disabledDate={(d) => d && d > dayjs().endOf("day")}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium">Date of Joining</label>
-              <DatePicker
-                className="w-full"
-                value={formik.values.dateOfJoining ? dayjs(formik.values.dateOfJoining) : null}
-                onChange={(date) =>
-                  formik.setFieldValue("dateOfJoining", date ? date.toISOString() : null)
-                }
-              />
-            </div>
+            <AntDateSelect
+              label="Date of Birth"
+              value={formik.values.dateOfBirth ? dayjs(formik.values.dateOfBirth) : null}
+              onChange={(date) =>
+                formik.setFieldValue("dateOfBirth", date ? date.toISOString() : null)
+              }
+              disabledDate={(d) => d && d > dayjs().endOf("day")}
+            />
+            <AntDateSelect
+              label="Date of Joining"
+              value={formik.values.dateOfJoining ? dayjs(formik.values.dateOfJoining) : null}
+              onChange={(date) =>
+                formik.setFieldValue("dateOfJoining", date ? date.toISOString() : null)
+              }
+            />
             <AntTextArea
               label="Address"
               name="address"
