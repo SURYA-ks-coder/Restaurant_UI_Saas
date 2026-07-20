@@ -15,7 +15,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { action, getAction, API } from "@/lib/API";
+import { getAction, API } from "@/lib/API";
 import AddBranch from "./Branch/AddBranch";
 import AddManager from "./Manager/AddManager";
 import { FaPen } from "react-icons/fa6";
@@ -71,42 +71,6 @@ const branches = [
   },
 ];
 
-const sampleManagers = [
-  {
-    _id: "sample-manager-1",
-    name: "Anika Rao",
-    ownerName: "",
-    email: "anika@flavorhub.test",
-    phone: "+91 98765 43210",
-    role: "manager",
-    status: "active",
-    branchIds: ["sample-branch-1"],
-    defaultBranchId: "sample-branch-1",
-  },
-  {
-    _id: "sample-manager-2",
-    name: "Rohan Mehta",
-    ownerName: "",
-    email: "rohan@flavorhub.test",
-    phone: "+91 98765 41023",
-    role: "manager",
-    status: "active",
-    branchIds: ["sample-branch-2"],
-    defaultBranchId: "sample-branch-2",
-  },
-  {
-    _id: "sample-manager-3",
-    name: "Neha S.",
-    ownerName: "",
-    email: "neha@flavorhub.test",
-    phone: "+91 98765 49821",
-    role: "manager",
-    status: "inactive",
-    branchIds: ["sample-branch-3"],
-    defaultBranchId: "sample-branch-3",
-  },
-];
-
 const serviceHours = [
   { day: "Mon - Thu", time: "11:00 AM - 11:00 PM" },
   { day: "Fri", time: "11:00 AM - 12:30 AM" },
@@ -156,14 +120,14 @@ const normalizeManager = (manager) => ({
   ...manager,
   _id: getEntityId(manager),
   name: manager?.name || manager?.ownerName || "Unnamed manager",
-  role: manager?.role || "manager",
+  role: manager?.roleId?.roleName || manager?.role || "manager",
   status: manager?.status || "active",
   branchIds: Array.isArray(manager?.branchIds) ? manager.branchIds : [],
 });
 
 export default function RestaurantProfilePage() {
   const [branchRows, setBranchRows] = useState(branches);
-  const [managerRows, setManagerRows] = useState(sampleManagers);
+  const [managerRows, setManagerRows] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(branches[0].code);
   const [branchSearch, setBranchSearch] = useState("");
   const [branchDrawerOpen, setBranchDrawerOpen] = useState(false);
@@ -188,17 +152,18 @@ export default function RestaurantProfilePage() {
     normalizedBranches.find((b) => getEntityId(b) === selectedBranch) ??
     normalizedBranches[0];
 
+  // Active managers of this restaurant, scoped to the branch picked in the
+  // navbar (getAction appends restaurantId/branchId automatically).
   const fetchManagers = async () => {
     try {
-      const result = await action(API.GET_STAFF_LIST, { role: "manager" });
+      const result = await getAction(
+        `${API.GET_STAFF_LIST}?role=manager&status=active&limit=100`,
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
-        const users = normalizeList(result, sampleManagers)
-          .filter((u) => (u?.role || "manager") === "manager")
-          .map(normalizeManager);
-        setManagerRows(users.length ? users : sampleManagers);
+        setManagerRows(normalizeList(result).map(normalizeManager));
       }
     } catch {
-      setManagerRows(sampleManagers);
+      setManagerRows([]);
     }
   };
 
@@ -218,6 +183,11 @@ export default function RestaurantProfilePage() {
   useEffect(() => {
     fetchManagers();
     fetchBranches();
+    // Refetch when the navbar branch selector changes — the manager list is
+    // scoped to the selected branch.
+    const onBranchChanged = () => fetchManagers();
+    window.addEventListener("branchChanged", onBranchChanged);
+    return () => window.removeEventListener("branchChanged", onBranchChanged);
   }, []);
 
   const activeManagerCount = normalizedManagers.filter(
@@ -478,6 +448,11 @@ export default function RestaurantProfilePage() {
               </button>
             </div>
             <div className="space-y-3">
+              {normalizedManagers.length === 0 && (
+                <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                  No active managers for this branch yet.
+                </p>
+              )}
               {normalizedManagers.map((manager) => (
                 <div
                   key={getEntityId(manager)}
