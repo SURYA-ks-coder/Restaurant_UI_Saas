@@ -27,7 +27,7 @@ import {
   navItems as menuTree,
   getAllowedPermissionIds,
   filterNavItemsByPermissions,
-} from "./sidebarNew";
+} from "@/lib/navigation";
 import { getUserRole } from "@/lib/auth";
 
 const navItems = [
