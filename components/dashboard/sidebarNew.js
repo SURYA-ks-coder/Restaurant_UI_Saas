@@ -158,6 +158,13 @@ export const navItems = [
             icon: <PackageSearch />,
           },
           {
+            id: 8,
+            title: "Recipes",
+            link: "/dashboard/inventory/recipes",
+            navigation: true,
+            icon: <ChefHat />,
+          },
+          {
             id: 6,
             title: "Purchases",
             link: "/dashboard/inventory/purchases",

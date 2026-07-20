@@ -13,6 +13,7 @@ export function AntInput({
   wrapperClassName,
   size = "large",
   variant = "filled",
+  required = false,
   ...props
 }) {
   return (

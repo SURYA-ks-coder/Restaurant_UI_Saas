@@ -68,7 +68,8 @@ export default function InventoryPage() {
         getAction(API.GET_SUPPLIER_LIST),
       ]);
       if (itemsRes?.statusCode === 200) setItems(itemsRes.data || []);
-      if (suppliersRes?.statusCode === 200) setSuppliers(suppliersRes.data || []);
+      if (suppliersRes?.statusCode === 200)
+        setSuppliers(suppliersRes.data || []);
     } catch {
       message.error("Failed to load inventory items");
     } finally {
@@ -114,7 +115,9 @@ export default function InventoryPage() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const endpoint = editId ? `${API.UPDATE_INVENTORY}/${editId}` : API.CREATE_INVENTORY;
+      const endpoint = editId
+        ? `${API.UPDATE_INVENTORY}/${editId}`
+        : API.CREATE_INVENTORY;
       const method = editId ? "PATCH" : "POST";
       const payload = {
         materialName: form.name,
@@ -153,7 +156,12 @@ export default function InventoryPage() {
   }));
 
   const stats = [
-    { label: "Total Items", value: items.length, icon: Boxes, color: "text-primary bg-primary/10" },
+    {
+      label: "Total Items",
+      value: items.length,
+      icon: Boxes,
+      color: "text-primary bg-primary/10",
+    },
     {
       label: "Categories",
       value: new Set(items.map((i) => i.category).filter(Boolean)).size,
@@ -185,8 +193,16 @@ export default function InventoryPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className="glass-card flex items-center gap-4 rounded-lg p-4">
-            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", s.color)}>
+          <div
+            key={s.label}
+            className="glass-card flex items-center gap-4 rounded-lg p-4"
+          >
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                s.color,
+              )}
+            >
               <s.icon className="h-5 w-5" />
             </div>
             <div>
@@ -210,20 +226,24 @@ export default function InventoryPage() {
       <DrawerPop
         open={drawerOpen}
         close={() => setDrawerOpen(false)}
-        header={[editId ? "Edit Item" : "Add Item", "Add an ingredient to your inventory catalog"]}
+        header={[
+          editId ? "Edit Item" : "Add Item",
+          "Add an ingredient to your inventory catalog",
+        ]}
         handleSubmit={handleSubmit}
         footerBtn={["Cancel", "Save"]}
         footerBtnDisabled={submitting}
         loadingButton={submitting}
         width={560}
       >
-        <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+        <div className="flex-1 space-y-5 overflow-y-auto p-2">
           <AntInput
-            label="Item Name *"
+            label="Item Name"
             placeholder="e.g. Atlantic Salmon"
             value={form.name}
             error={getError("name")}
             onChange={(e) => setField("name", e.target.value)}
+            required
           />
 
           <div className="grid gap-4 md:grid-cols-2">
