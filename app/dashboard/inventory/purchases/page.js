@@ -20,6 +20,8 @@ import Heading from "@/components/ui/Heading";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 import { AntTextArea } from "@/components/ui/AntTextArea";
+import { AntDateSelect } from "@/components/ui/AntDateSelect";
+import dayjs from "dayjs";
 
 const EMPTY_LINE = { inventoryItemId: "", quantity: "", unitCost: "" };
 
@@ -51,14 +53,19 @@ export default function PurchasesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [purchaseRes, supplierRes, inventoryRes, suggestionRes, summaryRes] =
-        await Promise.all([
-          getAction(`${API.GET_PURCHASE_LIST}?limit=100`),
-          getAction(API.GET_SUPPLIER_LIST),
-          getAction(`${API.GET_INVENTORY_LIST}?limit=100&status=active`),
-          getAction(API.GET_REORDER_SUGGESTIONS),
-          getAction(API.GET_PURCHASE_SUMMARY),
-        ]);
+      const [
+        purchaseRes,
+        supplierRes,
+        inventoryRes,
+        suggestionRes,
+        summaryRes,
+      ] = await Promise.all([
+        getAction(`${API.GET_PURCHASE_LIST}?limit=100`),
+        getAction(API.GET_SUPPLIER_LIST),
+        getAction(`${API.GET_INVENTORY_LIST}?limit=100&status=active`),
+        getAction(API.GET_REORDER_SUGGESTIONS),
+        getAction(API.GET_PURCHASE_SUMMARY),
+      ]);
       if (purchaseRes?.statusCode === 200) setPurchases(purchaseRes.data || []);
       if (supplierRes?.statusCode === 200) setSuppliers(supplierRes.data || []);
       if (inventoryRes?.statusCode === 200)
@@ -97,7 +104,8 @@ export default function PurchasesPage() {
   }));
 
   const grandTotal = lines.reduce(
-    (sum, line) => sum + (Number(line.quantity) || 0) * (Number(line.unitCost) || 0),
+    (sum, line) =>
+      sum + (Number(line.quantity) || 0) * (Number(line.unitCost) || 0),
     0,
   );
 
@@ -111,7 +119,11 @@ export default function PurchasesPage() {
         i === index ? { ...line, [name]: value } : line,
       );
       // Prefill last known unit cost when an item is picked.
-      if (name === "inventoryItemId" && itemById[value] && !next[index].unitCost) {
+      if (
+        name === "inventoryItemId" &&
+        itemById[value] &&
+        !next[index].unitCost
+      ) {
         next[index] = {
           ...next[index],
           unitCost: itemById[value].purchasePrice || "",
@@ -124,12 +136,16 @@ export default function PurchasesPage() {
 
   const addLine = () => setLines((prev) => [...prev, { ...EMPTY_LINE }]);
   const removeLine = (index) =>
-    setLines((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+    setLines((prev) =>
+      prev.length > 1 ? prev.filter((_, i) => i !== index) : prev,
+    );
 
   const openAdd = (prefillLines) => {
     setForm(EMPTY_FORM);
     setLines(
-      prefillLines && prefillLines.length > 0 ? prefillLines : [{ ...EMPTY_LINE }],
+      prefillLines && prefillLines.length > 0
+        ? prefillLines
+        : [{ ...EMPTY_LINE }],
     );
     setErrors({});
     setDrawerOpen(true);
@@ -259,13 +275,16 @@ export default function PurchasesPage() {
     {
       title: "Items",
       value: "items",
-      render: (value) => `${value?.length || 0} item${value?.length === 1 ? "" : "s"}`,
+      render: (value) =>
+        `${value?.length || 0} item${value?.length === 1 ? "" : "s"}`,
     },
     {
       title: "Total",
       value: "totalAmount",
       render: (value) => (
-        <span className="font-semibold">₹{Number(value || 0).toLocaleString()}</span>
+        <span className="font-semibold">
+          ₹{Number(value || 0).toLocaleString()}
+        </span>
       ),
     },
     {
@@ -341,8 +360,16 @@ export default function PurchasesPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((s) => (
-          <div key={s.label} className="glass-card flex items-center gap-4 rounded-lg p-4">
-            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", s.color)}>
+          <div
+            key={s.label}
+            className="glass-card flex items-center gap-4 rounded-lg p-4"
+          >
+            <div
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+                s.color,
+              )}
+            >
               <s.icon className="h-5 w-5" />
             </div>
             <div>
@@ -366,7 +393,10 @@ export default function PurchasesPage() {
       <DrawerPop
         open={drawerOpen}
         close={() => setDrawerOpen(false)}
-        header={["New Purchase", "Stock increases as soon as the purchase is saved"]}
+        header={[
+          "New Purchase",
+          "Stock increases as soon as the purchase is saved",
+        ]}
         handleSubmit={handleSubmit}
         footerBtn={["Cancel", "Record Purchase"]}
         footerBtnDisabled={submitting}
@@ -391,11 +421,12 @@ export default function PurchasesPage() {
             />
           </div>
 
-          <AntInput
+          <AntDateSelect
             label="Purchase Date"
-            type="date"
-            value={form.purchaseDate}
-            onChange={(e) => setField("purchaseDate", e.target.value)}
+            value={form.purchaseDate ? dayjs(form.purchaseDate) : null}
+            onChange={(date) =>
+              setField("purchaseDate", date ? date.format("YYYY-MM-DD") : "")
+            }
           />
 
           <div>
@@ -426,21 +457,27 @@ export default function PurchasesPage() {
                       options={itemOptions}
                       showSearch
                       optionFilterProp="label"
-                      onChange={(value) => setLineField(index, "inventoryItemId", value)}
+                      onChange={(value) =>
+                        setLineField(index, "inventoryItemId", value)
+                      }
                     />
                     <AntInput
                       label={index === 0 ? `Qty` : undefined}
                       type="number"
                       placeholder={selected ? selected.unit : "0"}
                       value={line.quantity}
-                      onChange={(e) => setLineField(index, "quantity", e.target.value)}
+                      onChange={(e) =>
+                        setLineField(index, "quantity", e.target.value)
+                      }
                     />
                     <AntInput
                       label={index === 0 ? "Unit Cost (₹)" : undefined}
                       type="number"
                       placeholder="0.00"
                       value={line.unitCost}
-                      onChange={(e) => setLineField(index, "unitCost", e.target.value)}
+                      onChange={(e) =>
+                        setLineField(index, "unitCost", e.target.value)
+                      }
                     />
                     <div className="pb-2 text-right text-sm font-semibold">
                       ₹{lineTotal.toLocaleString()}
@@ -462,7 +499,9 @@ export default function PurchasesPage() {
 
             <div className="mt-3 flex items-center justify-between rounded-lg bg-muted/50 px-4 py-3">
               <span className="text-sm font-medium">Grand Total</span>
-              <span className="text-lg font-bold">₹{grandTotal.toLocaleString()}</span>
+              <span className="text-lg font-bold">
+                ₹{grandTotal.toLocaleString()}
+              </span>
             </div>
           </div>
 
@@ -479,17 +518,22 @@ export default function PurchasesPage() {
       <DrawerPop
         open={viewOpen}
         close={() => setViewOpen(false)}
-        header={[viewPurchase?.purchaseNumber || "Purchase", "Purchase details"]}
+        header={[
+          viewPurchase?.purchaseNumber || "Purchase",
+          "Purchase details",
+        ]}
         isFooter={false}
         width={560}
       >
         {viewPurchase && (
-          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+          <div className="flex-1 space-y-4 overflow-y-auto p-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Supplier</p>
                 <p className="text-sm font-medium">
-                  {viewPurchase.supplierId?.supplierName || viewPurchase.supplierName || "—"}
+                  {viewPurchase.supplierId?.supplierName ||
+                    viewPurchase.supplierName ||
+                    "—"}
                 </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
@@ -502,11 +546,15 @@ export default function PurchasesPage() {
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Invoice #</p>
-                <p className="text-sm font-medium">{viewPurchase.invoiceNumber || "—"}</p>
+                <p className="text-sm font-medium">
+                  {viewPurchase.invoiceNumber || "—"}
+                </p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">Status</p>
-                <p className="text-sm font-medium capitalize">{viewPurchase.status}</p>
+                <p className="text-sm font-medium capitalize">
+                  {viewPurchase.status}
+                </p>
               </div>
             </div>
 
@@ -546,12 +594,15 @@ export default function PurchasesPage() {
                 <p className="text-sm">{viewPurchase.notes}</p>
               </div>
             )}
-            {viewPurchase.status === "cancelled" && viewPurchase.cancellationReason && (
-              <div className="rounded-lg bg-destructive/10 p-3">
-                <p className="text-xs text-destructive">Cancellation Reason</p>
-                <p className="text-sm">{viewPurchase.cancellationReason}</p>
-              </div>
-            )}
+            {viewPurchase.status === "cancelled" &&
+              viewPurchase.cancellationReason && (
+                <div className="rounded-lg bg-destructive/10 p-3">
+                  <p className="text-xs text-destructive">
+                    Cancellation Reason
+                  </p>
+                  <p className="text-sm">{viewPurchase.cancellationReason}</p>
+                </div>
+              )}
           </div>
         )}
       </DrawerPop>
@@ -560,7 +611,10 @@ export default function PurchasesPage() {
       <DrawerPop
         open={suggestOpen}
         close={() => setSuggestOpen(false)}
-        header={["Purchase Suggestions", "Items at or below their minimum stock level"]}
+        header={[
+          "Purchase Suggestions",
+          "Items at or below their minimum stock level",
+        ]}
         handleSubmit={startFromSuggestions}
         footerBtn={["Close", "Start Purchase From Suggestions"]}
         footerBtnDisabled={suggestions.length === 0}
@@ -581,8 +635,8 @@ export default function PurchasesPage() {
                   <div>
                     <p className="text-sm font-medium">{s.materialName}</p>
                     <p className="text-xs text-muted-foreground">
-                      In stock: {s.stockQuantity} {s.unit} · Minimum: {s.minimumStock}{" "}
-                      {s.unit}
+                      In stock: {s.stockQuantity} {s.unit} · Minimum:{" "}
+                      {s.minimumStock} {s.unit}
                       {s.supplier ? ` · ${s.supplier}` : ""}
                     </p>
                   </div>
