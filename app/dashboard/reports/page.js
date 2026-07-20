@@ -61,7 +61,7 @@ const ALL_REPORTS = [
       "Complete daily sales breakdown with all transactions and payment totals",
     category: "Sales Reports",
     endpoint: "reports/sales",
-    filterFields: ["branch", "dateRange"],
+    filterFields: ["dateRange"],
   },
   {
     id: "sales-summary",
@@ -70,7 +70,7 @@ const ALL_REPORTS = [
       "Consolidated sales summary grouped by category and selected time period",
     category: "Sales Reports",
     endpoint: "reports/sales/summary",
-    filterFields: ["branch", "dateRange", "groupBy"],
+    filterFields: ["dateRange", "groupBy"],
   },
   {
     id: "revenue-report",
@@ -79,7 +79,7 @@ const ALL_REPORTS = [
       "Comprehensive revenue analysis with trends and period-over-period comparisons",
     category: "Sales Reports",
     endpoint: "reports/sales/revenue",
-    filterFields: ["branch", "dateRange"],
+    filterFields: ["dateRange"],
   },
   {
     id: "hourly-sales",
@@ -88,7 +88,7 @@ const ALL_REPORTS = [
       "Sales performance breakdown by hour to identify peak and off-peak periods",
     category: "Sales Reports",
     endpoint: "reports/sales/hourly",
-    filterFields: ["branch", "date"],
+    filterFields: ["date"],
   },
   {
     id: "top-items",
@@ -97,7 +97,7 @@ const ALL_REPORTS = [
       "Best performing menu items ranked by number of orders and revenue",
     category: "Sales Reports",
     endpoint: "reports/top-selling-items",
-    filterFields: ["branch", "dateRange"],
+    filterFields: ["dateRange"],
   },
   {
     id: "least-selling-items",
@@ -107,7 +107,7 @@ const ALL_REPORTS = [
     category: "Sales Reports",
     endpoint: API.LEAST_SELLING_ITEMS_REPORT,
     method: "GET",
-    filterFields: ["branch", "dateRange"],
+    filterFields: ["dateRange"],
   },
   {
     id: "sales-by-category",
@@ -374,8 +374,18 @@ const GROUP_BY_OPTIONS = [
 ];
 
 const FORMAT_OPTIONS = [
-  { value: "pdf", label: "PDF", icon: FileText, activeColor: "text-destructive" },
-  { value: "xlsx", label: "Excel", icon: FileSpreadsheet, activeColor: "text-green-600" },
+  {
+    value: "pdf",
+    label: "PDF",
+    icon: FileText,
+    activeColor: "text-destructive",
+  },
+  {
+    value: "xlsx",
+    label: "Excel",
+    icon: FileSpreadsheet,
+    activeColor: "text-green-600",
+  },
   { value: "csv", label: "CSV", icon: BarChart3, activeColor: "text-primary" },
 ];
 
@@ -392,8 +402,20 @@ export default function ReportsPage() {
   const [downloadFormat, setDownloadFormat] = useState("pdf");
   const [formValues, setFormValues] = useState({});
 
-  const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
+
+  // Branch comes from the navbar selector (top-nav), not a per-report filter.
+  const [navBranchId, setNavBranchId] = useState(null);
+
+  useEffect(() => {
+    setNavBranchId(localStorage.getItem("branchId") || null);
+    const onBranchChanged = (e) =>
+      setNavBranchId(
+        e.detail?.branchId || localStorage.getItem("branchId") || null,
+      );
+    window.addEventListener("branchChanged", onBranchChanged);
+    return () => window.removeEventListener("branchChanged", onBranchChanged);
+  }, []);
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -409,24 +431,13 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [branchRes, deptRes] = await Promise.all([
-          getAction(API.GET_BRANCH_LIST),
-          getAction(API.GET_DEPARTMENT_LIST),
-        ]);
-        if (branchRes?.statusCode === 200) {
-          setBranches(
-            (branchRes.data || []).map((b) => ({
-              value: b._id,
-              label: b.branchName || b.name || "Branch",
-            }))
-          );
-        }
+        const deptRes = await getAction(API.GET_DEPARTMENT_LIST);
         if (deptRes?.statusCode === 200) {
           setDepartments(
             (deptRes.data || []).map((d) => ({
               value: d._id,
               label: d.departmentName || d.name || "Department",
-            }))
+            })),
           );
         }
       } catch {
@@ -445,7 +456,7 @@ export default function ReportsPage() {
       setFavorites(updated);
       localStorage.setItem("reportFavorites", JSON.stringify(updated));
     },
-    [favorites]
+    [favorites],
   );
 
   const filteredReports = useMemo(() => {
@@ -460,7 +471,7 @@ export default function ReportsPage() {
       list = list.filter(
         (r) =>
           r.name.toLowerCase().includes(q) ||
-          r.description.toLowerCase().includes(q)
+          r.description.toLowerCase().includes(q),
       );
     }
     return list;
@@ -501,7 +512,7 @@ export default function ReportsPage() {
   // not a generic "status" — unmatched keys are silently stripped server-side.
   const buildFilterParams = () => {
     const params = {};
-    if (formValues.branchId) params.branchId = formValues.branchId;
+    if (navBranchId) params.branchId = navBranchId;
     if (formValues.departmentId) params.department = formValues.departmentId;
     if (formValues.orderStatus) params.orderStatus = formValues.orderStatus;
     if (formValues.staffStatus) params.staffStatus = formValues.staffStatus;
@@ -575,20 +586,8 @@ export default function ReportsPage() {
   const renderFilterField = (fieldKey) => {
     switch (fieldKey) {
       case "branch":
-        return (
-          <div key="branch" className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Branch</label>
-            <Select
-              size="large"
-              placeholder="All Branches"
-              className="w-full"
-              options={[{ value: "", label: "All Branches" }, ...branches]}
-              value={formValues.branchId || undefined}
-              onChange={(val) => setField("branchId", val)}
-              allowClear
-            />
-          </div>
-        );
+        // Branch is taken from the navbar selector — no per-report filter.
+        return null;
       case "dateRange":
         return (
           <AntDateRangeSelect
@@ -652,7 +651,9 @@ export default function ReportsPage() {
       case "staffStatus":
         return (
           <div key="staffStatus" className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">Status</label>
+            <label className="text-sm font-medium text-foreground">
+              Status
+            </label>
             <Select
               size="large"
               placeholder="All Status"
@@ -714,7 +715,7 @@ export default function ReportsPage() {
                 "p-2 transition-colors",
                 viewMode === "grid"
                   ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground hover:bg-muted"
+                  : "bg-card text-muted-foreground hover:bg-muted",
               )}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -725,7 +726,7 @@ export default function ReportsPage() {
                 "p-2 transition-colors",
                 viewMode === "list"
                   ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground hover:bg-muted"
+                  : "bg-card text-muted-foreground hover:bg-muted",
               )}
             >
               <List className="w-4 h-4" />
@@ -757,7 +758,7 @@ export default function ReportsPage() {
                 "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0",
                 activeTab === cat
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:bg-muted",
               )}
             >
               {cat}
@@ -766,7 +767,7 @@ export default function ReportsPage() {
                   "text-xs px-1.5 py-0.5 rounded-full font-semibold",
                   activeTab === cat
                     ? "bg-white/20 text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 {tabCounts[cat] ?? 0}
@@ -781,7 +782,9 @@ export default function ReportsPage() {
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
           <BarChart3 className="w-12 h-12 mb-3 opacity-30" />
           <p className="text-base font-medium">No reports found</p>
-          <p className="text-sm mt-1">Try adjusting your search or category filter</p>
+          <p className="text-sm mt-1">
+            Try adjusting your search or category filter
+          </p>
         </div>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
@@ -825,7 +828,7 @@ export default function ReportsPage() {
         }}
       >
         {selectedReport && (
-          <div className="p-6">
+          <div className="">
             {/* Icon + Title */}
             <div className="flex flex-col items-center text-center mb-6">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
@@ -839,56 +842,61 @@ export default function ReportsPage() {
               </p>
             </div>
 
-            {/* Filter Fields */}
-            <div className="flex flex-col gap-4 bg-muted/40 rounded-xl p-4 mb-4">
-              {selectedReport.filterFields.map((field) =>
-                renderFilterField(field)
-              )}
-            </div>
+            {/* Filter Fields (branch comes from the navbar selector) */}
+            {selectedReport.filterFields.some((f) => f !== "branch") && (
+              <div className="flex flex-col gap-4 bg-muted/40 rounded-xl p-4 mb-4">
+                {selectedReport.filterFields.map((field) =>
+                  renderFilterField(field),
+                )}
+              </div>
+            )}
 
             {/* Download Format */}
             <div className="mb-6">
               <p className="text-sm font-medium text-foreground mb-3">
-                Download Format{" "}
-                <span className="text-destructive">*</span>
+                Download Format <span className="text-destructive">*</span>
               </p>
               <div className="flex gap-3">
-                {FORMAT_OPTIONS.map(({ value, label, icon: Icon, activeColor }) => (
-                  <label
-                    key={value}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-all flex-1 justify-center",
-                      downloadFormat === value
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:bg-muted/50"
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="format"
-                      value={value}
-                      checked={downloadFormat === value}
-                      onChange={() => setDownloadFormat(value)}
-                      className="accent-primary"
-                    />
-                    <Icon
+                {FORMAT_OPTIONS.map(
+                  ({ value, label, icon: Icon, activeColor }) => (
+                    <label
+                      key={value}
                       className={cn(
-                        "w-4 h-4",
-                        downloadFormat === value ? activeColor : "text-muted-foreground"
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "text-sm font-medium",
+                        "flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-all flex-1 justify-center",
                         downloadFormat === value
-                          ? "text-foreground"
-                          : "text-muted-foreground"
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-card hover:bg-muted/50",
                       )}
                     >
-                      {label}
-                    </span>
-                  </label>
-                ))}
+                      <input
+                        type="radio"
+                        name="format"
+                        value={value}
+                        checked={downloadFormat === value}
+                        onChange={() => setDownloadFormat(value)}
+                        className="accent-primary"
+                      />
+                      <Icon
+                        className={cn(
+                          "w-4 h-4",
+                          downloadFormat === value
+                            ? activeColor
+                            : "text-muted-foreground",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          downloadFormat === value
+                            ? "text-foreground"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {label}
+                      </span>
+                    </label>
+                  ),
+                )}
               </div>
             </div>
 
@@ -945,7 +953,7 @@ function ReportCard({ report, isFavorite, onToggleFavorite, onGenerate }) {
               "w-4 h-4 transition-colors",
               isFavorite
                 ? "fill-yellow-400 text-yellow-400"
-                : "text-muted-foreground hover:text-yellow-400"
+                : "text-muted-foreground hover:text-yellow-400",
             )}
           />
         </button>
@@ -979,7 +987,7 @@ function ReportListItem({
     <div
       className={cn(
         "flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors gap-4",
-        !isLast && "border-b border-border"
+        !isLast && "border-b border-border",
       )}
     >
       <div className="min-w-0">
@@ -1000,7 +1008,7 @@ function ReportListItem({
               "w-4 h-4 transition-colors",
               isFavorite
                 ? "fill-yellow-400 text-yellow-400"
-                : "text-muted-foreground hover:text-yellow-400"
+                : "text-muted-foreground hover:text-yellow-400",
             )}
           />
         </button>
