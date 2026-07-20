@@ -136,15 +136,16 @@ export default function AddDepartment({
       loadingButton={formik.isSubmitting}
       width={600}
     >
-      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      <div className="flex-1 space-y-5 overflow-y-auto ">
         <AntInput
-          label="Department Name *"
+          label="Department Name"
           name="departmentName"
           placeholder="Eg: Kitchen, Floor, Bar"
           value={formik.values.departmentName}
           error={getError("departmentName")}
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
+          required
         />
         <AntSelect
           label="Status"

@@ -116,7 +116,9 @@ export default function AddPrinter({
         if (result?.statusCode === 200 || result?.statusCode === 201) {
           message.success(
             result?.message ||
-              (isUpdate ? "Printer updated successfully" : "Printer added successfully"),
+              (isUpdate
+                ? "Printer updated successfully"
+                : "Printer added successfully"),
           );
           resetForm();
           onCreated?.(result?.data || payload);
@@ -139,9 +141,7 @@ export default function AddPrinter({
   });
 
   const getError = (field) =>
-    formik.touched[field] && formik.errors[field]
-      ? formik.errors[field]
-      : "";
+    formik.touched[field] && formik.errors[field] ? formik.errors[field] : "";
 
   const closeDrawer = () => {
     formik.resetForm();
@@ -190,30 +190,32 @@ export default function AddPrinter({
       loadingButton={formik.isSubmitting}
       width={640}
     >
-      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      <div className="flex-1 space-y-5 overflow-y-auto ">
         <AntInput
-          label="Printer Name *"
+          label="Printer Name"
           name="name"
           placeholder="Eg: Kitchen Printer 1, Billing Counter"
           value={formik.values.name}
           error={getError("name")}
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
+          required
         />
 
         <div className="grid gap-4 md:grid-cols-2">
           <AntSelect
-            label="Purpose *"
+            label="Purpose"
             placeholder="Select document type"
             value={formik.values.purpose}
             error={getError("purpose")}
             options={PURPOSE_TYPES}
             onChange={(value) => formik.setFieldValue("purpose", value)}
             onBlur={() => formik.setFieldTouched("purpose", true)}
+            required
           />
 
           <AntSelect
-            label="Connection Type *"
+            label="Connection Type"
             placeholder="Select connection type"
             value={formik.values.connectionType}
             error={getError("connectionType")}
@@ -226,6 +228,7 @@ export default function AddPrinter({
               }
             }}
             onBlur={() => formik.setFieldTouched("connectionType", true)}
+            required
           />
         </div>
 
@@ -240,25 +243,24 @@ export default function AddPrinter({
               label: section,
               value: section,
             }))}
-            onChange={(value) =>
-              formik.setFieldValue("kitchenSections", value)
-            }
+            onChange={(value) => formik.setFieldValue("kitchenSections", value)}
           />
         )}
 
         {isLanPrinter && (
           <div className="grid gap-4 md:grid-cols-2">
             <AntInput
-              label="IP Address *"
+              label="IP Address "
               name="ip"
               placeholder="192.168.1.50"
               value={formik.values.ip}
               error={getError("ip")}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
+              required
             />
             <AntInput
-              label="Port *"
+              label="Port"
               name="port"
               type="number"
               placeholder="9100"
@@ -266,6 +268,7 @@ export default function AddPrinter({
               error={getError("port")}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
+              required
             />
           </div>
         )}

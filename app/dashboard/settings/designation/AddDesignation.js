@@ -138,15 +138,16 @@ export default function AddDesignation({
       loadingButton={formik.isSubmitting}
       width={600}
     >
-      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      <div className="flex-1 space-y-5 overflow-y-auto ">
         <AntInput
-          label="Designation Name *"
+          label="Designation Name"
           name="designationName"
           placeholder="Eg: Head Chef, Senior Waiter, Supervisor"
           value={formik.values.designationName}
           error={getError("designationName")}
           onChange={formik.handleChange}
           onBlur={formik.handleBlur}
+          required
         />
         <AntSelect
           label="Status"

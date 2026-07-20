@@ -82,7 +82,9 @@ export default function AddShift({
             (isUpdate ? "Unable to update shift" : "Unable to add shift"),
         );
       } catch {
-        message.error(isUpdate ? "Unable to update shift" : "Unable to add shift");
+        message.error(
+          isUpdate ? "Unable to update shift" : "Unable to add shift",
+        );
       } finally {
         setSubmitting(false);
       }
@@ -141,9 +143,9 @@ export default function AddShift({
       loadingButton={formik.isSubmitting}
       width={640}
     >
-      <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+      <div className="flex-1 space-y-5 overflow-y-auto">
         <AntInput
-          label="Shift Name *"
+          label="Shift Name"
           name="shiftName"
           placeholder="Eg: Morning Shift, Evening Shift"
           value={formik.values.shiftName}
@@ -155,7 +157,11 @@ export default function AddShift({
         <div className="grid gap-4 md:grid-cols-2">
           <AntTimeSelect
             label="Start Time *"
-            value={formik.values.startTime ? dayjs(formik.values.startTime, "HH:mm") : null}
+            value={
+              formik.values.startTime
+                ? dayjs(formik.values.startTime, "HH:mm")
+                : null
+            }
             error={getError("startTime")}
             format="hh:mm A"
             placeholder="Select start time"
@@ -169,7 +175,11 @@ export default function AddShift({
           />
           <AntTimeSelect
             label="End Time *"
-            value={formik.values.endTime ? dayjs(formik.values.endTime, "HH:mm") : null}
+            value={
+              formik.values.endTime
+                ? dayjs(formik.values.endTime, "HH:mm")
+                : null
+            }
             error={getError("endTime")}
             format="hh:mm A"
             placeholder="Select end time"
