@@ -5,7 +5,7 @@ import { message } from "@/lib/message";
 import { useEffect, useMemo, useState } from "react";
 import {
   Banknote, CheckCircle2, CreditCard, Minus, PauseCircle,
-  Plus, ReceiptText, Smartphone, Tag, Trash2,
+  Plus, QrCode as QrCodeIcon, ReceiptText, Smartphone, Tag, Trash2,
   UtensilsCrossed, Users, X, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { API, action, getAction } from "@/lib/API";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 import SearchBox from "@/components/ui/SearchBox";
+import RazorpayPaymentModal from "@/components/payments/RazorpayPaymentModal";
 
 /* ── fallback data ─────────────────────────────────────────────────────── */
 
@@ -91,6 +92,7 @@ export default function BillingPage() {
   const [payments, setPayments] = useState({ cash: "", upi: "", card: "" });
   const [lastFourDigits, setLastFourDigits] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [razorpayModal, setRazorpayModal] = useState({ open: false, billId: null, billNo: "" });
   const [menuItems, setMenuItems] = useState(fallbackMenuItems);
   const [categories, setCategories] = useState(fallbackCategories);
   const [tables, setTables] = useState(fallbackTables);
@@ -274,6 +276,30 @@ export default function BillingPage() {
     } catch {
       message.error("Unable to save bill");
       setStatusMessage("Unable to save bill. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Distinct from submitBill("completed") — holds the bill with no payment
+  // recorded yet, then opens the Razorpay link/QR modal. The bill only
+  // settles once that modal's polling sees paymentStatus: "paid".
+  const payWithRazorpay = async () => {
+    if (!cart.length) { setStatusMessage("Add at least one item."); return; }
+    setIsSubmitting(true);
+    try {
+      const payload = buildPayload("held");
+      payload.payments = [];
+      payload.paymentStatus = "pending";
+      const res = await action(API.CREATE_BILL, payload);
+      if (res?.statusCode === 200 || res?.statusCode === 201) {
+        const bill = res?.data || {};
+        setRazorpayModal({ open: true, billId: bill._id || bill.id, billNo: bill.billNo || billNo });
+      } else {
+        message.error(res?.message || "Unable to create bill");
+      }
+    } catch {
+      message.error("Unable to create bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -574,11 +600,12 @@ export default function BillingPage() {
             {/* Payment method */}
             <div>
               <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Payment Method</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {[
                   { id: "cash", Icon: Banknote, label: "Cash" },
                   { id: "card", Icon: CreditCard, label: "Card" },
                   { id: "upi", Icon: Smartphone, label: "UPI" },
+                  { id: "razorpay", Icon: QrCodeIcon, label: "Razorpay" },
                 ].map(({ id, Icon, label }) => (
                   <button
                     key={id}
@@ -606,7 +633,14 @@ export default function BillingPage() {
                 />
               )}
 
+              {paymentMode === "razorpay" && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Generates a payment link + QR code for the customer to pay on their own phone.
+                </p>
+              )}
+
               {/* Split payment toggle */}
+              {paymentMode !== "razorpay" && (
               <button
                 onClick={() => setSplitPayment((p) => !p)}
                 className="mt-2 flex w-full items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -616,8 +650,9 @@ export default function BillingPage() {
                 </span>
                 Split payment
               </button>
+              )}
 
-              {splitPayment && (
+              {paymentMode !== "razorpay" && splitPayment && (
                 <div className="mt-2 space-y-2">
                   {[{ id: "cash", label: "Cash", Icon: Banknote }, { id: "card", label: "Card", Icon: CreditCard }, { id: "upi", label: "UPI", Icon: Smartphone }].map(({ id, label, Icon }) => (
                     <div key={id} className="flex items-center gap-2">
@@ -637,7 +672,7 @@ export default function BillingPage() {
             </div>
 
             {/* Balance indicator */}
-            {cart.length > 0 && Math.abs(balance) > 0.01 && (
+            {paymentMode !== "razorpay" && cart.length > 0 && Math.abs(balance) > 0.01 && (
               <div className={cn(
                 "flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold",
                 balance > 0 ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500",
@@ -650,11 +685,15 @@ export default function BillingPage() {
             {/* Actions */}
             <div className="space-y-2">
               <button
-                onClick={() => submitBill("completed")}
+                onClick={() => (paymentMode === "razorpay" ? payWithRazorpay() : submitBill("completed"))}
                 disabled={isSubmitting || !cart.length}
                 className="w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? "Processing…" : `Generate Bill  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total, 0)) : ""}`}
+                {isSubmitting
+                  ? "Processing…"
+                  : paymentMode === "razorpay"
+                    ? `Get Payment Link  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total, 0)) : ""}`
+                    : `Generate Bill  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total, 0)) : ""}`}
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -678,6 +717,18 @@ export default function BillingPage() {
           </div>
         </div>
       </div>
+
+      <RazorpayPaymentModal
+        open={razorpayModal.open}
+        billId={razorpayModal.billId}
+        billNo={razorpayModal.billNo}
+        onClose={() => setRazorpayModal({ open: false, billId: null, billNo: "" })}
+        onPaid={() => {
+          setRazorpayModal({ open: false, billId: null, billNo: "" });
+          resetBill();
+          setStatusMessage("Bill paid via Razorpay.");
+        }}
+      />
     </div>
   );
 }

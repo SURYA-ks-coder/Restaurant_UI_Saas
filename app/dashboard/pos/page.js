@@ -6,6 +6,7 @@ import {
   CreditCard,
   Minus,
   Plus,
+  QrCode,
   Search,
   Smartphone,
   Trash2,
@@ -20,6 +21,7 @@ import { Dropdown, Modal } from "antd";
 import { Printer } from "lucide-react";
 import { message } from "@/lib/message";
 import { getPrintPreviewHtml, triggerPrint } from "@/lib/print";
+import RazorpayPaymentModal from "@/components/payments/RazorpayPaymentModal";
 
 const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
 
@@ -73,6 +75,7 @@ export default function POSPage() {
   const [selectedTableId, setSelectedTableId] = useState("");
   const [gstRate, setGstRate] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [razorpayModal, setRazorpayModal] = useState({ open: false, billId: null, billNo: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastBillId, setLastBillId] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -180,7 +183,7 @@ export default function POSPage() {
     return `BILL-${datePart}-${randomPart}`;
   };
 
-  const buildBillPayload = () => {
+  const buildBillPayload = ({ razorpay = false } = {}) => {
     const restaurantId = getEntityId(parseStoredValue("restaurantId"));
     const branchId = getBranchId();
     const userData = parseStoredValue("userData");
@@ -214,15 +217,17 @@ export default function POSPage() {
       taxTotal: roundAmount(tax),
       discountTotal: 0,
       grandTotal: roundAmount(total),
-      payments: [
-        {
-          method: paymentMethod,
-          amount: roundAmount(total),
-          paidAt: new Date(),
-        },
-      ],
-      paymentStatus: "paid",
-      status: "completed",
+      payments: razorpay
+        ? []
+        : [
+            {
+              method: paymentMethod,
+              amount: roundAmount(total),
+              paidAt: new Date(),
+            },
+          ],
+      paymentStatus: razorpay ? "pending" : "paid",
+      status: razorpay ? "held" : "completed",
       createdBy: getEntityId(userData),
     };
   };
@@ -298,6 +303,27 @@ export default function POSPage() {
       message.error(result?.message || "Unable to complete order");
     } catch (error) {
       message.error("Unable to complete order");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Holds the bill with no payment recorded yet, then opens the Razorpay
+  // link/QR modal — the bill only settles once that modal's polling sees
+  // paymentStatus: "paid".
+  const payWithRazorpay = async () => {
+    if (!validateBill()) return;
+    setIsSubmitting(true);
+    try {
+      const result = await action(API.CREATE_BILL, buildBillPayload({ razorpay: true }), "POST");
+      if (result?.statusCode === 200 || result?.statusCode === 201) {
+        const bill = result?.data || {};
+        setRazorpayModal({ open: true, billId: bill._id || bill.id, billNo: bill.billNo });
+      } else {
+        message.error(result?.message || "Unable to create bill");
+      }
+    } catch (error) {
+      message.error("Unable to create bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -478,11 +504,12 @@ export default function POSPage() {
             </div>
           </div>
 
-          <div className="my-4 grid grid-cols-3 gap-2">
+          <div className="my-4 grid grid-cols-4 gap-2">
             {[
               { id: "cash", icon: Banknote, label: "Cash" },
               { id: "card", icon: CreditCard, label: "Card" },
               { id: "upi", icon: Smartphone, label: "UPI" },
+              { id: "razorpay", icon: QrCode, label: "Razorpay" },
             ].map(({ id, icon: Icon, label }) => (
               <button
                 key={id}
@@ -535,11 +562,15 @@ export default function POSPage() {
           </div>
 
           <button
-            onClick={completeOrder}
+            onClick={paymentMethod === "razorpay" ? payWithRazorpay : completeOrder}
             disabled={isSubmitting}
             className="w-full rounded-lg bg-primary py-2 font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSubmitting ? "Completing..." : "Complete Order"}
+            {isSubmitting
+              ? "Completing..."
+              : paymentMethod === "razorpay"
+                ? "Get Payment Link"
+                : "Complete Order"}
           </button>
 
           {lastBillId && (
@@ -578,6 +609,19 @@ export default function POSPage() {
           />
         )}
       </Modal>
+
+      <RazorpayPaymentModal
+        open={razorpayModal.open}
+        billId={razorpayModal.billId}
+        billNo={razorpayModal.billNo}
+        onClose={() => setRazorpayModal({ open: false, billId: null, billNo: "" })}
+        onPaid={(bill) => {
+          setRazorpayModal({ open: false, billId: null, billNo: "" });
+          setCart([]);
+          if (bill?._id || bill?.id) setLastBillId(bill._id || bill.id);
+          message.success("Bill paid via Razorpay.");
+        }}
+      />
     </div>
   );
 }

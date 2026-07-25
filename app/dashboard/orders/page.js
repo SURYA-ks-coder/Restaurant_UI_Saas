@@ -18,11 +18,13 @@ import {
   Heart,
   Check,
   Loader2,
+  QrCode,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
 import ViewOrderDetails from "./OrdersDetails.js/ViewOrderDetails";
+import RazorpayPaymentModal from "@/components/payments/RazorpayPaymentModal";
 
 /* ─── helpers (mirrors pos/page.js) ──────────────────────────────────────── */
 
@@ -96,6 +98,7 @@ const PAYMENT_METHODS = [
   { id: "card", label: "Card", Icon: CreditCard },
   { id: "upi", label: "UPI", Icon: Smartphone },
   { id: "wallet", label: "Wallet", Icon: Wallet },
+  { id: "razorpay", label: "Razorpay", Icon: QrCode },
 ];
 
 /* ─── VegDot ──────────────────────────────────────────────────────────────── */
@@ -273,6 +276,7 @@ export default function OrdersPage() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [razorpayModal, setRazorpayModal] = useState({ open: false, billId: null, billNo: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* live data */
@@ -397,7 +401,7 @@ export default function OrdersPage() {
     return `BILL-${datePart}-${Math.floor(1000 + Math.random() * 9000)}`;
   };
 
-  const buildBillPayload = () => {
+  const buildBillPayload = ({ razorpay = false } = {}) => {
     const restaurantId = getRestaurantId();
     const branchId = getDefaultBranchId();
     const TAX_RATE = 5;
@@ -427,15 +431,17 @@ export default function OrdersPage() {
       taxTotal: roundAmount(tax),
       discountTotal: 0,
       grandTotal: roundAmount(grandTotal),
-      payments: [
-        {
-          method: paymentMethod,
-          amount: roundAmount(grandTotal),
-          paidAt: new Date(),
-        },
-      ],
-      paymentStatus: "paid",
-      status: "completed",
+      payments: razorpay
+        ? []
+        : [
+            {
+              method: paymentMethod,
+              amount: roundAmount(grandTotal),
+              paidAt: new Date(),
+            },
+          ],
+      paymentStatus: razorpay ? "pending" : "paid",
+      status: razorpay ? "held" : "completed",
       createdBy: getUserId(),
     };
   };
@@ -471,6 +477,27 @@ export default function OrdersPage() {
       message.error(result?.message || "Unable to complete order");
     } catch {
       message.error("Unable to complete order");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Holds the bill with no payment recorded yet, then opens the Razorpay
+  // link/QR modal — the bill only settles once that modal's polling sees
+  // paymentStatus: "paid".
+  const payWithRazorpay = async () => {
+    if (!validateBill()) return;
+    setIsSubmitting(true);
+    try {
+      const result = await action(API.CREATE_BILL, buildBillPayload({ razorpay: true }), "POST");
+      if (result?.statusCode === 200 || result?.statusCode === 201) {
+        const bill = result?.data || {};
+        setRazorpayModal({ open: true, billId: bill._id || bill.id, billNo: bill.billNo });
+      } else {
+        message.error(result?.message || "Unable to create bill");
+      }
+    } catch {
+      message.error("Unable to create bill");
     } finally {
       setIsSubmitting(false);
     }
@@ -779,7 +806,7 @@ export default function OrdersPage() {
         {/* CTA */}
         <div className="shrink-0 px-5 pb-2 pt-2">
           <button
-            onClick={completeOrder}
+            onClick={paymentMethod === "razorpay" ? payWithRazorpay : completeOrder}
             disabled={!cart.length || !selectedTable || isSubmitting}
             className={cn(
               "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all duration-200 cursor-pointer",
@@ -797,6 +824,11 @@ export default function OrdersPage() {
               "Select a table first"
             ) : !cart.length ? (
               "Add items to order"
+            ) : paymentMethod === "razorpay" ? (
+              <>
+                <QrCode className="h-4 w-4" />
+                Get Payment Link · ₹{grandTotal}
+              </>
             ) : (
               <>
                 <Check className="h-4 w-4" />
@@ -806,6 +838,20 @@ export default function OrdersPage() {
           </button>
         </div>
       </div>
+
+      <RazorpayPaymentModal
+        open={razorpayModal.open}
+        billId={razorpayModal.billId}
+        billNo={razorpayModal.billNo}
+        onClose={() => setRazorpayModal({ open: false, billId: null, billNo: "" })}
+        onPaid={() => {
+          setRazorpayModal({ open: false, billId: null, billNo: "" });
+          clearCart();
+          setSelectedTable(null);
+          getOrdersList();
+          message.success("Bill paid via Razorpay.");
+        }}
+      />
 
       {/* existing view-order drawer */}
       <ViewOrderDetails
