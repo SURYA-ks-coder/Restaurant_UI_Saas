@@ -20,21 +20,19 @@ import Heading from "@/components/ui/Heading";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 import AntTextArea from "@/components/ui/AntTextArea";
+import { API, action, getAction, patchAction } from "@/lib/API";
+import { getPreferences, getRestaurantId, setCachedPreferences } from "@/lib/auth";
+import { message } from "@/lib/message";
+import {
+  ACCENT_COLORS,
+  applyAccentColor,
+  applyDirection,
+  applyFontSize,
+  applyLanguageAttr,
+  applyRadius,
+} from "@/lib/theme-helpers";
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
-
-const ACCENT_COLORS = [
-  { name: "Indigo", hue: 260, hex: "#6366f1" },
-  { name: "Blue", hue: 230, hex: "#3b82f6" },
-  { name: "Cyan", hue: 200, hex: "#06b6d4" },
-  { name: "Teal", hue: 180, hex: "#14b8a6" },
-  { name: "Green", hue: 145, hex: "#22c55e" },
-  { name: "Orange", hue: 50, hex: "#f97316" },
-  { name: "Red", hue: 25, hex: "#ef4444" },
-  { name: "Rose", hue: 355, hex: "#f43f5e" },
-  { name: "Violet", hue: 290, hex: "#a855f7" },
-  { name: "Pink", hue: 320, hex: "#ec4899" },
-];
 
 const RADIUS_OPTIONS = [
   { label: "Sharp", value: "0rem" },
@@ -59,40 +57,17 @@ const LANGUAGES = [
   { label: "German (Deutsch)", value: "de" },
 ];
 
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-
-function applyAccentColor(hue, hex) {
-  const root = document.documentElement;
-  const isDark = root.classList.contains("dark");
-  const L = isDark ? "0.7" : "0.58";
-  const C = "0.2";
-  const val = `oklch(${L} ${C} ${hue})`;
-  root.style.setProperty("--primary", val);
-  root.style.setProperty("--ring", val);
-  root.style.setProperty("--sidebar-primary", val);
-  root.style.setProperty("--sidebar-ring", val);
-
-  // AntD components (Switch, Checkbox, Radio, Button, ...) can't read the
-  // CSS var above, so hand them the resolved hex via a global event.
-  if (hex) {
-    localStorage.setItem("themeAccentHex", hex);
-    window.dispatchEvent(
-      new CustomEvent("accent-color-change", { detail: { hex } }),
-    );
-  }
-}
-
-function applyRadius(radius) {
-  document.documentElement.style.setProperty("--radius", radius);
-}
-
-function applyFontSize(size) {
-  document.documentElement.style.fontSize = size;
-}
-
-function applyDirection(dir) {
-  document.documentElement.setAttribute("dir", dir);
-}
+// Maps this page's local QR toggle state to the qrSiteConfig field the
+// server persists on the Restaurant document.
+const QR_FIELD_MAP = {
+  qrEnabled: "enabled",
+  qrSiteName: "siteName",
+  qrWelcome: "welcomeMessage",
+  qrShowPrices: "showPrices",
+  qrAllowOrders: "allowOrders",
+  qrShowImages: "showImages",
+  qrTableMode: "tableMode",
+};
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 
@@ -118,70 +93,119 @@ export default function AppearancePage() {
   useEffect(() => {
     setMounted(true);
 
-    const h = Number(localStorage.getItem("themeHue")) || 260;
-    const r = localStorage.getItem("themeRadius") || "0.75rem";
-    const f = localStorage.getItem("themeFontSize") || "16px";
-    const lang = localStorage.getItem("appLanguage") || "en";
-    const dir = localStorage.getItem("appDirection") || "ltr";
-    const qrOn = localStorage.getItem("qrEnabled") !== "false";
-    const qrName = localStorage.getItem("qrSiteName") || "";
-    const qrMsg = localStorage.getItem("qrWelcome") || "";
-    const qrPrices = localStorage.getItem("qrShowPrices") !== "false";
-    const qrOrders = localStorage.getItem("qrAllowOrders") !== "false";
-    const qrImgs = localStorage.getItem("qrShowImages") !== "false";
-    const qrTable = localStorage.getItem("qrTableMode") !== "false";
+    // Paint instantly from the copy cached at login, then reconcile with the
+    // server in case it changed on another device since then.
+    const cached = getPreferences();
+    applyFromPreferences(cached);
 
-    setAccentHue(h);
-    setRadius(r);
-    setFontSize(f);
-    setLanguage(lang);
-    setDirection(dir);
-    setQrEnabled(qrOn);
-    setQrSiteName(qrName);
-    setQrWelcome(qrMsg);
-    setQrShowPrices(qrPrices);
-    setQrAllowOrders(qrOrders);
-    setQrShowImages(qrImgs);
-    setQrTableMode(qrTable);
+    (async () => {
+      const result = await getAction(API.GET_PREFERENCES);
+      if (result?.statusCode === 200 && result.data) {
+        setCachedPreferences(result.data);
+        applyFromPreferences(result.data);
+        if (result.data.theme) setTheme(result.data.theme);
+      }
+    })();
 
-    applyAccentColor(h, ACCENT_COLORS.find((c) => c.hue === h)?.hex);
-    applyRadius(r);
-    applyFontSize(f);
-    applyDirection(dir);
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+    (async () => {
+      const result = await getAction(`${API.GET_RESTAURANT_BY_ID}/${restaurantId}`);
+      const qr = result?.data?.qrSiteConfig;
+      if (result?.statusCode === 200 && qr) {
+        setQrEnabled(qr.enabled !== false);
+        setQrSiteName(qr.siteName || "");
+        setQrWelcome(qr.welcomeMessage || "");
+        setQrShowPrices(qr.showPrices !== false);
+        setQrAllowOrders(qr.allowOrders !== false);
+        setQrShowImages(qr.showImages !== false);
+        setQrTableMode(qr.tableMode !== false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function applyFromPreferences(prefs) {
+    if (!prefs) return;
+    if (prefs.accentHue != null) setAccentHue(prefs.accentHue);
+    if (prefs.radius) setRadius(prefs.radius);
+    if (prefs.fontSize) setFontSize(prefs.fontSize);
+    if (prefs.language) setLanguage(prefs.language);
+    if (prefs.direction) setDirection(prefs.direction);
+
+    applyAccentColor(
+      prefs.accentHue ?? 260,
+      prefs.accentHex || ACCENT_COLORS.find((c) => c.hue === prefs.accentHue)?.hex,
+    );
+    applyRadius(prefs.radius);
+    applyFontSize(prefs.fontSize);
+    applyDirection(prefs.direction);
+    applyLanguageAttr(prefs.language);
+  }
+
+  const savePreferences = async (partial) => {
+    setCachedPreferences(partial);
+    try {
+      const result = await patchAction(API.UPDATE_PREFERENCES, partial);
+      if (result?.statusCode !== 200) {
+        message.error(result?.message || "Unable to save preference");
+      }
+    } catch {
+      message.error("Unable to save preference");
+    }
+  };
+
+  const handleThemeChange = (key) => {
+    setTheme(key);
+    savePreferences({ theme: key });
+  };
 
   const handleAccent = (hue, hex) => {
     setAccentHue(hue);
     applyAccentColor(hue, hex);
-    localStorage.setItem("themeHue", String(hue));
+    savePreferences({ accentHue: hue, accentHex: hex });
   };
 
   const handleRadius = (val) => {
     setRadius(val);
     applyRadius(val);
-    localStorage.setItem("themeRadius", val);
+    savePreferences({ radius: val });
   };
 
   const handleFontSize = (val) => {
     setFontSize(val);
     applyFontSize(val);
-    localStorage.setItem("themeFontSize", val);
+    savePreferences({ fontSize: val });
   };
 
   const handleLanguage = (val) => {
     setLanguage(val);
-    document.documentElement.setAttribute("lang", val);
-    localStorage.setItem("appLanguage", val);
+    applyLanguageAttr(val);
+    savePreferences({ language: val });
   };
 
   const handleDirection = (dir) => {
     setDirection(dir);
     applyDirection(dir);
-    localStorage.setItem("appDirection", dir);
+    savePreferences({ direction: dir });
   };
 
-  const saveQr = (key, value) => {
-    localStorage.setItem(key, String(value));
+  const saveQr = async (stateKey, value) => {
+    const restaurantId = getRestaurantId();
+    if (!restaurantId) return;
+    const field = QR_FIELD_MAP[stateKey];
+    try {
+      const result = await action(
+        `${API.UPDATE_RESTAURANT}/${restaurantId}`,
+        { qrSiteConfig: { [field]: value } },
+        "PATCH",
+      );
+      if (result?.statusCode !== 200) {
+        message.error(result?.message || "Unable to save QR site setting");
+      }
+    } catch {
+      message.error("Unable to save QR site setting");
+    }
   };
 
   if (!mounted) return null;
@@ -208,7 +232,7 @@ export default function AppearancePage() {
           ].map(({ key, label, Icon }) => (
             <button
               key={key}
-              onClick={() => setTheme(key)}
+              onClick={() => handleThemeChange(key)}
               className={cn(
                 "flex flex-col items-center gap-3 rounded-xl border-2 p-4 transition-all",
                 theme === key
@@ -409,10 +433,8 @@ export default function AppearancePage() {
                 label="Site Name"
                 placeholder="Eg: FlavorHub Menu"
                 value={qrSiteName}
-                onChange={(e) => {
-                  setQrSiteName(e.target.value);
-                  saveQr("qrSiteName", e.target.value);
-                }}
+                onChange={(e) => setQrSiteName(e.target.value)}
+                onBlur={() => saveQr("qrSiteName", qrSiteName)}
               />
             </div>
 
@@ -421,10 +443,8 @@ export default function AppearancePage() {
               placeholder="Eg: Welcome! Scan to browse our menu and order directly from your table."
               rows={2}
               value={qrWelcome}
-              onChange={(e) => {
-                setQrWelcome(e.target.value);
-                saveQr("qrWelcome", e.target.value);
-              }}
+              onChange={(e) => setQrWelcome(e.target.value)}
+              onBlur={() => saveQr("qrWelcome", qrWelcome)}
             />
 
             <div className="space-y-3 pt-1">
