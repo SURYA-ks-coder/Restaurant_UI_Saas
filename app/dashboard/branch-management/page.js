@@ -17,7 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { action, getAction, API } from "@/lib/API";
+import { getAction, API } from "@/lib/API";
 import AddBranch from "@/app/dashboard/restaurant-profile/Branch/AddBranch";
 
 const sampleBranches = [
@@ -120,8 +120,10 @@ export default function BranchManagementPage() {
     ? decodeURIComponent(searchParams.get("restaurantName"))
     : null;
 
-  const [branchRows, setBranchRows] = useState(sampleBranches);
-  const [managerRows, setManagerRows] = useState(sampleManagers);
+  const [branchRows, setBranchRows] = useState([]);
+  const [managerRows, setManagerRows] = useState([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
+  const [loadingManagers, setLoadingManagers] = useState(true);
   const [search, setSearch] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [updateId, setUpdateId] = useState(null);
@@ -148,28 +150,40 @@ export default function BranchManagementPage() {
   };
 
   const fetchBranches = async () => {
+    setLoadingBranches(true);
     try {
-      const result = await getAction(API.GET_BRANCH_LIST, {});
+      const result = await getAction(API.GET_BRANCH_LIST);
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         const list = normalizeList(result, sampleBranches);
         setBranchRows(list.length ? list : sampleBranches);
+      } else {
+        setBranchRows(sampleBranches);
       }
     } catch {
       setBranchRows(sampleBranches);
+    } finally {
+      setLoadingBranches(false);
     }
   };
 
   const fetchManagers = async () => {
+    setLoadingManagers(true);
     try {
-      const result = await action(API.GET_STAFF_LIST, { role: "manager" });
+      const result = await getAction(
+        `${API.GET_STAFF_LIST}?role=manager&status=active&limit=100`,
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         const list = normalizeList(result, sampleManagers).filter(
           (u) => (u?.role || "manager") === "manager",
         );
         setManagerRows(list.length ? list : sampleManagers);
+      } else {
+        setManagerRows(sampleManagers);
       }
     } catch {
       setManagerRows(sampleManagers);
+    } finally {
+      setLoadingManagers(false);
     }
   };
 
@@ -278,7 +292,13 @@ export default function BranchManagementPage() {
       </div>
 
       {/* Branch Cards Grid */}
-      {filtered.length === 0 ? (
+      {loadingBranches ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <BranchCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 py-20 text-center">
           <Building2 className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <p className="text-base font-medium text-muted-foreground">
@@ -305,6 +325,7 @@ export default function BranchManagementPage() {
         updateId={updateId}
         branches={normalizedBranches}
         managers={managerRows}
+        managersLoading={loadingManagers}
         onOpenChange={(next) => {
           setDrawerOpen(next);
           if (!next) setUpdateId(null);
@@ -408,6 +429,37 @@ function BranchCard({ branch, onEdit }) {
         <Edit3 className="h-3.5 w-3.5" />
         Edit Branch
       </button>
+    </div>
+  );
+}
+
+function BranchCardSkeleton() {
+  return (
+    <div className="glass-card flex flex-col rounded-xl border border-border p-5 animate-pulse">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-11 w-11 shrink-0 rounded-lg bg-muted" />
+          <div className="space-y-2">
+            <div className="h-3.5 w-28 rounded bg-muted" />
+            <div className="h-3 w-16 rounded bg-muted" />
+          </div>
+        </div>
+        <div className="h-5 w-14 rounded-full bg-muted" />
+      </div>
+
+      <div className="flex-1 space-y-3">
+        <div className="h-3 w-4/5 rounded bg-muted" />
+        <div className="h-3 w-3/5 rounded bg-muted" />
+        <div className="h-3 w-2/3 rounded bg-muted" />
+        <div className="h-3 w-1/2 rounded bg-muted" />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-4">
+        <div className="h-12 rounded-lg bg-muted/60" />
+        <div className="h-12 rounded-lg bg-muted/60" />
+      </div>
+
+      <div className="mt-4 h-8 w-full rounded-lg bg-muted" />
     </div>
   );
 }

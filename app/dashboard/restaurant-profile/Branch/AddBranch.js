@@ -16,6 +16,7 @@ export default function AddBranch({
   updateId,
   branches,
   managers,
+  managersLoading = false,
 }) {
   const [show, setShow] = useState(open);
   const isUpdate = Boolean(updateId);
@@ -70,7 +71,7 @@ export default function AddBranch({
           code: values.code.trim().toUpperCase(),
           phone: values.phone.trim(),
           address: values.address.trim(),
-          manager: null, // values.manager ,
+          manager: values.manager || null,
           isDefault: Boolean(values.isDefault),
         };
 
@@ -230,8 +231,9 @@ export default function AddBranch({
             error={getError("manager")}
             allowClear
             showSearch
+            loading={managersLoading}
             optionFilterProp="label"
-            placeholder="Select manager"
+            placeholder={managersLoading ? "Loading managers…" : "Select manager"}
             options={managers.map((manager) => ({
               label: manager.name,
               value: getEntityId(manager),
