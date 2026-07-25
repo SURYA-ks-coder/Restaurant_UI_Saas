@@ -281,8 +281,7 @@
 
 .employee-cost-table .ant-table-tbody > tr:hover > td,
 .employee-cost-table .ant-table-tbody > tr > td.ant-table-cell-row-hover {
-  /* background: color-mix(in oklch, var(--muted) 72%, transparent) !important; */
-  background: #fbfbfb !important;
+  background: color-mix(in oklch, var(--muted) 72%, transparent) !important;
   color: var(--foreground);
 }
 

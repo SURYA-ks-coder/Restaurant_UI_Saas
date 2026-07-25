@@ -127,7 +127,7 @@ function FoodCard({ item, onAdd }) {
   const [liked, setLiked] = useState(false);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-[20px] bg-white shadow-sm ring-1 ring-gray-100/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-blue-100">
+    <div className="group relative flex flex-col overflow-hidden rounded-[20px] bg-card shadow-sm ring-1 ring-border/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-primary/30">
       {/* Image area */}
       <div
         className={cn(
@@ -175,7 +175,7 @@ function FoodCard({ item, onAdd }) {
         {/* Floating add */}
         <button
           onClick={() => onAdd(item)}
-          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all duration-200 hover:scale-110 hover:bg-blue-700 active:scale-95"
+          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-200 hover:scale-110 hover:opacity-90 active:scale-95"
         >
           <Plus className="h-5 w-5" />
         </button>
@@ -185,16 +185,16 @@ function FoodCard({ item, onAdd }) {
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center gap-1.5">
           <VegDot veg={item.veg} />
-          <h3 className="truncate font-semibold leading-snug text-gray-900">
+          <h3 className="truncate font-semibold leading-snug text-foreground">
             {item.name}
           </h3>
         </div>
-        <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-gray-400">
+        <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-muted-foreground">
           {item.desc}
         </p>
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-lg font-bold text-gray-900">₹{item.price}</span>
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+          <span className="text-lg font-bold text-foreground">₹{item.price}</span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
             {item.time} min
           </span>
@@ -208,7 +208,7 @@ function FoodCard({ item, onAdd }) {
 
 function CartItemRow({ item, onIncrease, onDecrease, onRemove }) {
   return (
-    <div className="flex items-center gap-3 border-b border-gray-100 py-3 last:border-0">
+    <div className="flex items-center gap-3 border-b border-border py-3 last:border-0">
       {/* Emoji thumbnail */}
       <div
         className={cn(
@@ -220,26 +220,26 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-gray-900">
+        <p className="truncate text-sm font-semibold text-foreground">
           {item.name}
         </p>
-        <p className="text-xs text-gray-400">₹{item.price} each</p>
+        <p className="text-xs text-muted-foreground">₹{item.price} each</p>
       </div>
 
       {/* Qty control */}
-      <div className="flex items-center gap-1 rounded-xl bg-gray-50 p-1">
+      <div className="flex items-center gap-1 rounded-xl bg-muted p-1">
         <button
           onClick={() => onDecrease(item.id)}
-          className="flex h-6 w-6 items-center justify-center rounded-lg bg-white text-gray-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-500"
+          className="flex h-6 w-6 items-center justify-center rounded-lg bg-card text-muted-foreground shadow-sm transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <Minus className="h-3 w-3" />
         </button>
-        <span className="w-5 text-center text-sm font-bold tabular-nums text-gray-900">
+        <span className="w-5 text-center text-sm font-bold tabular-nums text-foreground">
           {item.qty}
         </span>
         <button
           onClick={() => onIncrease(item.id)}
-          className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm transition-colors hover:bg-blue-700"
+          className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm transition-colors hover:opacity-90"
         >
           <Plus className="h-3 w-3" />
         </button>
@@ -247,12 +247,12 @@ function CartItemRow({ item, onIncrease, onDecrease, onRemove }) {
 
       {/* Price + remove */}
       <div className="min-w-13 text-right">
-        <p className="text-sm font-bold text-gray-900">
+        <p className="text-sm font-bold text-foreground">
           ₹{item.price * item.qty}
         </p>
         <button
           onClick={() => onRemove(item.id)}
-          className="text-[11px] text-red-400 transition-colors hover:text-red-600"
+          className="text-[11px] text-destructive/70 transition-colors hover:text-destructive"
         >
           Remove
         </button>
@@ -508,22 +508,22 @@ export default function OrdersPage() {
       {/* ══════════════════════════════════════════
           LEFT PANEL — menu browsing (70%)
       ══════════════════════════════════════════ */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] bg-[#F8FAFC]">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] bg-muted/40">
         {/* Sticky top bar */}
-        <div className="shrink-0 rounded-t-[20px] bg-white px-5 pt-5 shadow-sm">
+        <div className="shrink-0 rounded-t-[20px] bg-card px-5 pt-5 shadow-sm">
           {/* Search */}
           <div className="relative mb-4">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search dishes, categories…"
-              className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-9 text-sm text-gray-900 placeholder:text-gray-400 transition-all focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="h-11 w-full rounded-xl border border-border bg-muted pl-10 pr-9 text-sm text-foreground placeholder:text-muted-foreground transition-all focus:border-primary focus:bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {search && (
               <button
                 onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -539,8 +539,8 @@ export default function OrdersPage() {
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200 capitalize",
                   activeCategory === cat.id
-                    ? "bg-linear-to-r from-blue-700 to-blue-500 text-white shadow-md shadow-blue-500/30"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200",
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70",
                 )}
               >
                 <span>{cat.emoji}</span>
@@ -549,8 +549,8 @@ export default function OrdersPage() {
                   className={cn(
                     "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
                     activeCategory === cat.id
-                      ? "bg-white/20 text-white"
-                      : "bg-white text-gray-500 shadow-sm",
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-card text-muted-foreground shadow-sm",
                   )}
                 >
                   {cat.count}
@@ -565,10 +565,10 @@ export default function OrdersPage() {
           {filteredItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <span className="mb-4 text-5xl">🔍</span>
-              <p className="text-lg font-semibold text-gray-600">
+              <p className="text-lg font-semibold text-muted-foreground">
                 No items found
               </p>
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Try a different search or category
               </p>
               <button
@@ -576,7 +576,7 @@ export default function OrdersPage() {
                   setSearch("");
                   setActiveCategory("all");
                 }}
-                className="mt-4 rounded-xl bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                className="mt-4 rounded-xl bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
               >
                 Clear filters
               </button>
@@ -594,16 +594,16 @@ export default function OrdersPage() {
       {/* ══════════════════════════════════════════
           RIGHT PANEL — order cart (30%)
       ══════════════════════════════════════════ */}
-      <div className="flex w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-xl lg:w-85 xl:w-95">
+      <div className="flex w-full shrink-0 flex-col overflow-hidden rounded-[20px] border border-border bg-card shadow-xl lg:w-85 xl:w-95">
         {/* Panel header */}
-        <div className="shrink-0 border-b border-gray-100 px-5 pb-4 pt-2">
+        <div className="shrink-0 border-b border-border px-5 pb-4 pt-2">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-gray-900">
+              <h2 className="text-base font-bold text-foreground">
                 Current Order
               </h2>
               {cartCount > 0 && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {cartCount} item{cartCount > 1 ? "s" : ""} in cart
                 </p>
               )}
@@ -611,7 +611,7 @@ export default function OrdersPage() {
             {cart.length > 0 && (
               <button
                 onClick={clearCart}
-                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3" />
                 Clear all
@@ -626,21 +626,21 @@ export default function OrdersPage() {
               className={cn(
                 "flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
                 selectedTable
-                  ? "border-blue-400/50 bg-blue-50 text-blue-900"
-                  : "border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:border-blue-400 hover:bg-blue-50/50",
+                  ? "border-primary/50 bg-primary/10 text-primary"
+                  : "border-dashed border-border bg-muted text-muted-foreground hover:border-primary/50 hover:bg-primary/5",
               )}
             >
               <div className="flex items-center gap-2">
                 <span
                   className={cn(
                     "flex h-2 w-2 rounded-full",
-                    selectedTable ? "bg-emerald-500" : "bg-gray-300",
+                    selectedTable ? "bg-emerald-500" : "bg-muted-foreground/40",
                   )}
                 />
                 {selectedTable ? (
                   <span>
                     <span className="font-semibold">{selectedTable.name}</span>
-                    <span className="ml-1.5 text-xs font-normal text-blue-500">
+                    <span className="ml-1.5 text-xs font-normal text-primary/70">
                       · {selectedTable.seats} seats
                     </span>
                   </span>
@@ -650,14 +650,14 @@ export default function OrdersPage() {
               </div>
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 text-gray-400 transition-transform duration-200",
+                  "h-4 w-4 text-muted-foreground transition-transform duration-200",
                   tableOpen && "rotate-180",
                 )}
               />
             </button>
 
             {tableOpen && (
-              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-2xl">
+              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
                 <div className="max-h-56 overflow-y-auto py-1">
                   {tableData.map((t) => (
                     <button
@@ -671,9 +671,9 @@ export default function OrdersPage() {
                         "flex w-full items-center justify-between px-4 py-2.5 text-sm transition-colors",
                         t.status === "occupied" &&
                           "cursor-not-allowed opacity-40",
-                        t.status !== "occupied" && "hover:bg-blue-50",
+                        t.status !== "occupied" && "hover:bg-primary/10",
                         selectedTable?.id === t.id &&
-                          "bg-blue-50 font-semibold text-blue-700",
+                          "bg-primary/10 font-semibold text-primary",
                       )}
                     >
                       <div className="flex items-center gap-2.5">
@@ -685,8 +685,8 @@ export default function OrdersPage() {
                             t.status === "reserved" && "bg-amber-500",
                           )}
                         />
-                        <span className="text-gray-800">{t.name}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-foreground">{t.name}</span>
+                        <span className="text-xs text-muted-foreground">
                           {t.seats} seats
                         </span>
                       </div>
@@ -694,10 +694,10 @@ export default function OrdersPage() {
                         className={cn(
                           "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
                           t.status === "available" &&
-                            "bg-emerald-50 text-emerald-700",
-                          t.status === "occupied" && "bg-red-50 text-red-700",
+                            "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                          t.status === "occupied" && "bg-red-500/10 text-red-600 dark:text-red-400",
                           t.status === "reserved" &&
-                            "bg-amber-50 text-amber-700",
+                            "bg-amber-500/10 text-amber-600 dark:text-amber-400",
                         )}
                       >
                         {t.status}
@@ -714,11 +714,11 @@ export default function OrdersPage() {
         <div className="flex-1 overflow-y-auto px-5">
           {cart.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 text-center">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gray-50 text-4xl">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted text-4xl">
                 🛒
               </div>
-              <p className="font-semibold text-gray-600">Cart is empty</p>
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="font-semibold text-foreground">Cart is empty</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Pick dishes from the menu to get started
               </p>
             </div>
@@ -739,29 +739,29 @@ export default function OrdersPage() {
 
         {/* Order summary */}
         {cart.length > 0 && (
-          <div className="shrink-0 border-t border-gray-100 bg-gray-50/60 px-5 pb-3 pt-4">
+          <div className="shrink-0 border-t border-border bg-muted/50 px-5 pb-3 pt-4">
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   Subtotal ({cartCount} items)
                 </span>
-                <span className="font-medium text-gray-800">₹{subtotal}</span>
+                <span className="font-medium text-foreground">₹{subtotal}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">GST (5%)</span>
-                <span className="font-medium text-gray-800">₹{tax}</span>
+                <span className="text-muted-foreground">GST (5%)</span>
+                <span className="font-medium text-foreground">₹{tax}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Service charge (2%)</span>
-                <span className="font-medium text-gray-800">
+                <span className="text-muted-foreground">Service charge (2%)</span>
+                <span className="font-medium text-foreground">
                   ₹{serviceCharge}
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500 text-sm font-semibold">
+                <span className="text-muted-foreground text-sm font-semibold">
                   Grand Total
                 </span>
-                <span className="font-medium text-gray-800">₹{grandTotal}</span>
+                <span className="font-medium text-foreground">₹{grandTotal}</span>
               </div>
             </div>
 
@@ -779,8 +779,8 @@ export default function OrdersPage() {
 
         {/* Payment method */}
         {cart.length > 0 && (
-          <div className="shrink-0 border-t border-gray-100 px-5 py-3">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+          <div className="shrink-0 border-t border-border px-5 py-3">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Payment Method
             </p>
             <div className="grid grid-cols-4 gap-1.5">
@@ -791,8 +791,8 @@ export default function OrdersPage() {
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[10px] font-semibold transition-all duration-200 ",
                     paymentMethod === id
-                      ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
-                      : "bg-gray-100 text-gray-500 hover:bg-gray-200",
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -809,10 +809,10 @@ export default function OrdersPage() {
             onClick={paymentMethod === "razorpay" ? payWithRazorpay : completeOrder}
             disabled={!cart.length || !selectedTable || isSubmitting}
             className={cn(
-              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-white transition-all duration-200 cursor-pointer",
+              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all duration-200 cursor-pointer",
               cart.length && selectedTable
-                ? "bg-linear-to-r from-blue-700 to-blue-500 shadow-lg shadow-blue-500/35 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-500/40 active:translate-y-0"
-                : "cursor-not-allowed bg-gray-200 text-gray-400",
+                ? "bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/35 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 active:translate-y-0"
+                : "cursor-not-allowed bg-muted text-muted-foreground",
             )}
           >
             {isSubmitting ? (

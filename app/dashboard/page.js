@@ -357,7 +357,11 @@ export default function DashboardPage() {
   const getTopSellingItems = async () => {
     try {
       const result = await getAction(API.GET_TOP_SELLING_ITEMS);
-      if (result.statusCode === 200) setTopItems(result.data);
+      if (result?.statusCode === 200) {
+        setTopItems(result.data || []);
+      } else {
+        console.warn("Top selling items request failed:", result?.message || result);
+      }
     } catch (error) {
       console.log(error);
     }
@@ -797,35 +801,47 @@ export default function DashboardPage() {
             </h3>
           </div>
           <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
-            {topItems.map(({ rank, itemName, quantitySold, revenueGenerated, trend }) => (
-              <div
-                key={itemName}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors"
-              >
-                <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                  {rank}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {itemName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{quantitySold} sold</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {formatINR(revenueGenerated)}
-                  </p>
-                  <span
-                    className={cn(
-                      "text-xs font-semibold",
-                      trend === "up" ? "text-emerald-500" : "text-rose-500",
-                    )}
-                  >
-                    {trend === "up" ? "↑ Up" : "↓ Down"}
-                  </span>
-                </div>
+            {topItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <Star className="w-6 h-6 text-muted-foreground/30 mb-2" />
+                <p className="text-sm font-medium text-muted-foreground">
+                  No sales data yet
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-0.5">
+                  Top sellers will appear once orders come in
+                </p>
               </div>
-            ))}
+            ) : (
+              topItems.map(({ rank, itemName, quantitySold, revenueGenerated, trend }) => (
+                <div
+                  key={itemName}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-muted transition-colors"
+                >
+                  <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                    {rank}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {itemName}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{quantitySold} sold</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold text-foreground tabular-nums">
+                      {formatINR(revenueGenerated)}
+                    </p>
+                    <span
+                      className={cn(
+                        "text-xs font-semibold",
+                        trend === "up" ? "text-emerald-500" : "text-rose-500",
+                      )}
+                    >
+                      {trend === "up" ? "↑ Up" : "↓ Down"}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </Card>
 

@@ -1,63 +1,61 @@
 "use client";
 import Heading from "@/components/ui/Heading";
 import Table from "@/components/ui/Table";
-import { API, getAction } from "@/lib/API";
-import React, { useEffect, useState } from "react";
+import { API, getAction, patchAction } from "@/lib/API";
+import { message } from "@/lib/message";
+import { cn } from "@/lib/utils";
+import { Select } from "antd";
+import { useEffect, useState } from "react";
 import ViewOrderDetails from "../orders/OrdersDetails.js/ViewOrderDetails";
-const ordersHeader = [
-  {
-    title: "Bill No",
-    value: "billNo",
-    // type: "link",
-    width: 220,
-  },
-  {
-    title: "Table",
-    value: "tableId.tableName",
-    // width: 180,
-    render: (value, row) =>
-      value || row.tableName || row.table?.tableName || "-",
-  },
-  {
-    title: "Items",
-    value: "items",
-    width: 300,
-    render: (value) => (
-      <div className="flex flex-wrap gap-1">
-        {value?.map((item) => (
-          <span key={item._id} className="rounded bg-muted px-2 py-1 text-xs">
-            {item.itemName} ({item.quantity})
-          </span>
-        ))}
-      </div>
-    ),
-  },
-  { title: "Sub Total", value: "subTotal" },
-  { title: "Total Amount", value: "grandTotal", align: "right", width: 100 },
-  {
-    title: "Payment Status",
-    value: "paymentStatus",
-    type: "status",
-    width: 140,
-  },
-  { title: "Order Status", value: "status", type: "status", width: 140 },
-  {
-    title: "Ordered At",
-    value: "createdAt",
-    render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
-  },
-  {
-    title: "Action",
-    value: "action",
-    type: "action",
-    // render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
-  },
-];
+
+const ORDER_STATUS_OPTIONS = ["pending", "preparing", "completed", "cancelled"];
+
+const orderStatusStyles = {
+  pending:
+    "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/30",
+  preparing:
+    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-400 dark:border-sky-500/30",
+  completed:
+    "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30",
+  cancelled:
+    "bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-500/15 dark:text-gray-400 dark:border-gray-500/30",
+};
+
+function OrderStatusCell({ row, updatingId, onChange }) {
+  const value = row.status?.toLowerCase();
+  const isKnown = ORDER_STATUS_OPTIONS.includes(value);
+  const isUpdating = updatingId === row._id;
+
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <Select
+        value={isKnown ? value : undefined}
+        placeholder={row.status || "-"}
+        size="small"
+        variant="borderless"
+        loading={isUpdating}
+        disabled={isUpdating}
+        onChange={(nextStatus) => onChange(row, nextStatus)}
+        popupMatchSelectWidth={false}
+        className={cn(
+          "min-w-28 rounded-full border font-medium capitalize",
+          "[&_.ant-select-selector]:bg-transparent! [&_.ant-select-selection-item]:capitalize",
+          isKnown ? orderStatusStyles[value] : orderStatusStyles.pending,
+        )}
+        options={ORDER_STATUS_OPTIONS.map((status) => ({
+          value: status,
+          label: status.charAt(0).toUpperCase() + status.slice(1),
+        }))}
+      />
+    </div>
+  );
+}
 
 export default function OrdersList() {
   const [ordersData, setordersDataa] = useState([]);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     getOrdersList();
@@ -76,6 +74,100 @@ export default function OrdersList() {
     setSelectedOrder(row);
     setViewDrawerOpen(true);
   };
+
+  const handleStatusChange = async (row, nextStatus) => {
+    const prevStatus = row.status;
+    if (nextStatus === prevStatus) return;
+
+    setUpdatingId(row._id);
+    setordersDataa((prev) =>
+      prev.map((order) =>
+        order._id === row._id ? { ...order, status: nextStatus } : order,
+      ),
+    );
+
+    try {
+      const result = await patchAction(API.UPDATE_BILL, {
+        id: row._id,
+        status: nextStatus,
+      });
+      if (result?.statusCode === 200) {
+        message.success("Order status updated");
+      } else {
+        throw new Error(result?.message || "Unable to update order status");
+      }
+    } catch (error) {
+      setordersDataa((prev) =>
+        prev.map((order) =>
+          order._id === row._id ? { ...order, status: prevStatus } : order,
+        ),
+      );
+      message.error(error?.message || "Unable to update order status");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const ordersHeader = [
+    {
+      title: "Bill No",
+      value: "billNo",
+      // type: "link",
+      width: 220,
+    },
+    {
+      title: "Table",
+      value: "tableId.tableName",
+      // width: 180,
+      render: (value, row) =>
+        value || row.tableName || row.table?.tableName || "-",
+    },
+    {
+      title: "Items",
+      value: "items",
+      width: 300,
+      render: (value) => (
+        <div className="flex flex-wrap gap-1">
+          {value?.map((item) => (
+            <span key={item._id} className="rounded bg-muted px-2 py-1 text-xs">
+              {item.itemName} ({item.quantity})
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    { title: "Sub Total", value: "subTotal" },
+    { title: "Total Amount", value: "grandTotal", align: "right", width: 100 },
+    {
+      title: "Payment Status",
+      value: "paymentStatus",
+      type: "status",
+      width: 140,
+    },
+    {
+      title: "Order Status",
+      value: "status",
+      width: 160,
+      render: (_value, row) => (
+        <OrderStatusCell
+          row={row}
+          updatingId={updatingId}
+          onChange={handleStatusChange}
+        />
+      ),
+    },
+    {
+      title: "Ordered At",
+      value: "createdAt",
+      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+    },
+    {
+      title: "Action",
+      value: "action",
+      type: "action",
+      // render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
