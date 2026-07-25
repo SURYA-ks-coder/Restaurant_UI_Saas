@@ -149,9 +149,17 @@ export default function StaffProfilePage() {
           <div className="flex items-end gap-4">
             {/* Avatar */}
             <div className="relative h-24 w-24 flex-shrink-0 rounded-2xl border-4 border-card bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-lg">
-              <span className="text-3xl font-bold text-primary tracking-tight">
-                {getInitials(staff.name)}
-              </span>
+              {staff.profileImage ? (
+                <img
+                  src={staff.profileImage}
+                  alt={staff.name}
+                  className="h-full w-full rounded-xl object-cover"
+                />
+              ) : (
+                <span className="text-3xl font-bold text-primary tracking-tight">
+                  {getInitials(staff.name)}
+                </span>
+              )}
               {/* online dot */}
               {staff.status === "active" && (
                 <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-card bg-success" />

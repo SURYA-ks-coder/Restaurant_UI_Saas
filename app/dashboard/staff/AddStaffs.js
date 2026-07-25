@@ -1,17 +1,20 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { message } from "@/lib/message";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import dayjs from "dayjs";
+import { Camera, User as UserIcon, X } from "lucide-react";
 import { AntInput } from "@/components/ui/AntInput";
 import { AntSelect } from "@/components/ui/AntSelect";
 import { AntDateSelect } from "@/components/ui/AntDateSelect";
 import AntTextArea from "@/components/ui/AntTextArea";
 import DrawerPop from "@/components/ui/DrawerPop";
-import { action, API, getAction } from "@/lib/API";
+import { action, API, fileUpload, getAction } from "@/lib/API";
 import { getRestaurantId } from "@/lib/auth";
+
+const MAX_IMAGE_MB = 5;
 
 const initialValues = {
   name: "",
@@ -63,12 +66,47 @@ export default function AddStaffs({
   const [shiftOptions, setShiftOptions] = useState([]);
   const [branchOptions, setBranchOptions] = useState([]);
   const [supervisorOptions, setSupervisorOptions] = useState([]);
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profileImagePreview, setProfileImagePreview] = useState("");
+  const [removeExistingPhoto, setRemoveExistingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   const isUpdate = Boolean(updateId);
 
   useEffect(() => {
     setShow(open);
   }, [open]);
+
+  const resetImageState = () => {
+    setProfileImageFile(null);
+    setProfileImagePreview("");
+    setRemoveExistingPhoto(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleImageSelect = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      message.error("Only image files are allowed");
+      return;
+    }
+    if (file.size > MAX_IMAGE_MB * 1024 * 1024) {
+      message.error(`Image must be smaller than ${MAX_IMAGE_MB}MB`);
+      return;
+    }
+    setProfileImageFile(file);
+    setProfileImagePreview(URL.createObjectURL(file));
+    setRemoveExistingPhoto(false);
+  };
+
+  const handleRemovePhoto = () => {
+    setProfileImageFile(null);
+    setProfileImagePreview("");
+    setRemoveExistingPhoto(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const formik = useFormik({
     initialValues,
@@ -95,6 +133,9 @@ export default function AddStaffs({
             values.emergencyContact.name || values.emergencyContact.phone
               ? values.emergencyContact
               : undefined,
+          ...(removeExistingPhoto && !profileImageFile
+            ? { profileImage: null }
+            : {}),
         };
 
         const result = await action(
@@ -104,11 +145,42 @@ export default function AddStaffs({
         );
 
         if (result?.statusCode === 200 || result?.statusCode === 201) {
+          let staffData = result?.data || payload;
+
+          // Photo upload is a separate multipart request so the primary
+          // save can stay a plain JSON call — the new/updated staff id is
+          // needed either way, and create only returns it after saving.
+          if (profileImageFile) {
+            const staffId = isUpdate ? updateId : result?.data?._id;
+            if (staffId) {
+              const formData = new FormData();
+              formData.append("profileImage", profileImageFile);
+              formData.append("name", payload.name);
+              try {
+                const uploadResult = await fileUpload(
+                  `${API.UPDATE_STAFF}/${staffId}`,
+                  formData,
+                  "patch",
+                );
+                if (uploadResult?.statusCode === 200) {
+                  staffData = uploadResult.data || staffData;
+                } else {
+                  message.error(
+                    uploadResult?.message || "Staff saved, but photo upload failed",
+                  );
+                }
+              } catch {
+                message.error("Staff saved, but photo upload failed");
+              }
+            }
+          }
+
           message.success(
             result?.message || (isUpdate ? "Staff updated" : "Staff added"),
           );
           resetForm();
-          onCreated?.(result?.data || payload);
+          resetImageState();
+          onCreated?.(staffData);
           onOpenChange(false);
           return;
         }
@@ -132,6 +204,7 @@ export default function AddStaffs({
 
   const closeDrawer = () => {
     formik.resetForm();
+    resetImageState();
     setShow(false);
     onOpenChange(false);
   };
@@ -224,6 +297,7 @@ export default function AddStaffs({
             relation: s.emergencyContact?.relation || "",
           },
         });
+        setProfileImagePreview(s.profileImage || "");
         // Remove self from supervisor options when editing
         setSupervisorOptions((prev) => prev.filter((o) => o.value !== id));
       }
@@ -240,6 +314,7 @@ export default function AddStaffs({
       fetchStaffDetails(updateId);
     } else {
       formik.resetForm();
+      resetImageState();
     }
   }, [open, updateId]);
 
@@ -260,6 +335,53 @@ export default function AddStaffs({
       width={860}
     >
       <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+        {/* Profile Photo */}
+        <section>
+          <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            Profile Photo
+          </h3>
+          <div className="flex items-center gap-4">
+            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+              {profileImagePreview ? (
+                <img
+                  src={profileImagePreview}
+                  alt="Profile preview"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <UserIcon className="h-7 w-7 text-muted-foreground/50" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <Camera className="h-3.5 w-3.5" />
+                {profileImagePreview ? "Change Photo" : "Upload Photo"}
+              </button>
+              {profileImagePreview && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Remove
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+            </div>
+          </div>
+        </section>
+
         {/* Basic Info */}
         <section>
           <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wide">

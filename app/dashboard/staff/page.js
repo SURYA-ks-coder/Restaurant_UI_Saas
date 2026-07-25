@@ -330,8 +330,16 @@ export default function StaffPage() {
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary capitalize">
-                          {getInitials(member.name)}
+                        <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-primary/10 text-sm font-semibold text-primary capitalize">
+                          {member.profileImage ? (
+                            <img
+                              src={member.profileImage}
+                              alt={member.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            getInitials(member.name)
+                          )}
                         </div>
                         <div>
                           <h2 className="font-semibold capitalize">
@@ -421,8 +429,16 @@ export default function StaffPage() {
             {selectedStaff ? (
               <div className=" flex flex-col gap-4">
                 <div className=" flex gap-2  rounded-lg border border-border bg-muted/30 p-4">
-                  <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-primary/10 text-lg font-semibold text-primary">
-                    {getInitials(selectedStaff.name)}
+                  <div className="mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-primary/10 text-lg font-semibold text-primary">
+                    {selectedStaff.profileImage ? (
+                      <img
+                        src={selectedStaff.profileImage}
+                        alt={selectedStaff.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      getInitials(selectedStaff.name)
+                    )}
                   </div>
                   <div className=" ">
                     <h3 className="text-xl font-semibold capitalize">
