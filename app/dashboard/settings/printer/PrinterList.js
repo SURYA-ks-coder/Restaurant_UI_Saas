@@ -35,7 +35,7 @@ const printerHeaders = [
     render: (value) => (
       <span className="flex items-center capitalize">
         {CONNECTION_ICONS[value]}
-        {value === "lan" ? "LAN" : "Browser"}
+        {value === "lan" ? "LAN" : value === "usb" ? "USB" : "Browser"}
       </span>
     ),
   },
@@ -43,10 +43,13 @@ const printerHeaders = [
     title: "IP / Port",
     value: "ip",
     width: 170,
-    render: (value, row) =>
-      row.connectionType === "lan" && value
-        ? `${value} : ${row.port || 9100}`
-        : "-",
+    render: (value, row) => {
+      if (row.connectionType === "lan" && value)
+        return `${value} : ${row.port || 9100}`;
+      if (row.connectionType === "usb" && row.printerName)
+        return row.printerName;
+      return "-";
+    },
   },
   { title: "Paper Width", value: "paperWidth", width: 120 },
   {

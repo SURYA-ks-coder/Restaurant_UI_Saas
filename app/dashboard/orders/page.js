@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
+import { triggerPrint } from "@/lib/print";
 import ViewOrderDetails from "./OrdersDetails.js/ViewOrderDetails";
 import RazorpayPaymentModal from "@/components/payments/RazorpayPaymentModal";
 
@@ -462,6 +463,15 @@ export default function OrdersPage() {
     return true;
   };
 
+  const printBill = async (billId) => {
+    if (!billId) return;
+    try {
+      await triggerPrint({ endpoint: API.PRINT_BILL, id: billId });
+    } catch {
+      message.error("Unable to print bill");
+    }
+  };
+
   const completeOrder = async () => {
     if (!validateBill()) return;
     setIsSubmitting(true);
@@ -472,6 +482,7 @@ export default function OrdersPage() {
         clearCart();
         setSelectedTable(null);
         getOrdersList();
+        printBill(result?.data?._id || result?.data?.id);
         return;
       }
       message.error(result?.message || "Unable to complete order");

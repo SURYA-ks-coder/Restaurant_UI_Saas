@@ -166,7 +166,8 @@ export default function AddStaffs({
                   staffData = uploadResult.data || staffData;
                 } else {
                   message.error(
-                    uploadResult?.message || "Staff saved, but photo upload failed",
+                    uploadResult?.message ||
+                      "Staff saved, but photo upload failed",
                   );
                 }
               } catch {

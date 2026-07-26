@@ -26,6 +26,7 @@ export default function ViewPrinter({ open, close, printer }) {
   if (!printer) return null;
 
   const isLan = printer.connectionType === "lan";
+  const isUsb = printer.connectionType === "usb";
 
   return (
     <DrawerPop
@@ -64,13 +65,22 @@ export default function ViewPrinter({ open, close, printer }) {
           </div>
           <InfoRow
             label="Type"
-            value={isLan ? "LAN (network printer)" : "Browser"}
+            value={
+              isLan
+                ? "LAN (network printer)"
+                : isUsb
+                  ? "USB (connected to agent PC)"
+                  : "Browser"
+            }
           />
           {isLan && (
             <>
               <InfoRow label="IP Address" value={printer.ip} />
               <InfoRow label="Port" value={printer.port} />
             </>
+          )}
+          {isUsb && (
+            <InfoRow label="Printer Name" value={printer.printerName} />
           )}
           <InfoRow label="Paper Width" value={printer.paperWidth} />
         </div>
