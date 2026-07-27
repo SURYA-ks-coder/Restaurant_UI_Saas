@@ -97,6 +97,11 @@ export default function BillingPage() {
   const [categories, setCategories] = useState(fallbackCategories);
   const [tables, setTables] = useState(fallbackTables);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Loyalty: known customer matched by mobile + their redeemable points.
+  const [loyalCustomer, setLoyalCustomer] = useState(null);
+  const [redeemQuote, setRedeemQuote] = useState(null);
+  const [redeemPoints, setRedeemPoints] = useState("");
+  const [tipAmount, setTipAmount] = useState("");
 
   const billNo = useMemo(() => buildBillNo(), []);
 
@@ -149,17 +154,59 @@ export default function BillingPage() {
     return { subtotal, discount, gst, serviceCharge, total };
   }, [cart, discountType, discountValue]);
 
+  // Currency value of the points being redeemed (capped by the server quote).
+  const redemptionValue = useMemo(() => {
+    const points = Number(redeemPoints) || 0;
+    if (!points || !redeemQuote?.eligible) return 0;
+    const capped = Math.min(points, redeemQuote.maxRedeemablePoints);
+    return roundAmount(capped * redeemQuote.redeemValue);
+  }, [redeemPoints, redeemQuote]);
+
   useEffect(() => {
     if (splitPayment) return;
+    const due = Math.max(summary.total - redemptionValue, 0);
     setPayments({
-      cash: paymentMode === "cash" ? summary.total.toFixed(2) : "",
-      upi: paymentMode === "upi" ? summary.total.toFixed(2) : "",
-      card: paymentMode === "card" ? summary.total.toFixed(2) : "",
+      cash: paymentMode === "cash" ? due.toFixed(2) : "",
+      upi: paymentMode === "upi" ? due.toFixed(2) : "",
+      card: paymentMode === "card" ? due.toFixed(2) : "",
     });
-  }, [paymentMode, splitPayment, summary.total]);
+  }, [paymentMode, splitPayment, summary.total, redemptionValue]);
+
+  // Match the typed mobile number to an existing customer, then pull their
+  // loyalty position for the current bill amount.
+  useEffect(() => {
+    if ((customer.mobile || "").length < 10) {
+      setLoyalCustomer(null);
+      setRedeemQuote(null);
+      setRedeemPoints("");
+      return;
+    }
+    const t = setTimeout(async () => {
+      const res = await getAction(
+        `${API.GET_CUSTOMER_LIST}?search=${customer.mobile}&limit=1`,
+      );
+      const match = res?.statusCode === 200 ? res.data?.[0] : null;
+      setLoyalCustomer(match || null);
+      if (!match) setRedeemQuote(null);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [customer.mobile]);
+
+  useEffect(() => {
+    if (!loyalCustomer?._id || summary.total <= 0) {
+      setRedeemQuote(null);
+      return;
+    }
+    action(API.LOYALTY_REDEEM_PREVIEW, {
+      customerId: loyalCustomer._id,
+      billAmount: roundAmount(summary.total),
+    }).then((res) => {
+      if (res?.statusCode === 200) setRedeemQuote(res.data);
+    });
+  }, [loyalCustomer?._id, summary.total]);
 
   const paidTotal = Object.values(payments).reduce((s, v) => s + (Number(v) || 0), 0);
-  const balance = summary.total - paidTotal;
+  const balance = summary.total - redemptionValue - paidTotal;
   const selectedTable = tables.find((t) => t._id === customer.tableId);
 
   const updateCustomer = (field, value) => setCustomer((c) => ({ ...c, [field]: value }));
@@ -202,6 +249,10 @@ export default function BillingPage() {
     setPaymentMode("cash");
     setPayments({ cash: "", upi: "", card: "" });
     setLastFourDigits("");
+    setLoyalCustomer(null);
+    setRedeemQuote(null);
+    setRedeemPoints("");
+    setTipAmount("");
   };
 
   const validateBill = ({ requirePayment = true } = {}) => {
@@ -244,9 +295,22 @@ export default function BillingPage() {
       .map(([method, amount]) => ({ method, amount: roundAmount(amount), transactionRef: method === "card" ? lastFourDigits : "", paidAt: new Date() }))
       .filter((p) => p.amount > 0);
 
+    const tip = Number(tipAmount) > 0
+      ? {
+          amount: roundAmount(tipAmount),
+          method: ["cash", "card", "upi"].includes(paymentMode) ? paymentMode : "cash",
+        }
+      : undefined;
+
     return {
       restaurantId, branchId, billNo, orderType: getOrderType(customer.type),
       tableId: customer.type === "Dine In" ? customer.tableId : undefined,
+      // Attaching the customer is what makes loyalty earn/redeem work — the
+      // server resolves (or creates) the customer from the phone number.
+      customerId: loyalCustomer?._id || undefined,
+      customerName: customer.name || undefined,
+      customerPhone: customer.mobile || undefined,
+      tip,
       items, taxRate: cart[0]?.gstPercent || 0,
       discount: roundAmount(discountValue),
       note: [customerText, ...cartNotes()].filter(Boolean).join("\n"),
@@ -259,8 +323,53 @@ export default function BillingPage() {
     };
   };
 
+  // Settling with a points redemption is a two-step flow: create the bill
+  // unpaid, then record the payment with `loyaltyPoints` so the server can
+  // debit the ledger and apply the redemption value atomically.
+  const submitWithRedemption = async () => {
+    if (splitPayment) {
+      message.error("Points redemption doesn't support split payment yet.");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = buildPayload("held");
+      payload.payments = [];
+      payload.paymentStatus = "pending";
+      delete payload.tip;
+      const res = await action(API.CREATE_BILL, payload);
+      if (!(res?.statusCode === 200 || res?.statusCode === 201)) {
+        message.error(res?.message || "Unable to create bill");
+        return;
+      }
+      const billId = res?.data?.bill?._id || res?.data?._id;
+      const payRes = await action(API.RECORD_BILL_PAYMENT.replace(":id", billId), {
+        method: paymentMode,
+        amount: roundAmount(Math.max(summary.total - redemptionValue, 0)),
+        transactionRef: paymentMode === "card" ? lastFourDigits : "",
+        loyaltyPoints: Math.min(Number(redeemPoints) || 0, redeemQuote?.maxRedeemablePoints || 0),
+        tip: Number(tipAmount) > 0
+          ? { amount: roundAmount(tipAmount), method: paymentMode }
+          : undefined,
+      });
+      if (payRes?.statusCode === 200 || payRes?.statusCode === 201) {
+        message.success("Bill settled with points redemption");
+        setStatusMessage(`Bill saved — ${currency.format(redemptionValue)} paid by points.`);
+        resetBill();
+      } else {
+        message.error(payRes?.message || "Bill created but payment failed — settle it from Orders.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const submitBill = async (status) => {
     if (!validateBill({ requirePayment: status === "completed" })) return;
+    if (status === "completed" && redemptionValue > 0) {
+      await submitWithRedemption();
+      return;
+    }
     setIsSubmitting(true);
     try {
       const res = await action(API.CREATE_BILL, buildPayload(status));
@@ -407,6 +516,31 @@ export default function BillingPage() {
                 <Stepper value={customer.guests} onChange={(v) => updateCustomer("guests", Math.max(1, v))} />
               </BillField>
             </div>
+
+            {/* Loyalty chip — appears when the mobile number matches a customer */}
+            {loyalCustomer && (
+              <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3.5 py-2.5 text-xs">
+                <span className="font-semibold text-foreground">
+                  {loyalCustomer.customerName}
+                </span>
+                {loyalCustomer.tier?.name && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
+                    {loyalCustomer.tier.name}
+                  </span>
+                )}
+                <span className="text-muted-foreground">
+                  Points: <b className="text-foreground">{redeemQuote?.availablePoints ?? loyalCustomer.loyaltyPoints ?? 0}</b>
+                </span>
+                {loyalCustomer.walletBalance > 0 && (
+                  <span className="text-muted-foreground">
+                    Wallet: <b className="text-foreground">{currency.format(loyalCustomer.walletBalance)}</b>
+                  </span>
+                )}
+                {loyalCustomer.totalOrders > 0 && (
+                  <span className="text-muted-foreground">{loyalCustomer.totalOrders} past orders</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Menu card */}
@@ -581,6 +715,63 @@ export default function BillingPage() {
               </div>
             )}
 
+            {/* Loyalty redemption */}
+            {redeemQuote?.eligible && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-foreground">Redeem points</span>
+                  <span className="text-muted-foreground">
+                    max {redeemQuote.maxRedeemablePoints} pts (
+                    {currency.format(redeemQuote.maxRedeemableValue)})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={redeemQuote.maxRedeemablePoints}
+                    value={redeemPoints}
+                    onChange={(e) => setRedeemPoints(e.target.value)}
+                    placeholder="Points"
+                    className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                  <button
+                    onClick={() => setRedeemPoints(String(redeemQuote.maxRedeemablePoints))}
+                    className="rounded-lg bg-primary/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary"
+                  >
+                    Max
+                  </button>
+                  {redemptionValue > 0 && (
+                    <span className="text-xs font-semibold text-emerald-500">
+                      − {currency.format(redemptionValue)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Tip */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Tip (optional)</span>
+              <input
+                type="number"
+                min={0}
+                value={tipAmount}
+                onChange={(e) => setTipAmount(e.target.value)}
+                placeholder="₹0"
+                className="w-24 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+              {[20, 50, 100].map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setTipAmount(String(v))}
+                  className="rounded-lg bg-muted px-2 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  ₹{v}
+                </button>
+              ))}
+            </div>
+
             {/* Summary rows */}
             <div className="space-y-1.5 rounded-xl bg-muted/50 p-3 text-sm">
               <BillRow label="Subtotal" value={currency.format(summary.subtotal)} />
@@ -589,10 +780,16 @@ export default function BillingPage() {
               )}
               <BillRow label="GST" value={currency.format(summary.gst)} />
               <BillRow label="Service Charge (5%)" value={currency.format(summary.serviceCharge)} />
+              {redemptionValue > 0 && (
+                <BillRow label="Points redemption" value={`- ${currency.format(redemptionValue)}`} className="text-emerald-500" />
+              )}
+              {Number(tipAmount) > 0 && (
+                <BillRow label="Tip (not in total)" value={currency.format(Number(tipAmount))} className="text-muted-foreground" />
+              )}
               <div className="border-t border-border/60 pt-2">
                 <BillRow
-                  label={<span className="font-bold text-foreground">Total</span>}
-                  value={<span className="text-base font-bold text-foreground">{currency.format(Math.max(summary.total, 0))}</span>}
+                  label={<span className="font-bold text-foreground">To pay</span>}
+                  value={<span className="text-base font-bold text-foreground">{currency.format(Math.max(summary.total - redemptionValue, 0))}</span>}
                 />
               </div>
             </div>
@@ -693,7 +890,7 @@ export default function BillingPage() {
                   ? "Processing…"
                   : paymentMode === "razorpay"
                     ? `Get Payment Link  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total, 0)) : ""}`
-                    : `Generate Bill  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total, 0)) : ""}`}
+                    : `Generate Bill  ${cart.length > 0 ? "· " + currency.format(Math.max(summary.total - redemptionValue, 0)) : ""}`}
               </button>
               <div className="grid grid-cols-2 gap-2">
                 <button
