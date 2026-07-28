@@ -29,7 +29,11 @@ export default function RecipesPage() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [outputType, setOutputType] = useState("menu_item");
   const [menuItemId, setMenuItemId] = useState("");
+  const [outputInventoryItemId, setOutputInventoryItemId] = useState("");
+  const [outputQuantity, setOutputQuantity] = useState("");
+  const [tolerancePercent, setTolerancePercent] = useState("0");
   const [lines, setLines] = useState([{ ...EMPTY_LINE }]);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -86,7 +90,14 @@ export default function RecipesPage() {
     [menuItems, recipeMenuItemIds, editId],
   );
 
-  const ingredientOptions = inventoryItems.map((item) => ({
+  const ingredientOptions = inventoryItems
+    .filter((item) => item._id !== outputInventoryItemId)
+    .map((item) => ({
+      label: `${item.materialName} (${item.unit})`,
+      value: item._id,
+    }));
+
+  const outputItemOptions = inventoryItems.map((item) => ({
     label: `${item.materialName} (${item.unit})`,
     value: item._id,
   }));
@@ -123,7 +134,11 @@ export default function RecipesPage() {
 
   const openAdd = () => {
     setEditId(null);
+    setOutputType("menu_item");
     setMenuItemId("");
+    setOutputInventoryItemId("");
+    setOutputQuantity("");
+    setTolerancePercent("0");
     setLines([{ ...EMPTY_LINE }]);
     setErrors({});
     setDrawerOpen(true);
@@ -131,7 +146,13 @@ export default function RecipesPage() {
 
   const openEdit = (recipe) => {
     setEditId(recipe._id);
+    setOutputType(recipe.outputType || "menu_item");
     setMenuItemId(recipe.menuItemId?._id || recipe.menuItemId || "");
+    setOutputInventoryItemId(
+      recipe.outputInventoryItemId?._id || recipe.outputInventoryItemId || "",
+    );
+    setOutputQuantity(recipe.outputQuantity ?? "");
+    setTolerancePercent(recipe.tolerancePercent ?? "0");
     setLines(
       (recipe.ingredients || []).map((ing) => ({
         inventoryItemId: ing.inventoryItemId?._id || ing.inventoryItemId || "",
@@ -144,7 +165,13 @@ export default function RecipesPage() {
 
   const validate = () => {
     const next = {};
-    if (!menuItemId) next.menuItemId = "Select a menu item";
+    if (outputType === "inventory_item") {
+      if (!outputInventoryItemId) next.outputInventoryItemId = "Select the prepared item this recipe produces";
+      if (!outputQuantity || Number(outputQuantity) <= 0)
+        next.outputQuantity = "Enter the standard batch yield";
+    } else if (!menuItemId) {
+      next.menuItemId = "Select a menu item";
+    }
     const validLines = lines.filter((l) => l.inventoryItemId);
     if (validLines.length === 0)
       next.ingredients = "Add at least one ingredient";
@@ -159,7 +186,11 @@ export default function RecipesPage() {
     setSubmitting(true);
     try {
       const payload = {
-        menuItemId,
+        outputType,
+        tolerancePercent: Number(tolerancePercent) || 0,
+        ...(outputType === "inventory_item"
+          ? { outputInventoryItemId, outputQuantity: Number(outputQuantity) }
+          : { menuItemId }),
         ingredients: lines
           .filter((l) => l.inventoryItemId)
           .map((l) => ({
@@ -238,11 +269,21 @@ export default function RecipesPage() {
 
   const headers = [
     {
-      title: "Menu Item",
+      title: "Produces",
       value: "menuItemId",
       type: "bold",
-      width: 200,
-      render: (value, row) => row.menuItemId?.itemName || "—",
+      width: 220,
+      render: (value, row) =>
+        row.outputType === "inventory_item" ? (
+          <div>
+            <span>{row.outputInventoryItemId?.materialName || "—"}</span>
+            <span className="ml-1.5 rounded-full bg-accent/10 px-1.5 py-0.5 text-[10px] font-medium text-accent">
+              Batch · yields {row.outputQuantity} {row.outputInventoryItemId?.unit}
+            </span>
+          </div>
+        ) : (
+          row.menuItemId?.itemName || "—"
+        ),
     },
     {
       title: "Ingredients",
@@ -364,22 +405,93 @@ export default function RecipesPage() {
         width={640}
       >
         <div className="flex-1 space-y-5 overflow-y-auto p-2">
-          <AntSelect
-            label="Menu Item"
-            placeholder="Select menu item"
-            value={menuItemId || undefined}
-            options={menuItemOptions}
-            error={errors.menuItemId}
-            showSearch
-            optionFilterProp="label"
-            disabled={Boolean(editId)}
-            onChange={(value) => {
-              setMenuItemId(value);
-              if (errors.menuItemId)
-                setErrors((prev) => ({ ...prev, menuItemId: "" }));
-            }}
-            required
-          />
+          <div>
+            <span className="mb-2 block text-sm font-medium">Recipe Type</span>
+            <div className="flex gap-2 rounded-xl bg-muted p-1">
+              {[
+                { id: "menu_item", label: "Menu Item" },
+                { id: "inventory_item", label: "Batch Production" },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  disabled={Boolean(editId)}
+                  onClick={() => setOutputType(t.id)}
+                  className={cn(
+                    "flex-1 rounded-lg py-2 text-xs font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60",
+                    outputType === t.id
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {outputType === "inventory_item" ? (
+            <div className="grid grid-cols-[1fr_140px] gap-3">
+              <AntSelect
+                label="Prepared Item (output)"
+                placeholder="Select the item this recipe produces"
+                value={outputInventoryItemId || undefined}
+                options={outputItemOptions}
+                error={errors.outputInventoryItemId}
+                showSearch
+                optionFilterProp="label"
+                disabled={Boolean(editId)}
+                onChange={(value) => {
+                  setOutputInventoryItemId(value);
+                  if (errors.outputInventoryItemId)
+                    setErrors((prev) => ({ ...prev, outputInventoryItemId: "" }));
+                }}
+                required
+              />
+              <AntInput
+                label="Batch yield"
+                type="number"
+                placeholder="e.g. 5"
+                value={outputQuantity}
+                error={errors.outputQuantity}
+                onChange={(e) => {
+                  setOutputQuantity(e.target.value);
+                  if (errors.outputQuantity)
+                    setErrors((prev) => ({ ...prev, outputQuantity: "" }));
+                }}
+              />
+            </div>
+          ) : (
+            <AntSelect
+              label="Menu Item"
+              placeholder="Select menu item"
+              value={menuItemId || undefined}
+              options={menuItemOptions}
+              error={errors.menuItemId}
+              showSearch
+              optionFilterProp="label"
+              disabled={Boolean(editId)}
+              onChange={(value) => {
+                setMenuItemId(value);
+                if (errors.menuItemId)
+                  setErrors((prev) => ({ ...prev, menuItemId: "" }));
+              }}
+              required
+            />
+          )}
+
+          <div>
+            <AntInput
+              label="Acceptable tolerance (%)"
+              type="number"
+              min={0}
+              max={100}
+              value={tolerancePercent}
+              onChange={(e) => setTolerancePercent(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Variance beyond this — in production yield or recorded usage — gets flagged in reports.
+            </p>
+          </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between">
