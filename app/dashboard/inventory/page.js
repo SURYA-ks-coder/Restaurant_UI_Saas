@@ -25,6 +25,7 @@ const UNIT_OPTIONS = [
 
 const EMPTY_FORM = {
   name: "",
+  itemType: "raw",
   category: "",
   unit: "kg",
   par: "",
@@ -34,6 +35,21 @@ const EMPTY_FORM = {
 
 const itemHeaders = [
   { title: "Item Name", value: "materialName", type: "bold", width: 200 },
+  {
+    title: "Type",
+    value: "itemType",
+    width: 100,
+    render: (value) => (
+      <span
+        className={cn(
+          "rounded-full px-2 py-0.5 text-[11px] font-medium",
+          value === "prepared" ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {value === "prepared" ? "Prepared" : "Raw"}
+      </span>
+    ),
+  },
   { title: "Category", value: "category" },
   { title: "Unit", value: "unit", width: 90 },
   {
@@ -51,6 +67,7 @@ const itemHeaders = [
 ];
 
 export default function InventoryPage() {
+  const [itemTypeFilter, setItemTypeFilter] = useState("raw");
   const [items, setItems] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +81,7 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const [itemsRes, suppliersRes] = await Promise.all([
-        getAction(API.GET_INVENTORY_LIST),
+        getAction(`${API.GET_INVENTORY_LIST}?itemType=${itemTypeFilter}&limit=200`),
         getAction(API.GET_SUPPLIER_LIST),
       ]);
       if (itemsRes?.statusCode === 200) setItems(itemsRes.data || []);
@@ -75,7 +92,7 @@ export default function InventoryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [itemTypeFilter]);
 
   useEffect(() => {
     fetchData();
@@ -92,7 +109,7 @@ export default function InventoryPage() {
 
   const openAdd = () => {
     setEditId(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, itemType: itemTypeFilter });
     setErrors({});
     setDrawerOpen(true);
   };
@@ -101,6 +118,7 @@ export default function InventoryPage() {
     setEditId(id);
     setForm({
       name: item.materialName || item.name || "",
+      itemType: item.itemType || "raw",
       category: item.category || "",
       unit: item.unit || "kg",
       par: item.minimumStock ?? "",
@@ -121,6 +139,7 @@ export default function InventoryPage() {
       const method = editId ? "PATCH" : "POST";
       const payload = {
         materialName: form.name,
+        itemType: form.itemType,
         category: form.category,
         unit: form.unit,
         minimumStock: Number(form.par) || 0,
@@ -180,7 +199,7 @@ export default function InventoryPage() {
     <div className="min-h-screen bg-background">
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <Heading
-          title="Inventory"
+          title="Raw Materials"
           description="Manage your ingredient catalog — categories, units, par levels, and suppliers."
         />
         <ButtonClick
@@ -189,6 +208,24 @@ export default function InventoryPage() {
           icon={<Plus className="h-4 w-4" />}
           BtnType="primary"
         />
+      </div>
+
+      <div className="mb-4 flex gap-1 rounded-lg border border-border bg-card p-0.5 w-fit">
+        {[
+          { id: "raw", label: "Raw Materials" },
+          { id: "prepared", label: "Prepared Item Catalog" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setItemTypeFilter(t.id)}
+            className={cn(
+              "rounded-md px-3 py-1.5 text-xs font-medium",
+              itemTypeFilter === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -216,7 +253,7 @@ export default function InventoryPage() {
       <Table
         header={itemHeaders}
         data={items}
-        title="Inventory Items"
+        title={itemTypeFilter === "raw" ? "Raw Materials" : "Prepared Item Catalog"}
         rowKey="_id"
         loading={loading}
         searchPlaceholder="Search item, category, or supplier"
@@ -244,6 +281,16 @@ export default function InventoryPage() {
             error={getError("name")}
             onChange={(e) => setField("name", e.target.value)}
             required
+          />
+
+          <AntSelect
+            label="Item Type"
+            value={form.itemType}
+            options={[
+              { label: "Raw Material (purchased from supplier)", value: "raw" },
+              { label: "Prepared Item (produced via batch cooking)", value: "prepared" },
+            ]}
+            onChange={(value) => setField("itemType", value)}
           />
 
           <div className="grid gap-4 md:grid-cols-2">

@@ -33,6 +33,7 @@ export default function RecipesPage() {
   const [menuItemId, setMenuItemId] = useState("");
   const [outputInventoryItemId, setOutputInventoryItemId] = useState("");
   const [outputQuantity, setOutputQuantity] = useState("");
+  const [shelfLifeHours, setShelfLifeHours] = useState("");
   const [tolerancePercent, setTolerancePercent] = useState("0");
   const [lines, setLines] = useState([{ ...EMPTY_LINE }]);
   const [errors, setErrors] = useState({});
@@ -138,6 +139,7 @@ export default function RecipesPage() {
     setMenuItemId("");
     setOutputInventoryItemId("");
     setOutputQuantity("");
+    setShelfLifeHours("");
     setTolerancePercent("0");
     setLines([{ ...EMPTY_LINE }]);
     setErrors({});
@@ -152,6 +154,7 @@ export default function RecipesPage() {
       recipe.outputInventoryItemId?._id || recipe.outputInventoryItemId || "",
     );
     setOutputQuantity(recipe.outputQuantity ?? "");
+    setShelfLifeHours(recipe.shelfLifeHours ?? "");
     setTolerancePercent(recipe.tolerancePercent ?? "0");
     setLines(
       (recipe.ingredients || []).map((ing) => ({
@@ -189,7 +192,11 @@ export default function RecipesPage() {
         outputType,
         tolerancePercent: Number(tolerancePercent) || 0,
         ...(outputType === "inventory_item"
-          ? { outputInventoryItemId, outputQuantity: Number(outputQuantity) }
+          ? {
+              outputInventoryItemId,
+              outputQuantity: Number(outputQuantity),
+              shelfLifeHours: shelfLifeHours ? Number(shelfLifeHours) : null,
+            }
           : { menuItemId }),
         ingredients: lines
           .filter((l) => l.inventoryItemId)
@@ -459,6 +466,15 @@ export default function RecipesPage() {
                     setErrors((prev) => ({ ...prev, outputQuantity: "" }));
                 }}
               />
+              <div className="col-span-2">
+                <AntInput
+                  label="Shelf life (hours, optional)"
+                  type="number"
+                  placeholder="e.g. 48 — leave blank if it never expires"
+                  value={shelfLifeHours}
+                  onChange={(e) => setShelfLifeHours(e.target.value)}
+                />
+              </div>
             </div>
           ) : (
             <AntSelect
