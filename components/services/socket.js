@@ -5,7 +5,8 @@ let socket = null;
 export const connectSocket = ({ token }) => {
   if (socket && socket.connected) return socket;
 
-  socket = io("http://localhost:5000", {
+  socket = io("https://restaurant-server-saas.onrender.com", {
+    //http://localhost:5000"
     auth: {
       token,
     },

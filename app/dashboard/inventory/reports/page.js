@@ -7,6 +7,7 @@ import {
   BarChart3,
   IndianRupee,
   PackageSearch,
+  Sparkles,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -25,17 +26,20 @@ const currency = new Intl.NumberFormat("en-IN", {
 export default function InventoryReportsHubPage() {
   const [stock, setStock] = useState(null);
   const [wastage, setWastage] = useState(null);
+  const [aiForecast, setAiForecast] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [stockRes, wastageRes] = await Promise.all([
+      const [stockRes, wastageRes, aiRes] = await Promise.all([
         getAction(API.GET_INVENTORY_REPORT),
         getAction(API.GET_WASTAGE_REPORT),
+        getAction(API.GET_AI_LOW_STOCK_FORECAST),
       ]);
       if (stockRes?.statusCode === 200) setStock(stockRes.data);
       if (wastageRes?.statusCode === 200) setWastage(wastageRes.data);
+      if (aiRes?.statusCode === 200) setAiForecast(aiRes.data);
     } catch {
       message.error("Failed to load inventory reports");
     } finally {
@@ -115,6 +119,26 @@ export default function InventoryReportsHubPage() {
                 </div>
               </div>
             ))}
+          </div>
+
+          <div className="mb-6 rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <h3 className="text-sm font-semibold text-foreground">AI Stock Outlook</h3>
+              </div>
+              <Link
+                href="/dashboard/ai-assistant"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Ask the assistant
+              </Link>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {aiForecast?.narrative || "No forecast yet — visit the AI Assistant page to generate one."}
+            </p>
           </div>
 
           <div className="mb-6 grid gap-4 lg:grid-cols-2">

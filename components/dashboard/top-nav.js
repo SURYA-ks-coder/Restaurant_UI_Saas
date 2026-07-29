@@ -21,6 +21,7 @@ import {
   Search,
   Settings,
   ShoppingBag,
+  Sparkles,
   Sun,
   TrendingUp,
   UtensilsCrossed,
@@ -40,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getSocket } from "@/components/services/socket";
+import AiChatModal from "@/components/dashboard/AiChatModal";
 import { getAction, patchAction, API } from "@/lib/API";
 import { getUserData } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -128,6 +130,7 @@ const relativeTime = (ts) => {
 };
 
 export function TopNav({ onMenuToggle, onLogout }) {
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -602,6 +605,17 @@ export function TopNav({ onMenuToggle, onLogout }) {
           <Mic className="h-5 w-5" />
         </button>
 
+        {/* AI Assistant */}
+        <button
+          type="button"
+          onClick={() => setAiChatOpen(true)}
+          className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Open AI Assistant"
+          title="AI Assistant"
+        >
+          <Sparkles className="h-5 w-5" />
+        </button>
+
         {/* Profile */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -654,6 +668,8 @@ export function TopNav({ onMenuToggle, onLogout }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <AiChatModal open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
     </header>
   );
 }
