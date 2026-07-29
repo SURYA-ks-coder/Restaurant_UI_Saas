@@ -43,7 +43,9 @@ const itemHeaders = [
       <span
         className={cn(
           "rounded-full px-2 py-0.5 text-[11px] font-medium",
-          value === "prepared" ? "bg-accent/10 text-accent" : "bg-muted text-muted-foreground",
+          value === "prepared"
+            ? "bg-accent/10 text-accent"
+            : "bg-muted text-muted-foreground",
         )}
       >
         {value === "prepared" ? "Prepared" : "Raw"}
@@ -81,7 +83,9 @@ export default function InventoryPage() {
     setLoading(true);
     try {
       const [itemsRes, suppliersRes] = await Promise.all([
-        getAction(`${API.GET_INVENTORY_LIST}?itemType=${itemTypeFilter}&limit=200`),
+        getAction(
+          `${API.GET_INVENTORY_LIST}?itemType=${itemTypeFilter}&limit=100`,
+        ),
         getAction(API.GET_SUPPLIER_LIST),
       ]);
       if (itemsRes?.statusCode === 200) setItems(itemsRes.data || []);
@@ -220,7 +224,9 @@ export default function InventoryPage() {
             onClick={() => setItemTypeFilter(t.id)}
             className={cn(
               "rounded-md px-3 py-1.5 text-xs font-medium",
-              itemTypeFilter === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+              itemTypeFilter === t.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground",
             )}
           >
             {t.label}
@@ -253,7 +259,9 @@ export default function InventoryPage() {
       <Table
         header={itemHeaders}
         data={items}
-        title={itemTypeFilter === "raw" ? "Raw Materials" : "Prepared Item Catalog"}
+        title={
+          itemTypeFilter === "raw" ? "Raw Materials" : "Prepared Item Catalog"
+        }
         rowKey="_id"
         loading={loading}
         searchPlaceholder="Search item, category, or supplier"
@@ -288,7 +296,10 @@ export default function InventoryPage() {
             value={form.itemType}
             options={[
               { label: "Raw Material (purchased from supplier)", value: "raw" },
-              { label: "Prepared Item (produced via batch cooking)", value: "prepared" },
+              {
+                label: "Prepared Item (produced via batch cooking)",
+                value: "prepared",
+              },
             ]}
             onChange={(value) => setField("itemType", value)}
           />

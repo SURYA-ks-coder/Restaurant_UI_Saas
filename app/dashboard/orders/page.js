@@ -20,6 +20,7 @@ import {
   Loader2,
   QrCode,
   X,
+  ChefHat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { API, action, getAction } from "@/lib/API";
@@ -98,7 +99,7 @@ const PAYMENT_METHODS = [
   { id: "cash", label: "Cash", Icon: Banknote },
   { id: "card", label: "Card", Icon: CreditCard },
   { id: "upi", label: "UPI", Icon: Smartphone },
-  { id: "wallet", label: "Wallet", Icon: Wallet },
+  // { id: "wallet", label: "Wallet", Icon: Wallet },
   { id: "razorpay", label: "Razorpay", Icon: QrCode },
 ];
 
@@ -194,7 +195,9 @@ function FoodCard({ item, onAdd }) {
           {item.desc}
         </p>
         <div className="mt-3 flex items-center justify-between">
-          <span className="text-lg font-bold text-foreground">₹{item.price}</span>
+          <span className="text-lg font-bold text-foreground">
+            ₹{item.price}
+          </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
             {item.time} min
@@ -277,8 +280,13 @@ export default function OrdersPage() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [tableOpen, setTableOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [razorpayModal, setRazorpayModal] = useState({ open: false, billId: null, billNo: "" });
+  const [razorpayModal, setRazorpayModal] = useState({
+    open: false,
+    billId: null,
+    billNo: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingToKot, setIsSendingToKot] = useState(false);
 
   /* live data */
   const [categoryData, setCategoryData] = useState([]);
@@ -402,7 +410,7 @@ export default function OrdersPage() {
     return `BILL-${datePart}-${Math.floor(1000 + Math.random() * 9000)}`;
   };
 
-  const buildBillPayload = ({ razorpay = false } = {}) => {
+  const buildBillPayload = ({ mode = "complete" } = {}) => {
     const restaurantId = getRestaurantId();
     const branchId = getDefaultBranchId();
     const TAX_RATE = 5;
@@ -432,17 +440,19 @@ export default function OrdersPage() {
       taxTotal: roundAmount(tax),
       discountTotal: 0,
       grandTotal: roundAmount(grandTotal),
-      payments: razorpay
-        ? []
-        : [
-            {
-              method: paymentMethod,
-              amount: roundAmount(grandTotal),
-              paidAt: new Date(),
-            },
-          ],
-      paymentStatus: razorpay ? "pending" : "paid",
-      status: razorpay ? "held" : "completed",
+      payments:
+        mode === "complete"
+          ? [
+              {
+                method: paymentMethod,
+                amount: roundAmount(grandTotal),
+                paidAt: new Date(),
+              },
+            ]
+          : [],
+      paymentStatus: mode === "complete" ? "paid" : "pending",
+      status:
+        mode === "kot" ? "pending" : mode === "razorpay" ? "held" : "completed",
       createdBy: getUserId(),
     };
   };
@@ -476,7 +486,11 @@ export default function OrdersPage() {
     if (!validateBill()) return;
     setIsSubmitting(true);
     try {
-      const result = await action(API.CREATE_BILL, buildBillPayload(), "POST");
+      const result = await action(
+        API.CREATE_BILL,
+        buildBillPayload({ mode: "complete" }),
+        "POST",
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         message.success(result?.message || "Order completed successfully");
         clearCart();
@@ -493,6 +507,30 @@ export default function OrdersPage() {
     }
   };
 
+  const sendToKot = async () => {
+    if (!validateBill()) return;
+    setIsSendingToKot(true);
+    try {
+      const result = await action(
+        API.CREATE_BILL,
+        buildBillPayload({ mode: "kot" }),
+        "POST",
+      );
+      if (result?.statusCode === 200 || result?.statusCode === 201) {
+        message.success(result?.message || "Order sent to kitchen");
+        clearCart();
+        setSelectedTable(null);
+        getOrdersList();
+        return;
+      }
+      message.error(result?.message || "Unable to send order to kitchen");
+    } catch {
+      message.error("Unable to send order to kitchen");
+    } finally {
+      setIsSendingToKot(false);
+    }
+  };
+
   // Holds the bill with no payment recorded yet, then opens the Razorpay
   // link/QR modal — the bill only settles once that modal's polling sees
   // paymentStatus: "paid".
@@ -500,10 +538,18 @@ export default function OrdersPage() {
     if (!validateBill()) return;
     setIsSubmitting(true);
     try {
-      const result = await action(API.CREATE_BILL, buildBillPayload({ razorpay: true }), "POST");
+      const result = await action(
+        API.CREATE_BILL,
+        buildBillPayload({ mode: "razorpay" }),
+        "POST",
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         const bill = result?.data || {};
-        setRazorpayModal({ open: true, billId: bill._id || bill.id, billNo: bill.billNo });
+        setRazorpayModal({
+          open: true,
+          billId: bill._id || bill.id,
+          billNo: bill.billNo,
+        });
       } else {
         message.error(result?.message || "Unable to create bill");
       }
@@ -706,7 +752,8 @@ export default function OrdersPage() {
                           "rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
                           t.status === "available" &&
                             "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                          t.status === "occupied" && "bg-red-500/10 text-red-600 dark:text-red-400",
+                          t.status === "occupied" &&
+                            "bg-red-500/10 text-red-600 dark:text-red-400",
                           t.status === "reserved" &&
                             "bg-amber-500/10 text-amber-600 dark:text-amber-400",
                         )}
@@ -763,7 +810,9 @@ export default function OrdersPage() {
                 <span className="font-medium text-foreground">₹{tax}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Service charge (2%)</span>
+                <span className="text-muted-foreground">
+                  Service charge (2%)
+                </span>
                 <span className="font-medium text-foreground">
                   ₹{serviceCharge}
                 </span>
@@ -772,7 +821,9 @@ export default function OrdersPage() {
                 <span className="text-muted-foreground text-sm font-semibold">
                   Grand Total
                 </span>
-                <span className="font-medium text-foreground">₹{grandTotal}</span>
+                <span className="font-medium text-foreground">
+                  ₹{grandTotal}
+                </span>
               </div>
             </div>
 
@@ -816,37 +867,63 @@ export default function OrdersPage() {
 
         {/* CTA */}
         <div className="shrink-0 px-5 pb-2 pt-2">
-          <button
-            onClick={paymentMethod === "razorpay" ? payWithRazorpay : completeOrder}
-            disabled={!cart.length || !selectedTable || isSubmitting}
-            className={cn(
-              "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all duration-200 cursor-pointer",
-              cart.length && selectedTable
-                ? "bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/35 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 active:translate-y-0"
-                : "cursor-not-allowed bg-muted text-muted-foreground",
-            )}
-          >
-            {isSubmitting ? (
-              <>
+          {(!selectedTable || !cart.length) && (
+            <p className="mb-2 text-center text-xs font-medium text-muted-foreground">
+              {!selectedTable ? "Select a table first" : "Add items to order"}
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={sendToKot}
+              disabled={
+                !cart.length || !selectedTable || isSubmitting || isSendingToKot
+              }
+              className={cn(
+                "flex h-12 w-full items-center justify-center gap-2 rounded-2xl border text-sm font-semibold transition-all duration-200 cursor-pointer",
+                cart.length && selectedTable
+                  ? "border-primary/40 text-primary hover:bg-primary/10"
+                  : "cursor-not-allowed border-border bg-muted text-muted-foreground",
+              )}
+            >
+              {isSendingToKot ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Processing…
-              </>
-            ) : !selectedTable ? (
-              "Select a table first"
-            ) : !cart.length ? (
-              "Add items to order"
-            ) : paymentMethod === "razorpay" ? (
-              <>
-                <QrCode className="h-4 w-4" />
-                Get Payment Link · ₹{grandTotal}
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                Complete Order · ₹{grandTotal}
-              </>
-            )}
-          </button>
+              ) : (
+                <>
+                  <ChefHat className="h-4 w-4" />
+                  Send to KOT
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={
+                paymentMethod === "razorpay" ? payWithRazorpay : completeOrder
+              }
+              disabled={
+                !cart.length || !selectedTable || isSubmitting || isSendingToKot
+              }
+              className={cn(
+                "flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all duration-200 cursor-pointer",
+                cart.length && selectedTable
+                  ? "bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/35 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40 active:translate-y-0"
+                  : "cursor-not-allowed bg-muted text-muted-foreground",
+              )}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : paymentMethod === "razorpay" ? (
+                <>
+                  <QrCode className="h-4 w-4" />
+                  Payment Link
+                </>
+              ) : (
+                <>
+                  <Check className="h-4 w-4" />
+                  Complete · ₹{grandTotal}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -854,7 +931,9 @@ export default function OrdersPage() {
         open={razorpayModal.open}
         billId={razorpayModal.billId}
         billNo={razorpayModal.billNo}
-        onClose={() => setRazorpayModal({ open: false, billId: null, billNo: "" })}
+        onClose={() =>
+          setRazorpayModal({ open: false, billId: null, billNo: "" })
+        }
         onPaid={() => {
           setRazorpayModal({ open: false, billId: null, billNo: "" });
           clearCart();
