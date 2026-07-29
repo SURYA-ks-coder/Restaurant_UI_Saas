@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Bell,
   CreditCard,
@@ -38,13 +39,34 @@ import TemplateSettings from "./printer/TemplateSettings";
 import { AntTabs } from "@/components/ui/AntTabs";
 import { hasPermission } from "@/lib/auth";
 
+// Maps a shareable ?tab= query slug (used by Administration → Configuration
+// deep links) to the numeric tab id TabsNew expects and the exact selectedTab
+// title used by handleAddClick below.
+const TAB_META = [
+  { id: 1, slug: "category", title: "Category" },
+  { id: 2, slug: "sub-category", title: "Sub Category" },
+  { id: 3, slug: "menu-items", title: "Menu Items" },
+  { id: 4, slug: "suppliers", title: "Suppliers" },
+  { id: 5, slug: "subscription", title: "Subcription" },
+  { id: 6, slug: "department", title: "Department" },
+  { id: 7, slug: "designation", title: "Designation" },
+  { id: 8, slug: "shift", title: "shift" },
+  { id: 9, slug: "printer", title: "Printer" },
+];
+
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("profile");
   const [onlineOrdering, setOnlineOrdering] = useState(true);
   const [autoPrint, setAutoPrint] = useState(true);
   const [lowStockAlerts, setLowStockAlerts] = useState(true);
   const [dailyDigest, setDailyDigest] = useState(false);
-  const [selectedTab, setSelectedTab] = useState("Category");
+  const searchParams = useSearchParams();
+  const initialTabMeta = TAB_META.find(
+    (t) => t.slug === searchParams.get("tab"),
+  );
+  const [selectedTab, setSelectedTab] = useState(
+    initialTabMeta?.title || "Category",
+  );
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
   const [categoryRefreshKey, setCategoryRefreshKey] = useState(0);
   const [subCategoryDrawerOpen, setSubCategoryDrawerOpen] = useState(false);
@@ -115,6 +137,7 @@ export default function SettingsPage() {
         {/* )} */}
       </div>
       <TabsNew
+        initialTab={initialTabMeta?.id}
         onTabChange={(id, tab) => {
           setSelectedTab(tab.title);
         }}
