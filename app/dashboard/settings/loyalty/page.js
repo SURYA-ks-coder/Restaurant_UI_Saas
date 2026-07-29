@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Gift, Plus, Save, Trash2 } from "lucide-react";
-import { Skeleton, InputNumber, Switch, Select, Input } from "antd";
+import { Skeleton, Switch } from "antd";
+import { AntInput } from "@/components/ui/AntInput";
+import { AntSelect } from "@/components/ui/AntSelect";
+import ButtonClick from "@/components/ui/ButtonClick";
 import { message } from "@/lib/message";
 import { getAction, API, postAction } from "@/lib/API";
 
@@ -87,13 +90,6 @@ export default function LoyaltySettingsPage() {
     </div>
   );
 
-  const Field = ({ label, children }) => (
-    <div>
-      <div className="mb-1 text-xs text-muted-foreground">{label}</div>
-      {children}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -112,57 +108,99 @@ export default function LoyaltySettingsPage() {
               onChange={(v) => set({ status: v ? "active" : "inactive" })}
             />
           </label>
-          <button
-            onClick={save}
+          <ButtonClick
+            BtnType="primary"
+            buttonName={saving ? "Saving…" : "Save changes"}
+            icon={<Save className="w-3.5 h-3.5" />}
+            handleSubmit={save}
+            loading={saving}
             disabled={saving}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground disabled:opacity-60"
-          >
-            <Save className="w-3.5 h-3.5" /> {saving ? "Saving…" : "Save changes"}
-          </button>
+          />
         </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Earning & redemption">
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Points earned per ₹1 spent">
-              <InputNumber className="w-full" min={0} step={0.01} value={program.earnRate} onChange={(v) => set({ earnRate: v })} />
-            </Field>
-            <Field label="₹ value of 1 point">
-              <InputNumber className="w-full" min={0} step={0.05} value={program.redeemValue} onChange={(v) => set({ redeemValue: v })} />
-            </Field>
-            <Field label="Minimum points to redeem">
-              <InputNumber className="w-full" min={0} value={program.minRedeemPoints} onChange={(v) => set({ minRedeemPoints: v })} />
-            </Field>
-            <Field label="Max % of a bill payable by points">
-              <InputNumber className="w-full" min={1} max={100} value={program.maxRedeemPercentPerBill} onChange={(v) => set({ maxRedeemPercentPerBill: v })} />
-            </Field>
-            <Field label="Points expire after (days of inactivity, 0 = never)">
-              <InputNumber className="w-full" min={0} value={program.pointsExpiryDays} onChange={(v) => set({ pointsExpiryDays: v })} />
-            </Field>
-            <Field label="Customer wallet">
+            <AntInput
+              label="Points earned per ₹1 spent"
+              type="number"
+              min={0}
+              step={0.01}
+              value={program.earnRate}
+              onChange={(e) => set({ earnRate: Number(e.target.value) })}
+            />
+            <AntInput
+              label="₹ value of 1 point"
+              type="number"
+              min={0}
+              step={0.05}
+              value={program.redeemValue}
+              onChange={(e) => set({ redeemValue: Number(e.target.value) })}
+            />
+            <AntInput
+              label="Minimum points to redeem"
+              type="number"
+              min={0}
+              value={program.minRedeemPoints}
+              onChange={(e) => set({ minRedeemPoints: Number(e.target.value) })}
+            />
+            <AntInput
+              label="Max % of a bill payable by points"
+              type="number"
+              min={1}
+              max={100}
+              value={program.maxRedeemPercentPerBill}
+              onChange={(e) => set({ maxRedeemPercentPerBill: Number(e.target.value) })}
+            />
+            <AntInput
+              label="Points expire after (days of inactivity, 0 = never)"
+              type="number"
+              min={0}
+              value={program.pointsExpiryDays}
+              onChange={(e) => set({ pointsExpiryDays: Number(e.target.value) })}
+            />
+            <div>
+              <div className="mb-1 text-xs text-muted-foreground">Customer wallet</div>
               <div className="pt-1.5">
                 <Switch checked={program.walletEnabled} onChange={(v) => set({ walletEnabled: v })} />
                 <span className="ml-2 text-xs text-muted-foreground">Allow prepaid wallet payments</span>
               </div>
-            </Field>
+            </div>
           </div>
         </Section>
 
         <Section
           title="Membership tiers (by lifetime spend)"
           extra={
-            <button onClick={addTier} className="flex items-center gap-1 text-xs text-primary">
-              <Plus className="w-3.5 h-3.5" /> Add tier
-            </button>
+            <ButtonClick
+              BtnType="link"
+              size="small"
+              buttonName="Add tier"
+              icon={<Plus className="w-3.5 h-3.5" />}
+              handleSubmit={addTier}
+            />
           }
         >
           <div className="space-y-2">
             {program.tiers.map((tier, i) => (
               <div key={i} className="grid grid-cols-[1fr_100px_90px_70px_28px] items-center gap-2">
-                <Input value={tier.name} onChange={(e) => setTier(i, { name: e.target.value })} />
-                <InputNumber className="w-full" min={0} value={tier.threshold} onChange={(v) => setTier(i, { threshold: v })} placeholder="₹ spend" />
-                <InputNumber className="w-full" min={0} step={0.05} value={tier.multiplier} onChange={(v) => setTier(i, { multiplier: v })} placeholder="×" />
+                <AntInput value={tier.name} onChange={(e) => setTier(i, { name: e.target.value })} />
+                <AntInput
+                  type="number"
+                  min={0}
+                  value={tier.threshold}
+                  onChange={(e) => setTier(i, { threshold: Number(e.target.value) })}
+                  placeholder="₹ spend"
+                />
+                <AntInput
+                  type="number"
+                  min={0}
+                  step={0.05}
+                  value={tier.multiplier}
+                  onChange={(e) => setTier(i, { multiplier: Number(e.target.value) })}
+                  placeholder="×"
+                />
                 <input
                   type="color"
                   value={tier.color || "#888888"}
@@ -190,24 +228,31 @@ export default function LoyaltySettingsPage() {
           }
         >
           <div className="grid grid-cols-3 gap-4">
-            <Field label="Reward type">
-              <Select
-                className="w-full"
-                value={program.birthdayReward?.type || "points"}
-                onChange={(v) => setNested("birthdayReward", { type: v })}
-                options={[
-                  { value: "points", label: "Bonus points" },
-                  { value: "percent_discount", label: "% discount voucher" },
-                  { value: "flat_discount", label: "Flat ₹ voucher" },
-                ]}
-              />
-            </Field>
-            <Field label="Value">
-              <InputNumber className="w-full" min={0} value={program.birthdayReward?.value} onChange={(v) => setNested("birthdayReward", { value: v })} />
-            </Field>
-            <Field label="Window (± days)">
-              <InputNumber className="w-full" min={1} max={31} value={program.birthdayReward?.windowDays} onChange={(v) => setNested("birthdayReward", { windowDays: v })} />
-            </Field>
+            <AntSelect
+              label="Reward type"
+              value={program.birthdayReward?.type || "points"}
+              onChange={(v) => setNested("birthdayReward", { type: v })}
+              options={[
+                { value: "points", label: "Bonus points" },
+                { value: "percent_discount", label: "% discount voucher" },
+                { value: "flat_discount", label: "Flat ₹ voucher" },
+              ]}
+            />
+            <AntInput
+              label="Value"
+              type="number"
+              min={0}
+              value={program.birthdayReward?.value}
+              onChange={(e) => setNested("birthdayReward", { value: Number(e.target.value) })}
+            />
+            <AntInput
+              label="Window (± days)"
+              type="number"
+              min={1}
+              max={31}
+              value={program.birthdayReward?.windowDays}
+              onChange={(e) => setNested("birthdayReward", { windowDays: Number(e.target.value) })}
+            />
           </div>
         </Section>
 
@@ -221,15 +266,27 @@ export default function LoyaltySettingsPage() {
           }
         >
           <div className="grid grid-cols-3 gap-4">
-            <Field label="Referrer gets (points)">
-              <InputNumber className="w-full" min={0} value={program.referral?.referrerPoints} onChange={(v) => setNested("referral", { referrerPoints: v })} />
-            </Field>
-            <Field label="New customer gets (points)">
-              <InputNumber className="w-full" min={0} value={program.referral?.refereePoints} onChange={(v) => setNested("referral", { refereePoints: v })} />
-            </Field>
-            <Field label="Min first bill (₹)">
-              <InputNumber className="w-full" min={0} value={program.referral?.minFirstBillAmount} onChange={(v) => setNested("referral", { minFirstBillAmount: v })} />
-            </Field>
+            <AntInput
+              label="Referrer gets (points)"
+              type="number"
+              min={0}
+              value={program.referral?.referrerPoints}
+              onChange={(e) => setNested("referral", { referrerPoints: Number(e.target.value) })}
+            />
+            <AntInput
+              label="New customer gets (points)"
+              type="number"
+              min={0}
+              value={program.referral?.refereePoints}
+              onChange={(e) => setNested("referral", { refereePoints: Number(e.target.value) })}
+            />
+            <AntInput
+              label="Min first bill (₹)"
+              type="number"
+              min={0}
+              value={program.referral?.minFirstBillAmount}
+              onChange={(e) => setNested("referral", { minFirstBillAmount: Number(e.target.value) })}
+            />
           </div>
         </Section>
       </div>
