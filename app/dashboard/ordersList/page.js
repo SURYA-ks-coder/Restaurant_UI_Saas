@@ -8,13 +8,15 @@ import { Select } from "antd";
 import { useEffect, useState } from "react";
 import ViewOrderDetails from "../orders/OrdersDetails.js/ViewOrderDetails";
 
-const ORDER_STATUS_OPTIONS = ["pending", "preparing", "completed", "cancelled"];
+// Mirrors Bill.status exactly (pending/held/completed/cancelled) — kitchen
+// progress ("preparing"/"ready"/"served") is tracked on the KOT and is
+// edited from the Kitchen page instead.
+const ORDER_STATUS_OPTIONS = ["pending", "held", "completed", "cancelled"];
 
 const orderStatusStyles = {
   pending:
     "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/30",
-  preparing:
-    "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-400 dark:border-sky-500/30",
+  held: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-400 dark:border-sky-500/30",
   completed:
     "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-400 dark:border-indigo-500/30",
   cancelled:
@@ -87,10 +89,13 @@ export default function OrdersList() {
     );
 
     try {
-      const result = await patchAction(API.UPDATE_BILL, {
-        id: row._id,
-        status: nextStatus,
-      });
+      const result = await patchAction(
+        API.UPDATE_BILL.replace(":id", row._id),
+        {
+          status: nextStatus,
+          paymentStatus: nextStatus === "completed" ? "paid" : undefined,
+        },
+      );
       if (result?.statusCode === 200) {
         message.success("Order status updated");
       } else {
