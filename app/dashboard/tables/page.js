@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import CreateTable from "./TableManage/CreateTable";
 import Reservations from "./TableManage/Reservations";
+import TableGroups from "./TableManage/TableGroups";
 import { action, API, getAction } from "@/lib/API";
 import { Dropdown, Modal } from "antd";
 import { message } from "@/lib/message";
@@ -70,6 +71,7 @@ export default function TablesPage() {
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [generatingQr, setGeneratingQr] = useState(false);
+  const [groupsModalOpen, setGroupsModalOpen] = useState(false);
 
   const counts = useMemo(
     () =>
@@ -337,6 +339,7 @@ export default function TablesPage() {
                       },
                       { key: "edit", label: "Edit Table" },
                       { key: "reserve", label: "Add Reservation" },
+                      { key: "groups", label: "Order Groups" },
                     ],
                     onClick: ({ key }) => {
                       if (key === "qr") createQRCode(selectedTable._id);
@@ -347,6 +350,7 @@ export default function TablesPage() {
                         });
                       else if (key === "reserve")
                         setReservationDrawerOpen(true);
+                      else if (key === "groups") setGroupsModalOpen(true);
                     },
                   }}
                   trigger={["click"]}
@@ -528,7 +532,10 @@ export default function TablesPage() {
                   >
                     Edit Table
                   </button>
-                  <button className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">
+                  <button
+                    onClick={() => setGroupsModalOpen(true)}
+                    className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                  >
                     {selectedTable.status === "available"
                       ? "Assign Table"
                       : "Manage"}
@@ -635,6 +642,12 @@ export default function TablesPage() {
         open={reservationDrawerOpen}
         onOpenChange={setReservationDrawerOpen}
         onCreated={addCreatedReservation}
+      />
+      <TableGroups
+        open={groupsModalOpen}
+        onOpenChange={setGroupsModalOpen}
+        table={selectedTable}
+        onChanged={getTableList}
       />
     </div>
   );
