@@ -351,8 +351,7 @@ export default function KitchenPage() {
   const assignChef = async (kotId, chefId) => {
     setAssigningId(kotId);
     try {
-      const result = await patchAction(API.ASSIGN_KOT_CHEF, {
-        id: kotId,
+      const result = await patchAction(`${API.ASSIGN_KOT_CHEF}/${kotId}/assign`, {
         chefId,
       });
       if (result?.statusCode === 200) {
@@ -490,7 +489,6 @@ export default function KitchenPage() {
                 <div className="mb-4 flex items-center gap-2">
                   <ChefHat className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <Select
-                    size="small"
                     className="min-w-0 flex-1"
                     placeholder="Assign chef"
                     value={order.assignedChefId || undefined}

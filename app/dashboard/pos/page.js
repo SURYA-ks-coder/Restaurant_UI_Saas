@@ -690,8 +690,8 @@ export default function POSPage() {
               </div>
 
               {groupFormOpen && (
-                <div className="mt-2 flex items-end gap-2 rounded-lg bg-muted/30 p-2">
-                  <div className="flex-1">
+                <div className="mt-2 flex flex-col gap-2 rounded-lg bg-muted/30 p-2 sm:flex-row sm:items-end">
+                  <div className="w-full sm:flex-1">
                     <label className="mb-1 block text-[10px] text-muted-foreground">
                       Guests
                     </label>
@@ -703,7 +703,7 @@ export default function POSPage() {
                       className="h-8 w-full rounded-md border border-border px-2 text-xs outline-none focus:border-primary"
                     />
                   </div>
-                  <div className="flex-[2]">
+                  <div className="w-full sm:flex-2">
                     <label className="mb-1 block text-[10px] text-muted-foreground">
                       Label
                     </label>
@@ -720,6 +720,7 @@ export default function POSPage() {
                     size="small"
                     loading={creatingGroup}
                     handleSubmit={createSplitGroup}
+                    className="w-full sm:w-auto"
                   />
                 </div>
               )}

@@ -881,8 +881,8 @@ export default function OrdersPage() {
               </div>
 
               {groupFormOpen && (
-                <div className="mt-2 flex items-end gap-2 rounded-lg bg-muted/50 p-2">
-                  <div className="flex-1">
+                <div className="mt-2 flex flex-col gap-2 rounded-lg bg-muted/50 p-2 sm:flex-row sm:items-end">
+                  <div className="w-full sm:flex-1">
                     <label className="mb-1 block text-[10px] text-muted-foreground">
                       Guests
                     </label>
@@ -894,7 +894,7 @@ export default function OrdersPage() {
                       className="h-8 w-full rounded-md border border-border bg-card px-2 text-xs outline-none focus:border-primary"
                     />
                   </div>
-                  <div className="flex-[2]">
+                  <div className="w-full sm:flex-2">
                     <label className="mb-1 block text-[10px] text-muted-foreground">
                       Label
                     </label>
@@ -908,7 +908,7 @@ export default function OrdersPage() {
                   <button
                     onClick={createSplitGroup}
                     disabled={creatingGroup}
-                    className="flex h-8 items-center gap-1 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                    className="flex h-8 w-full items-center justify-center gap-1 rounded-md bg-primary px-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60 sm:w-auto"
                   >
                     {creatingGroup ? (
                       <Loader2 className="h-3 w-3 animate-spin" />

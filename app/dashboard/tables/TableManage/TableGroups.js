@@ -233,8 +233,8 @@ export default function TableGroups({ open, onOpenChange, table, onChanged }) {
       <Divider className="my-3" />
 
       <p className="mb-2 text-sm font-medium">Add walk-in group</p>
-      <div className="flex items-end gap-2">
-        <div className="flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="w-full sm:flex-1">
           <label className="mb-1 block text-xs text-muted-foreground">
             Guests
           </label>
@@ -246,7 +246,7 @@ export default function TableGroups({ open, onOpenChange, table, onChanged }) {
             className="h-9 w-full rounded-lg border border-border px-2 text-sm outline-none focus:border-primary"
           />
         </div>
-        <div className="flex-[2]">
+        <div className="w-full sm:flex-2">
           <label className="mb-1 block text-xs text-muted-foreground">
             Label (optional)
           </label>
@@ -263,6 +263,7 @@ export default function TableGroups({ open, onOpenChange, table, onChanged }) {
           icon={<Plus className="h-4 w-4" />}
           loading={creating}
           handleSubmit={createGroup}
+          className="w-full sm:w-auto"
         />
       </div>
     </Modal>
