@@ -7,6 +7,8 @@ import {
   Check,
   ChefHat,
   Clock,
+  Loader2,
+  Printer,
   RefreshCw,
   Volume2,
   VolumeX,
@@ -26,7 +28,8 @@ import {
 } from "@/components/socket/kotSocketListeners";
 import { action, API, getAction, patchAction, postAction } from "@/lib/API";
 import { triggerPrint } from "@/lib/print";
-import { Button, Checkbox, Tooltip } from "antd";
+import { message } from "@/lib/message";
+import { Button, Checkbox, Select, Tooltip } from "antd";
 import { FaCircleCheck } from "react-icons/fa6";
 import { MdCancel } from "react-icons/md";
 
@@ -115,11 +118,20 @@ const normalizeKotOrder = (kot) => {
     items: kot.items || kot.orderItems || kot.billId?.items || [],
     status: kot.status || "new",
     priority: Boolean(kot.priority),
+    assignedChefId: kot.chefId?._id || kot.chefId || kot.assignedChefId || "",
+    assignedChefName: kot.chefId?.name || kot.chefName || "",
   };
 };
 
+const isChefMember = (member) =>
+  [member.role, member.designation, member.roleId?.roleName]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes("chef"));
+
 export default function KitchenPage() {
   const [orders, setOrders] = useState([]);
+  const [chefs, setChefs] = useState([]);
+  const [assigningId, setAssigningId] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const [reprintingId, setReprintingId] = useState(null);
@@ -215,6 +227,20 @@ export default function KitchenPage() {
     ready: orders.filter((order) => order.status === "ready").length,
   };
 
+  // Chefs available to assign a KOT ticket to — reuses the staff list,
+  // filtered to members whose role/designation/roleName mentions "chef"
+  // (staff no longer has a fixed role enum, see app/dashboard/staff/AddStaffs.js).
+  const getChefList = useCallback(async () => {
+    try {
+      const result = await getAction(API.GET_STAFF_LIST, {});
+      if (result?.statusCode === 200) {
+        setChefs((result?.data || []).filter(isChefMember));
+      }
+    } catch (error) {
+      console.error("Unable to fetch chef list:", error);
+    }
+  }, []);
+
   const getKotList = useCallback(async () => {
     console.log("Fetching KOT list...");
     try {
@@ -233,6 +259,7 @@ export default function KitchenPage() {
     const branchId = getBranchId();
 
     getKotList();
+    getChefList();
 
     if (!token || !branchId) {
       return;
@@ -265,7 +292,7 @@ export default function KitchenPage() {
       // removeKotListeners();
       // disconnectSocket();
     };
-  }, [getKotList]);
+  }, [getKotList, getChefList]);
 
   const updateKotItemList = async (updatedKot) => {
     try {
@@ -318,6 +345,37 @@ export default function KitchenPage() {
       }
     } catch (error) {
       console.error("Error updating KOT status:", error);
+    }
+  };
+
+  const assignChef = async (kotId, chefId) => {
+    setAssigningId(kotId);
+    try {
+      const result = await patchAction(API.ASSIGN_KOT_CHEF, {
+        id: kotId,
+        chefId,
+      });
+      if (result?.statusCode === 200) {
+        const chef = chefs.find((c) => c._id === chefId);
+        setOrders((prev) =>
+          prev.map((order) =>
+            order._id === kotId
+              ? {
+                  ...order,
+                  assignedChefId: chefId,
+                  assignedChefName: chef?.name || "",
+                }
+              : order,
+          ),
+        );
+        message.success(`Assigned to ${chef?.name || "chef"}`);
+      } else {
+        message.error(result?.message || "Unable to assign chef");
+      }
+    } catch {
+      message.error("Unable to assign chef");
+    } finally {
+      setAssigningId(null);
     }
   };
 
@@ -408,12 +466,11 @@ export default function KitchenPage() {
                         disabled={reprintingId === order._id}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
                       >
-                        <RefreshCw
-                          className={cn(
-                            "h-3.5 w-3.5",
-                            reprintingId === order._id && "animate-spin",
-                          )}
-                        />
+                        {reprintingId === order._id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Printer className="h-3.5 w-3.5" />
+                        )}
                       </button>
                     </Tooltip>
                   </div>
@@ -428,6 +485,23 @@ export default function KitchenPage() {
                   <Clock className="h-4 w-4" />
                   {order.elapsed}m
                   {isUrgent && <AlertTriangle className="h-4 w-4" />}
+                </div>
+
+                <div className="mb-4 flex items-center gap-2">
+                  <ChefHat className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Select
+                    size="small"
+                    className="min-w-0 flex-1"
+                    placeholder="Assign chef"
+                    value={order.assignedChefId || undefined}
+                    loading={assigningId === order._id}
+                    disabled={assigningId === order._id}
+                    onChange={(chefId) => assignChef(order._id, chefId)}
+                    options={chefs.map((chef) => ({
+                      value: chef._id,
+                      label: chef.name,
+                    }))}
+                  />
                 </div>
 
                 <div className="space-y-2">
