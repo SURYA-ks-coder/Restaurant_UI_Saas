@@ -10,6 +10,7 @@ import {
   Search,
   Smartphone,
   Trash2,
+  Users,
   UtensilsCrossed,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ import { Printer } from "lucide-react";
 import { message } from "@/lib/message";
 import { getPrintPreviewHtml, triggerPrint } from "@/lib/print";
 import RazorpayPaymentModal from "@/components/payments/RazorpayPaymentModal";
+import ButtonClick from "@/components/ui/ButtonClick";
 
 const roundAmount = (value) => Number((Number(value) || 0).toFixed(2));
 
@@ -73,9 +75,19 @@ export default function POSPage() {
   const [categoryData, setCategoryData] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [selectedTableId, setSelectedTableId] = useState("");
+  const [tableGroups, setTableGroups] = useState([]);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [groupFormOpen, setGroupFormOpen] = useState(false);
+  const [newGroupGuestCount, setNewGroupGuestCount] = useState(2);
+  const [newGroupLabel, setNewGroupLabel] = useState("");
+  const [creatingGroup, setCreatingGroup] = useState(false);
   const [gstRate, setGstRate] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [razorpayModal, setRazorpayModal] = useState({ open: false, billId: null, billNo: "" });
+  const [razorpayModal, setRazorpayModal] = useState({
+    open: false,
+    billId: null,
+    billNo: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastBillId, setLastBillId] = useState(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -138,8 +150,8 @@ export default function POSPage() {
   const getMenuItemList = async () => {
     try {
       const result = await action(API.GET_MENU_ITEM_LIST, {
-        restaurantId: getEntityId(parseStoredValue("restaurantId")),
-        branchId: getBranchId(),
+        restaurantId: getRestaurantId(),
+        branchId: getDefaultBranchId(),
       });
       if (result?.statusCode === 200) {
         setMenuItemData(
@@ -176,6 +188,68 @@ export default function POSPage() {
     getMenuItemList();
   }, []);
 
+  // Active order groups for the selected table — lets a waiter attach the
+  // cart to one family's group instead of billing the whole table, the same
+  // way TableGroups.js splits a shared table into separate parties/bills.
+  const getTableGroups = async (tableId) => {
+    if (!tableId) {
+      setTableGroups([]);
+      return;
+    }
+    try {
+      const result = await getAction(
+        `${API.GET_TABLE_SESSION_GROUPS}/${tableId}/staff`,
+        {},
+      );
+      if (result?.statusCode === 200) {
+        const active = (result.data.groups || []).filter((g) =>
+          ["ordering", "placed"].includes(g.status),
+        );
+        setTableGroups(active);
+      } else {
+        setTableGroups([]);
+      }
+    } catch {
+      setTableGroups([]);
+    }
+  };
+
+  useEffect(() => {
+    setSelectedGroupId("");
+    setGroupFormOpen(false);
+    getTableGroups(selectedTableId);
+  }, [selectedTableId]);
+
+  const createSplitGroup = async () => {
+    if (!selectedTableId) return;
+    setCreatingGroup(true);
+    try {
+      const result = await action(
+        `${API.CREATE_TABLE_SESSION_GROUP}/${selectedTableId}/staff/groups`,
+        {
+          guestCount: Number(newGroupGuestCount) || 1,
+          groupLabel: newGroupLabel || undefined,
+        },
+      );
+      if (result?.statusCode === 201 || result?.statusCode === 200) {
+        message.success(
+          `${result.data.groupLabel} created — code ${result.data.groupCode}`,
+        );
+        setNewGroupLabel("");
+        setNewGroupGuestCount(2);
+        setGroupFormOpen(false);
+        await getTableGroups(selectedTableId);
+        setSelectedGroupId(result.data.groupId);
+      } else {
+        message.error(result?.message || "Unable to create group");
+      }
+    } catch {
+      message.error("Unable to create group");
+    } finally {
+      setCreatingGroup(false);
+    }
+  };
+
   const buildBillNo = () => {
     const datePart = new Date().toISOString().slice(0, 10).replaceAll("-", "");
     const randomPart = Math.floor(1000 + Math.random() * 9000);
@@ -188,6 +262,9 @@ export default function POSPage() {
     const branchId = getBranchId();
     const userData = parseStoredValue("userData");
     const taxRate = Number(gstRate) || 0;
+    const selectedGroup = tableGroups.find(
+      (g) => g.groupId === selectedGroupId,
+    );
 
     return {
       restaurantId,
@@ -195,6 +272,12 @@ export default function POSPage() {
       billNo: buildBillNo(),
       orderType: "qr",
       tableId: selectedTableId,
+      ...(selectedGroup
+        ? {
+            groupId: selectedGroup.groupId,
+            groupLabel: selectedGroup.groupLabel,
+          }
+        : {}),
       items: cart.map((item) => {
         const price = getItemPrice(item);
         const lineSubtotal = price * item.quantity;
@@ -240,6 +323,13 @@ export default function POSPage() {
 
     if (!selectedTableId) {
       message.error("Please select a table.");
+      return false;
+    }
+
+    if (tableGroups.length >= 2 && !selectedGroupId) {
+      message.error(
+        "This table is split — select which group this order is for.",
+      );
       return false;
     }
 
@@ -315,10 +405,18 @@ export default function POSPage() {
     if (!validateBill()) return;
     setIsSubmitting(true);
     try {
-      const result = await action(API.CREATE_BILL, buildBillPayload({ razorpay: true }), "POST");
+      const result = await action(
+        API.CREATE_BILL,
+        buildBillPayload({ razorpay: true }),
+        "POST",
+      );
       if (result?.statusCode === 200 || result?.statusCode === 201) {
         const bill = result?.data || {};
-        setRazorpayModal({ open: true, billId: bill._id || bill.id, billNo: bill.billNo });
+        setRazorpayModal({
+          open: true,
+          billId: bill._id || bill.id,
+          billNo: bill.billNo,
+        });
       } else {
         message.error(result?.message || "Unable to create bill");
       }
@@ -561,8 +659,77 @@ export default function POSPage() {
             />
           </div>
 
+          {selectedTableId && (
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                Split by group — separate families at this table get separate
+                bills
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {tableGroups.map((group) => (
+                  <button
+                    key={group.groupId}
+                    onClick={() => setSelectedGroupId(group.groupId)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium",
+                      selectedGroupId === group.groupId
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border hover:bg-muted",
+                    )}
+                  >
+                    <Users className="h-3 w-3" />
+                    {group.groupLabel} · {group.guestCount}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setGroupFormOpen((v) => !v)}
+                  className="rounded-lg border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+                >
+                  + Split / New Group
+                </button>
+              </div>
+
+              {groupFormOpen && (
+                <div className="mt-2 flex items-end gap-2 rounded-lg bg-muted/30 p-2">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-[10px] text-muted-foreground">
+                      Guests
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={newGroupGuestCount}
+                      onChange={(e) => setNewGroupGuestCount(e.target.value)}
+                      className="h-8 w-full rounded-md border border-border px-2 text-xs outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="flex-[2]">
+                    <label className="mb-1 block text-[10px] text-muted-foreground">
+                      Label
+                    </label>
+                    <input
+                      value={newGroupLabel}
+                      onChange={(e) => setNewGroupLabel(e.target.value)}
+                      placeholder="e.g. Family 2"
+                      className="h-8 w-full rounded-md border border-border px-2 text-xs outline-none focus:border-primary"
+                    />
+                  </div>
+                  <ButtonClick
+                    BtnType="primary"
+                    buttonName="Add"
+                    size="small"
+                    loading={creatingGroup}
+                    handleSubmit={createSplitGroup}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <button
-            onClick={paymentMethod === "razorpay" ? payWithRazorpay : completeOrder}
+            onClick={
+              paymentMethod === "razorpay" ? payWithRazorpay : completeOrder
+            }
             disabled={isSubmitting}
             className="w-full rounded-lg bg-primary py-2 font-medium text-primary-foreground disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -614,7 +781,9 @@ export default function POSPage() {
         open={razorpayModal.open}
         billId={razorpayModal.billId}
         billNo={razorpayModal.billNo}
-        onClose={() => setRazorpayModal({ open: false, billId: null, billNo: "" })}
+        onClose={() =>
+          setRazorpayModal({ open: false, billId: null, billNo: "" })
+        }
         onPaid={(bill) => {
           setRazorpayModal({ open: false, billId: null, billNo: "" });
           setCart([]);

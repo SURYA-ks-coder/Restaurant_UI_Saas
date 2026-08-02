@@ -7,6 +7,9 @@ import { action, getAction, API } from "@/lib/API";
 import { message } from "@/lib/message";
 import ButtonClick from "@/components/ui/ButtonClick";
 
+const POLL_MS = 5000;
+const isSettled = (group) => group.paymentStatus === "paid";
+
 const STATUS_TAG_COLOR = {
   ordering: "blue",
   placed: "gold",
@@ -38,33 +41,58 @@ export default function TableGroups({ open, onOpenChange, table, onChanged }) {
   const [billDetail, setBillDetail] = useState(null);
   const [billLoading, setBillLoading] = useState(false);
 
-  const load = async () => {
+  // `silent` skips the spinner/error toast so the background poll below
+  // doesn't flicker the modal every 5s.
+  const load = async ({ silent = false } = {}) => {
     if (!table?._id) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const result = await getAction(
         `${API.GET_TABLE_SESSION_GROUPS}/${table._id}/staff`,
         {},
       );
       if (result?.statusCode === 200) {
-        setGroups(result.data.groups || []);
+        const fetched = result.data.groups || [];
+        setGroups((prev) => {
+          const previouslySettled = new Set(
+            prev.filter(isSettled).map((g) => g.groupId),
+          );
+          const newlySettled = fetched.filter(
+            (g) => isSettled(g) && !previouslySettled.has(g.groupId),
+          );
+          if (newlySettled.length) {
+            newlySettled.forEach((g) =>
+              message.success(`${g.groupLabel} settled`),
+            );
+            onChanged?.();
+          }
+          return fetched;
+        });
       }
     } catch {
-      message.error("Unable to load table groups");
+      if (!silent) message.error("Unable to load table groups");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (open) {
-      load();
-    } else {
+    if (!open) {
       setExpandedGroupId(null);
       setBillDetail(null);
+      return;
     }
+    load();
+    // Poll while the modal is open so a group that gets paid elsewhere
+    // (billing/Razorpay) drops off this list without staff refreshing.
+    const interval = setInterval(() => load({ silent: true }), POLL_MS);
+    return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, table?._id]);
+
+  // Settled groups are kept in state briefly (for the toast/onChanged diff
+  // above) but never rendered — a paid group is done occupying the table.
+  const visibleGroups = groups.filter((g) => !isSettled(g));
 
   const createGroup = async () => {
     setCreating(true);
@@ -130,11 +158,11 @@ export default function TableGroups({ open, onOpenChange, table, onChanged }) {
       </p>
 
       <Spin spinning={loading}>
-        {groups.length === 0 ? (
+        {visibleGroups.length === 0 ? (
           <Empty description="No groups yet" className="py-6" />
         ) : (
           <div className="mb-4 space-y-2">
-            {groups.map((group) => (
+            {visibleGroups.map((group) => (
               <div
                 key={group.groupId}
                 className="rounded-lg border border-border p-3"
