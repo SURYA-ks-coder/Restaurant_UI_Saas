@@ -8,7 +8,6 @@ import * as Yup from "yup";
 import { AntInput, AntSelect } from "@/components/ui/antd-components";
 import DrawerPop from "@/components/ui/DrawerPop";
 import { action, API, getAction } from "@/lib/API";
-import { LocalStorageData } from "@/lib/LocalStoragekeyvalue";
 
 const initialValues = {
   restaurantId: "",
@@ -87,10 +86,14 @@ export default function CreateTable({
     validationSchema: tableValidationSchema,
     onSubmit: async (values, { resetForm, setSubmitting }) => {
       try {
+        const { restaurantId, branchId, ...rest } = values;
+        // restaurantId/branchId are intentionally omitted here — the API
+        // layer (withScopeBody) injects the *currently selected* branch
+        // (top-nav), not the login-time default. Sending a stale default
+        // branchId here would save the table under a different branch than
+        // the one the list is refetched against, so it silently disappears.
         const payload = {
-          ...values,
-          restaurantId: LocalStorageData.restaurantId,
-          branchId: LocalStorageData.branchId,
+          ...rest,
           tableName: values.tableName.trim(),
           tableNumber: Number(values.tableNumber),
           capacity: Number(values.capacity),

@@ -129,7 +129,7 @@ export default function TablesPage() {
   const getTableList = async () => {
     try {
       const result = await getAction(API.GET_TABLE_LIST, {});
-      if (result.statusCode === 200) {
+      if (result?.statusCode === 200) {
         setTables(result.data);
         setSelectedTable((prev) => prev ?? result.data[0] ?? null);
       }
@@ -139,7 +139,7 @@ export default function TablesPage() {
   const getReservationList = async () => {
     try {
       const result = await getAction(API.GET_RESERVATION_LIST, {});
-      if (result.statusCode === 200) setReservations(result.data);
+      if (result?.statusCode === 200) setReservations(result.data);
     } catch {}
   };
 
