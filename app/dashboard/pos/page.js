@@ -272,12 +272,10 @@ export default function POSPage() {
       billNo: buildBillNo(),
       orderType: "qr",
       tableId: selectedTableId,
-      ...(selectedGroup
-        ? {
-            groupId: selectedGroup.groupId,
-            groupLabel: selectedGroup.groupLabel,
-          }
-        : {}),
+      // `orderGroupId` — matches Bill.model.js/pos.validator.js on the
+      // backend; there's no separate `groupLabel` field on Bill (the label
+      // lives on the OrderGroup document), so it isn't sent here.
+      ...(selectedGroup ? { orderGroupId: selectedGroup.groupId } : {}),
       items: cart.map((item) => {
         const price = getItemPrice(item);
         const lineSubtotal = price * item.quantity;

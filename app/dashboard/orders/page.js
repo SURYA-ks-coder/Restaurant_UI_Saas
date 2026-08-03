@@ -495,9 +495,10 @@ export default function OrdersPage() {
       billNo: buildBillNo(),
       orderType: "dine-in",
       tableId: selectedTable?.id,
-      ...(selectedGroup
-        ? { groupId: selectedGroup.groupId, groupLabel: selectedGroup.groupLabel }
-        : {}),
+      // `orderGroupId` — matches Bill.model.js/pos.validator.js on the
+      // backend; there's no separate `groupLabel` field on Bill (the label
+      // lives on the OrderGroup document), so it isn't sent here.
+      ...(selectedGroup ? { orderGroupId: selectedGroup.groupId } : {}),
       items: cart.map((item) => {
         const lineSubtotal = item.price * item.qty;
         return {
