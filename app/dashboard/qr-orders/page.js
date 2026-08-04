@@ -339,7 +339,9 @@ export default function QrOrdersPage() {
                   <QrCode className="h-7 w-7 text-muted-foreground" />
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight">
-                  {tables.length === 0 ? "No QR tables configured" : "No tables match your search"}
+                  {tables.length === 0
+                    ? "No QR tables configured"
+                    : "No tables match your search"}
                 </h3>
                 <p className="mt-2 max-w-xs text-sm text-muted-foreground">
                   {tables.length === 0
@@ -366,8 +368,12 @@ export default function QrOrdersPage() {
                 >
                   <div className="mb-4 flex items-start justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Table</p>
-                      <h2 className="text-3xl font-bold">{table?.tableName}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        Table {table?.tableNumber}
+                      </p>
+                      <h2 className="text-3xl font-bold capitalize">
+                        {table?.tableName}
+                      </h2>
                     </div>
                     <span
                       className={cn(
@@ -597,7 +603,9 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border pb-2">
       <span className="text-muted-foreground">{label}</span>
-      <span className="truncate text-right font-medium">{value}</span>
+      <span className="truncate text-right font-medium capitalize">
+        {value}
+      </span>
     </div>
   );
 }

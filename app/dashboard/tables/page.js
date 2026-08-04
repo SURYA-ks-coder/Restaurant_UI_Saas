@@ -131,7 +131,13 @@ export default function TablesPage() {
       const result = await getAction(API.GET_TABLE_LIST, {});
       if (result?.statusCode === 200) {
         setTables(result.data);
-        setSelectedTable((prev) => prev ?? result.data[0] ?? null);
+        setSelectedTable((prev) => {
+          if (!prev) return result.data[0] ?? null;
+          const updated = result.data.find(
+            (t) => String(t._id || t.id) === String(prev._id || prev.id),
+          );
+          return updated ?? prev;
+        });
       }
     } catch {}
   };
