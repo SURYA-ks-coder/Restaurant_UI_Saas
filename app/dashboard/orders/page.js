@@ -333,10 +333,7 @@ export default function OrdersPage() {
 
   const getMenuItemList = async () => {
     try {
-      const result = await action(API.GET_MENU_ITEM_LIST, {
-        restaurantId: getRestaurantId(),
-        branchId: getDefaultBranchId(),
-      });
+      const result = await action(API.GET_MENU_ITEM_LIST, {});
       if (result?.statusCode === 200) {
         setMenuItemData((result.data || []).map(transformMenuItem));
       }
