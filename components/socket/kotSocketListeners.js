@@ -4,6 +4,7 @@ export const registerKotListeners = ({
   onKotCreated,
   onOrderCreated,
   onKotStatusUpdated,
+  onKotItemStatusUpdated,
 }) => {
   const socket = getSocket();
 
@@ -29,6 +30,14 @@ export const registerKotListeners = ({
       onKotStatusUpdated(payload);
     }
   });
+
+  socket.on("kot:item:status:updated", (payload) => {
+    console.log("KOT Item Status Updated:", payload);
+
+    if (onKotItemStatusUpdated) {
+      onKotItemStatusUpdated(payload);
+    }
+  });
 };
 
 export const removeKotListeners = () => {
@@ -39,4 +48,5 @@ export const removeKotListeners = () => {
   socket.off("kot:created");
   socket.off("order:created");
   socket.off("kot:status:updated");
+  socket.off("kot:item:status:updated");
 };

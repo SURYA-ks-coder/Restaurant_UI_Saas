@@ -1,16 +1,25 @@
 "use client";
 import Heading from "@/components/ui/Heading";
 import Table from "@/components/ui/Table";
+import { connectSocket } from "@/components/services/socket";
+import { joinBranch } from "@/components/socket/kotSocketActions";
+import {
+  registerKotListeners,
+  removeKotListeners,
+} from "@/components/socket/kotSocketListeners";
 import { API, getAction, patchAction } from "@/lib/API";
+import { getAccessToken, getDefaultBranchId } from "@/lib/auth";
+import { KITCHEN_STATUS_LABELS, KITCHEN_STATUS_STYLES } from "@/lib/kitchenStatus";
 import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
-import { Select } from "antd";
-import { useEffect, useState } from "react";
+import { Select, Tag } from "antd";
+import { useCallback, useEffect, useState } from "react";
 import ViewOrderDetails from "../orders/OrdersDetails.js/ViewOrderDetails";
 
 // Mirrors Bill.status exactly (pending/held/completed/cancelled) — kitchen
-// progress ("preparing"/"ready"/"served") is tracked on the KOT and is
-// edited from the Kitchen page instead.
+// progress ("preparing"/"ready"/"served") is tracked on the KOT instead and
+// is joined in separately below (see lib/kitchenStatus.js) so this column
+// still only ever offers the four statuses the backend accepts here.
 const ORDER_STATUS_OPTIONS = ["pending", "held", "completed", "cancelled"];
 
 const orderStatusStyles = {
@@ -59,18 +68,38 @@ export default function OrdersList() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
 
-  useEffect(() => {
-    getOrdersList();
-  }, []);
-
-  const getOrdersList = async () => {
+  const getOrdersList = useCallback(async () => {
     try {
       const result = await getAction(API.GET_BILL_LIST, {});
       if (result?.statusCode === 200) {
         setordersDataa(result?.data || []);
       }
     } catch (error) {}
-  };
+  }, []);
+
+  useEffect(() => {
+    getOrdersList();
+
+    const token = getAccessToken();
+    const branchId = getDefaultBranchId();
+    if (!token || !branchId) return;
+
+    connectSocket({ token });
+    joinBranch(branchId);
+    // Bill.kitchenStatus is server-computed from the KOT(s) on every KOT
+    // change (see kot.service.js#computeBillKitchenStatus) — a fresh
+    // pos/list fetch is all that's needed to pick it up.
+    registerKotListeners({
+      onKotCreated: getOrdersList,
+      onOrderCreated: getOrdersList,
+      onKotStatusUpdated: getOrdersList,
+      onKotItemStatusUpdated: getOrdersList,
+    });
+
+    return () => {
+      removeKotListeners();
+    };
+  }, [getOrdersList]);
 
   const handleView = (_id, row) => {
     setSelectedOrder(row);
@@ -148,6 +177,21 @@ export default function OrdersList() {
       value: "paymentStatus",
       type: "status",
       width: 140,
+    },
+    {
+      title: "Kitchen Status",
+      value: "kitchenStatus",
+      width: 140,
+      render: (kitchenStatus) => (
+        <Tag
+          className={cn(
+            "rounded-full border font-medium capitalize",
+            KITCHEN_STATUS_STYLES[kitchenStatus] || KITCHEN_STATUS_STYLES.pending,
+          )}
+        >
+          {KITCHEN_STATUS_LABELS[kitchenStatus] || "Not Started"}
+        </Tag>
+      ),
     },
     {
       title: "Order Status",

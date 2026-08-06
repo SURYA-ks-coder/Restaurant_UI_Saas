@@ -27,6 +27,7 @@ import {
   removeKotListeners,
 } from "@/components/socket/kotSocketListeners";
 import { action, API, getAction, patchAction, postAction } from "@/lib/API";
+import { getAccessToken } from "@/lib/auth";
 import { triggerPrint } from "@/lib/print";
 import { message } from "@/lib/message";
 import { Button, Checkbox, Select, Tooltip } from "antd";
@@ -160,7 +161,7 @@ export default function KitchenPage() {
     //   status,
     // });
 
-    UpdateKOTStatus(kotId);
+    UpdateKOTStatus(kotId, status);
   };
 
   const deductStockForKot = async (kotId, items) => {
@@ -255,7 +256,7 @@ export default function KitchenPage() {
   }, []);
 
   useEffect(() => {
-    const token = parseStoredValue("accessToken");
+    const token = getAccessToken();
     const branchId = getBranchId();
 
     getKotList();
@@ -332,7 +333,7 @@ export default function KitchenPage() {
     try {
       const result = await patchAction(API.UPDATE_KOT_STATUS, {
         id: kotId,
-        status: "ready",
+        status,
       });
 
       if (result?.statusCode === 200) {

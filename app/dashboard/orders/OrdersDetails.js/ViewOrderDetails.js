@@ -87,6 +87,7 @@ export default function ViewOrderDetails({ open, close, orderData }) {
   const {
     items = [],
     status,
+    kitchenStatus,
     paymentStatus,
     billNo,
     createdAt,
@@ -97,9 +98,19 @@ export default function ViewOrderDetails({ open, close, orderData }) {
     deliveryPerson,
     deliveryAddress,
   } = orderData;
-  console.log(orderData, "orderData");
 
-  const statusKey = status?.toLowerCase().replace(/\s+/g, "_");
+  // Bill.status only ever holds pending/held/completed/cancelled — it can
+  // never itself become "preparing". Kitchen progress lives on the linked
+  // KOT(s) instead (see lib/kitchenStatus.js), so fold it in here to drive
+  // the "Preparing" step.
+  let statusKey = status?.toLowerCase().replace(/\s+/g, "_");
+  if (
+    statusKey !== "completed" &&
+    statusKey !== "cancelled" &&
+    (kitchenStatus === "preparing" || kitchenStatus === "ready")
+  ) {
+    statusKey = "preparing";
+  }
   const currentStepIndex = ORDER_STEPS.findIndex((s) => s.key === statusKey);
 
 
