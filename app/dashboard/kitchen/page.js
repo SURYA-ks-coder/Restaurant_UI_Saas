@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
+  Bookmark,
+  BookmarkCheck,
   Check,
   ChefHat,
   Clock,
@@ -129,6 +131,8 @@ const isChefMember = (member) =>
     .filter(Boolean)
     .some((value) => String(value).toLowerCase().includes("chef"));
 
+const KITCHEN_BOOKMARKS_KEY = "kitchenBookmarkedKots";
+
 export default function KitchenPage() {
   const [orders, setOrders] = useState([]);
   const [chefs, setChefs] = useState([]);
@@ -136,6 +140,26 @@ export default function KitchenPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const [reprintingId, setReprintingId] = useState(null);
+  // Per-browser highlight for tickets a chef is keeping an eye on — local
+  // only, not synced to other kitchen displays or the backend.
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(KITCHEN_BOOKMARKS_KEY) || "[]");
+      setBookmarkedIds(new Set(stored));
+    } catch {}
+  }, []);
+
+  const toggleBookmark = (kotId) => {
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kotId)) next.delete(kotId);
+      else next.add(kotId);
+      localStorage.setItem(KITCHEN_BOOKMARKS_KEY, JSON.stringify([...next]));
+      return next;
+    });
+  };
 
   const reprintKot = async (kotId) => {
     setReprintingId(kotId);
@@ -442,10 +466,15 @@ export default function KitchenPage() {
           };
           const isUrgent = order.elapsed > 10 && order.status !== "ready";
 
+          const isBookmarked = bookmarkedIds.has(order.id);
+
           return (
             <article
               key={order.id}
-              className="border rounded-lg p-5 flex flex-col justify-between bg-white dark:bg-card"
+              className={cn(
+                "border rounded-lg p-5 flex flex-col justify-between bg-white dark:bg-card",
+                isBookmarked && "ring-2 ring-amber-400 dark:ring-amber-500/70",
+              )}
             >
               <div className="">
                 <div className="mb-4 flex items-start justify-between">
@@ -460,6 +489,20 @@ export default function KitchenPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={status.color}>{status.label}</Badge>
+                    {order.status === "preparing" && (
+                      <Tooltip title={isBookmarked ? "Remove bookmark" : "Bookmark this ticket"}>
+                        <button
+                          onClick={() => toggleBookmark(order.id)}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
+                          {isBookmarked ? (
+                            <BookmarkCheck className="h-3.5 w-3.5 text-amber-500" />
+                          ) : (
+                            <Bookmark className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </Tooltip>
+                    )}
                     <Tooltip title="Reprint KOT">
                       <button
                         onClick={() => reprintKot(order._id)}

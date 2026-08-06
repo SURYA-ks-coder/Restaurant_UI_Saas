@@ -9,7 +9,12 @@ import {
 } from "@/components/socket/kotSocketListeners";
 import { API, getAction, patchAction } from "@/lib/API";
 import { getAccessToken, getDefaultBranchId } from "@/lib/auth";
-import { KITCHEN_STATUS_LABELS, KITCHEN_STATUS_STYLES } from "@/lib/kitchenStatus";
+import {
+  KITCHEN_STATUS_LABELS,
+  KITCHEN_STATUS_STYLES,
+  LIST_STATUS_FILTERS,
+  matchesListStatusFilter,
+} from "@/lib/kitchenStatus";
 import { message } from "@/lib/message";
 import { cn } from "@/lib/utils";
 import { Select, Tag } from "antd";
@@ -67,6 +72,7 @@ export default function OrdersList() {
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("all");
 
   const getOrdersList = useCallback(async () => {
     try {
@@ -100,6 +106,17 @@ export default function OrdersList() {
       removeKotListeners();
     };
   }, [getOrdersList]);
+
+  const filteredOrdersData = ordersData.filter((order) =>
+    matchesListStatusFilter(order, selectedStatus),
+  );
+
+  const statusCounts = Object.fromEntries(
+    LIST_STATUS_FILTERS.map(({ key }) => [
+      key,
+      ordersData.filter((order) => matchesListStatusFilter(order, key)).length,
+    ]),
+  );
 
   const handleView = (_id, row) => {
     setSelectedOrder(row);
@@ -221,9 +238,25 @@ export default function OrdersList() {
   return (
     <div className="flex flex-col gap-4">
       <Heading title="Orders" description="Manage your restaurant orders" />
+      <div className="flex flex-wrap gap-2">
+        {LIST_STATUS_FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setSelectedStatus(key)}
+            className={cn(
+              "rounded-lg px-4 py-2 text-sm font-medium cursor-pointer",
+              selectedStatus === key
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {label} ({statusCounts[key]})
+          </button>
+        ))}
+      </div>
       <Table
         header={ordersHeader}
-        data={ordersData}
+        data={filteredOrdersData}
         title="Orders List"
         rowKey="_id"
         onView={handleView}
