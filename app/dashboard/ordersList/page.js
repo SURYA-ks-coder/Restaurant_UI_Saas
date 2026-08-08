@@ -27,6 +27,23 @@ import ViewOrderDetails from "../orders/OrdersDetails.js/ViewOrderDetails";
 // still only ever offers the four statuses the backend accepts here.
 const ORDER_STATUS_OPTIONS = ["pending", "held", "completed", "cancelled"];
 
+// Mirrors app/dashboard/settings/menuItems/AddMenuItem.js's kitchenSectionOptions.
+const KITCHEN_SECTION_OPTIONS = [
+  { label: "Main Kitchen", value: "main_kitchen" },
+  { label: "Grill", value: "grill" },
+  { label: "Cold Station", value: "cold_station" },
+];
+
+// Staff no longer has a fixed role enum (see app/dashboard/staff/AddStaffs.js),
+// so — same approach as app/dashboard/kitchen/page.js's isChefMember — match
+// on whatever free-text role/designation/roleName the account was given.
+const isWaiterMember = (member) =>
+  [member.role, member.designation, member.roleId?.roleName]
+    .filter(Boolean)
+    .some((value) =>
+      ["waiter", "server"].some((term) => String(value).toLowerCase().includes(term)),
+    );
+
 const orderStatusStyles = {
   pending:
     "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/30",
@@ -67,12 +84,56 @@ function OrderStatusCell({ row, updatingId, onChange }) {
   );
 }
 
+function WaiterCell({ row, waiters, updatingId, onChange }) {
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <Select
+        value={row.waiterId || undefined}
+        placeholder="Assign waiter"
+        size="small"
+        variant="borderless"
+        loading={updatingId === row._id}
+        disabled={updatingId === row._id}
+        onChange={(waiterId) => onChange(row, waiterId)}
+        popupMatchSelectWidth={false}
+        className="min-w-32"
+        options={waiters.map((waiter) => ({
+          value: waiter._id,
+          label: waiter.name,
+        }))}
+      />
+    </div>
+  );
+}
+
+function KitchenSectionCell({ row, updatingId, onChange }) {
+  return (
+    <div onClick={(event) => event.stopPropagation()}>
+      <Select
+        value={row.kitchenSection || undefined}
+        placeholder="Assign section"
+        size="small"
+        variant="borderless"
+        loading={updatingId === row._id}
+        disabled={updatingId === row._id}
+        onChange={(kitchenSection) => onChange(row, kitchenSection)}
+        popupMatchSelectWidth={false}
+        className="min-w-32"
+        options={KITCHEN_SECTION_OPTIONS}
+      />
+    </div>
+  );
+}
+
 export default function OrdersList() {
   const [ordersData, setordersDataa] = useState([]);
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [waiterUpdatingId, setWaiterUpdatingId] = useState(null);
+  const [kitchenUpdatingId, setKitchenUpdatingId] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("all");
+  const [waiters, setWaiters] = useState([]);
 
   const getOrdersList = useCallback(async () => {
     try {
@@ -81,6 +142,18 @@ export default function OrdersList() {
         setordersDataa(result?.data || []);
       }
     } catch (error) {}
+  }, []);
+
+  useEffect(() => {
+    const getWaiters = async () => {
+      try {
+        const result = await getAction(`${API.GET_STAFF_LIST}?status=active&limit=100`);
+        if (result?.statusCode === 200) {
+          setWaiters((result?.data || []).filter(isWaiterMember));
+        }
+      } catch (error) {}
+    };
+    getWaiters();
   }, []);
 
   useEffect(() => {
@@ -159,6 +232,77 @@ export default function OrdersList() {
     }
   };
 
+  const handleWaiterChange = async (row, waiterId) => {
+    const prevWaiterId = row.waiterId;
+    const prevWaiterName = row.waiterName;
+    const waiter = waiters.find((w) => w._id === waiterId);
+
+    setWaiterUpdatingId(row._id);
+    setordersDataa((prev) =>
+      prev.map((order) =>
+        order._id === row._id
+          ? { ...order, waiterId, waiterName: waiter?.name || "" }
+          : order,
+      ),
+    );
+
+    try {
+      const result = await patchAction(`${API.UPDATE_BILL}/${row._id}`, {
+        waiterId,
+        waiterName: waiter?.name || "",
+      });
+      if (result?.statusCode === 200) {
+        message.success(`Assigned to ${waiter?.name || "waiter"}`);
+      } else {
+        throw new Error(result?.message || "Unable to assign waiter");
+      }
+    } catch (error) {
+      setordersDataa((prev) =>
+        prev.map((order) =>
+          order._id === row._id
+            ? { ...order, waiterId: prevWaiterId, waiterName: prevWaiterName }
+            : order,
+        ),
+      );
+      message.error(error?.message || "Unable to assign waiter");
+    } finally {
+      setWaiterUpdatingId(null);
+    }
+  };
+
+  const handleKitchenSectionChange = async (row, kitchenSection) => {
+    const prevKitchenSection = row.kitchenSection;
+
+    setKitchenUpdatingId(row._id);
+    setordersDataa((prev) =>
+      prev.map((order) =>
+        order._id === row._id ? { ...order, kitchenSection } : order,
+      ),
+    );
+
+    try {
+      const result = await patchAction(`${API.UPDATE_BILL}/${row._id}`, {
+        kitchenSection,
+      });
+      if (result?.statusCode === 200) {
+        message.success("Kitchen section updated");
+      } else {
+        throw new Error(result?.message || "Unable to update kitchen section");
+      }
+    } catch (error) {
+      setordersDataa((prev) =>
+        prev.map((order) =>
+          order._id === row._id
+            ? { ...order, kitchenSection: prevKitchenSection }
+            : order,
+        ),
+      );
+      message.error(error?.message || "Unable to update kitchen section");
+    } finally {
+      setKitchenUpdatingId(null);
+    }
+  };
+
   const ordersHeader = [
     {
       title: "Bill No",
@@ -208,6 +352,31 @@ export default function OrdersList() {
         >
           {KITCHEN_STATUS_LABELS[kitchenStatus] || "Not Started"}
         </Tag>
+      ),
+    },
+    {
+      title: "Waiter",
+      value: "waiterId",
+      width: 160,
+      render: (_value, row) => (
+        <WaiterCell
+          row={row}
+          waiters={waiters}
+          updatingId={waiterUpdatingId}
+          onChange={handleWaiterChange}
+        />
+      ),
+    },
+    {
+      title: "Kitchen Section",
+      value: "kitchenSection",
+      width: 160,
+      render: (_value, row) => (
+        <KitchenSectionCell
+          row={row}
+          updatingId={kitchenUpdatingId}
+          onChange={handleKitchenSectionChange}
+        />
       ),
     },
     {
