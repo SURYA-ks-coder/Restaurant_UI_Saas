@@ -10,7 +10,6 @@ import {
   ArrowUpRight,
   CheckCircle2,
   ChefHat,
-  ChevronDown,
   Clock,
   FileText,
   LayoutGrid,
@@ -31,8 +30,6 @@ import { getUserData } from "@/lib/auth";
 import dayjs from "dayjs";
 
 /* ── data ──────────────────────────────────────────────────────────────── */
-
-const BRANCHES = ["Chennai Central", "Anna Nagar", "Velachery"];
 
 const HEADER_STATS = [
   { label: "Orders Today", value: "ordersToday", Icon: ShoppingBag },
@@ -223,8 +220,7 @@ function DonutChart({ data }) {
 
 export default function DashboardPage() {
   const [now, setNow] = useState(new Date());
-  const [branch, setBranch] = useState(BRANCHES[0]);
-  const [branchOpen, setBranchOpen] = useState(false);
+  const [branch, setBranch] = useState("");
   const [liveOrders, setLiveOrders] = useState({});
   const [liveStatus, setLiveStatus] = useState({});
   const [revenueSummary, setRevenueSummary] = useState({});
@@ -242,6 +238,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setUserName(getUserData()?.name || "");
+  }, []);
+
+  // Same branch data/selection as the top-nav switcher, so this stays in
+  // sync whenever the user switches branches there.
+  useEffect(() => {
+    const fetchBranch = async () => {
+      try {
+        const result = await getAction(API.GET_BRANCH_LIST);
+        if (result?.statusCode === 200) {
+          const list = result.data || [];
+          const savedId = localStorage.getItem("branchId");
+          const found = list.find((b) => b._id === savedId) || list[0];
+          if (found) setBranch(found.branchName || found.name || "");
+        }
+      } catch {
+        // keep whatever was last displayed
+      }
+    };
+    fetchBranch();
+    window.addEventListener("branchChanged", fetchBranch);
+    return () => window.removeEventListener("branchChanged", fetchBranch);
   }, []);
 
   const hour = now.getHours();
@@ -458,40 +475,10 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Branch selector */}
-            <div className="relative">
-              <button
-                onClick={() => setBranchOpen((p) => !p)}
-                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium backdrop-blur-sm transition-all duration-200 hover:border-white/20 hover:bg-white/12"
-              >
-                <MapPin className="h-3.5 w-3.5 text-violet-400" />
-                {branch}
-                <ChevronDown
-                  className={cn(
-                    "h-3.5 w-3.5 text-white/40 transition-transform duration-200",
-                    branchOpen && "rotate-180",
-                  )}
-                />
-              </button>
-              {branchOpen && (
-                <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
-                  {BRANCHES.map((b) => (
-                    <button
-                      key={b}
-                      onClick={() => {
-                        setBranch(b);
-                        setBranchOpen(false);
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-muted",
-                        b === branch && "font-semibold text-primary",
-                      )}
-                    >
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Branch location */}
+            <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium backdrop-blur-sm">
+              <MapPin className="h-3.5 w-3.5 text-violet-400" />
+              {branch || "Loading..."}
             </div>
           </div>
 

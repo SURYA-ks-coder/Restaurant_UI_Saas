@@ -75,7 +75,12 @@ export function DashboardLayout({ children }) {
     applyPreferences(prefs);
     if (prefs.theme) setTheme(prefs.theme);
     setMounted(true);
-  }, [router, setTheme]);
+    // Mount-only: `setTheme` is intentionally excluded — next-themes gives it a
+    // new identity every time the theme changes, so including it here reruns
+    // this effect (and re-applies the stale cached `prefs.theme`) right after
+    // the header's own toggle, snapping the theme back before the user sees it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const handleLogout = useCallback(() => {
     clearAuthData();

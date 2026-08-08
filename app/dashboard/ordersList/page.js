@@ -136,7 +136,7 @@ export default function OrdersList() {
 
     try {
       const result = await patchAction(
-        API.UPDATE_BILL.replace(":id", row._id),
+        `${API.UPDATE_BILL}/${row._id}`,
         {
           status: nextStatus,
           paymentStatus: nextStatus === "completed" ? "paid" : undefined,

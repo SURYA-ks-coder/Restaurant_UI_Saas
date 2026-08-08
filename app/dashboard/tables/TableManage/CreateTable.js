@@ -244,7 +244,7 @@ export default function CreateTable({
 
         <SectionTitle>Ordering & Status</SectionTitle>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
+          {/* <label className="block">
             <span className="mb-2 block text-sm font-medium">
               QR Code Enable
             </span>
@@ -258,7 +258,7 @@ export default function CreateTable({
             <p className="mt-2 text-xs text-muted-foreground">
               Enables QR ordering for this table.
             </p>
-          </label>
+          </label> */}
           <AntSelect
             label="Status"
             value={formik.values.status}
